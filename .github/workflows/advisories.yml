@@ -1,0 +1,120 @@
+name: Advisories aktualisieren
+
+# Wöchentlich: neue CVEs/GHSAs für JTL-Shop, Shopware und Shopify-Apps suchen,
+# durch einen Claude-Agenten recherchieren und als Pull Request einpflegen.
+# Ohne ANTHROPIC_API_KEY werden nur die automatischen Entwürfe als PR angelegt.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"   # Montag 06:17 UTC
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Zeitraum in Tagen (lastModified)"
+        default: "30"
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    outputs:
+      count: ${{ steps.sync.outputs.count }}
+      drafts: ${{ steps.sync.outputs.drafts }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Kandidaten suchen (NVD, OSV)
+        id: sync
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: |
+          python3 scripts/advisory_sync.py --days "${{ github.event.inputs.days || '30' }}" | tee sync.md
+          echo "### Advisory-Sync" >> "$GITHUB_STEP_SUMMARY"
+          cat sync.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: advisory-candidates
+          path: |
+            advisories/candidates.json
+            advisories/drafts/
+            sync.md
+          if-no-files-found: ignore
+
+  agent:
+    needs: sync
+    if: needs.sync.outputs.count != '0'
+    runs-on: ubuntu-latest
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: advisory-candidates
+          path: .
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Entwürfe prüfen (Lint ohne Semantik-Stopp)
+        run: cargo run -q -p ecomsec -- advisories lint advisories/drafts || true
+
+      - name: Claude-Agent recherchiert und pflegt Advisories ein
+        if: env.HAS_KEY == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: |
+            --max-turns 60
+            --allowedTools "Read,Edit,Write,Glob,Grep,WebFetch,WebSearch,Bash(cargo:*),Bash(git:*),Bash(gh pr:*),Bash(python3:*),Bash(ls:*),Bash(cat:*)"
+          prompt: |
+            Du pflegst die Schwachstellen-Datenbank von ecomsec (Verzeichnis `advisories/`).
+            Lies zuerst `docs/ADVISORIES.md` (Format und Regeln) und `advisories/candidates.json`
+            (neue Kandidaten aus NVD/OSV, erzeugt am ${{ github.run_id }}).
+
+            Für JEDEN Kandidaten:
+            1. Recherchiere die Primärquellen (Hersteller-Advisory, GHSA, NVD, Sansec, JTL-Forum)
+               per WebFetch/WebSearch. Stelle fest: betroffene Versionsbereiche, behobene Versionen,
+               Schweregrad, ob ein Back-Patch existiert, ob der Eintrag überhaupt die unterstützte
+               Plattform betrifft (JTL-Shop 5, Shopware 6, Shopify-Apps).
+            2. Betrifft er die Plattform: trage ihn als vollständigen Eintrag in
+               `advisories/<platform>.toml` ein (deutscher Titel, `affected` als ">=a <b"-Bereiche,
+               `fixed_in`, `reference`, `published`, `source`, `tags`). Kein `draft`.
+               Bei Unsicherheit über Versionsbereiche: Eintrag mit `draft = true` anlegen und im
+               PR-Text erklären, was fehlt.
+            3. Betrifft er die Plattform nicht (falscher Treffer, anderes Produkt, nur Shopware 5):
+               trage die ID mit Begründung in `advisories/ignored.toml` ein.
+            4. Lösche verarbeitete Dateien unter `advisories/drafts/` und `advisories/candidates.json`.
+
+            Danach:
+            - `cargo run -q -p ecomsec -- advisories lint advisories` muss ohne Fehler durchlaufen.
+            - `cargo test -p ecomsec-core -p ecomsec` muss grün sein.
+            - Ändere NUR Dateien unter `advisories/`. Keine Änderungen an Code, Workflows oder Doku.
+            - Erzeuge einen Branch `advisories/update-$(date +%F)`, committe mit einer deutschen
+              Nachricht, pushe und öffne per `gh pr create` einen Pull Request gegen `main`.
+              Der PR-Text listet jeden Kandidaten mit Entscheidung (eingetragen / Entwurf / ignoriert)
+              und den verwendeten Quellen. Beginne den PR-Titel mit "Advisories: ".
+
+      - name: Fallback-PR nur mit Entwürfen (kein API-Key oder Agent nicht gelaufen)
+        if: env.HAS_KEY != 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: advisories/drafts-${{ github.run_id }}
+          title: "Advisories: ${{ needs.sync.outputs.count }} neue Kandidaten (Entwürfe)"
+          commit-message: "Advisory-Entwürfe aus NVD/OSV (automatisch, inaktiv)"
+          body: |
+            Der Sync-Workflow hat neue Kandidaten gefunden. Da kein `ANTHROPIC_API_KEY`
+            hinterlegt ist, wurden nur automatische Entwürfe (`draft = true`, inaktiv) angelegt.
+            Bitte Versionsbereiche prüfen und nach `advisories/<platform>.toml` übernehmen,
+            siehe `docs/ADVISORIES.md`. Zusammenfassung: siehe Job-Summary des Workflows.
+          add-paths: |
+            advisories/drafts/*.toml
+            advisories/candidates.json
+          labels: advisories

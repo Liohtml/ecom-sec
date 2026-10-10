@@ -1,5 +1,6 @@
 //! `ecomsec` – compromise check for e-commerce installations.
 
+mod advisories_cmd;
 mod config;
 mod output;
 mod platforms;
@@ -102,6 +103,11 @@ enum Command {
     },
     /// Lokales Web-Dashboard starten
     Serve(ServeArgs),
+    /// Schwachstellen-Datenbank anzeigen, prüfen oder aktualisieren
+    Advisories {
+        #[command(subcommand)]
+        command: advisories_cmd::AdvisoriesCommand,
+    },
 }
 
 #[derive(Args, Clone)]
@@ -133,6 +139,12 @@ struct ScanOptionArgs {
     /// Maximale Dateigröße für die Inhaltsprüfung in Bytes
     #[arg(long)]
     max_file_size: Option<u64>,
+    /// Online-Abgleich der Composer-Pakete mit OSV.dev (sendet Paketnamen + Versionen)
+    #[arg(long)]
+    online: bool,
+    /// Zusätzliches Advisory-Verzeichnis (*.toml), mehrfach möglich
+    #[arg(long = "advisories", value_name = "DIR")]
+    advisory_dirs: Vec<PathBuf>,
 }
 
 #[derive(Args)]
@@ -248,6 +260,7 @@ struct Context_ {
     cfg: FileConfig,
     spec: TargetSpec,
     store: StateStore,
+    state_base: PathBuf,
 }
 
 fn main() -> ExitCode {
@@ -292,15 +305,39 @@ fn build_context(cli: &Cli) -> anyhow::Result<Context_> {
         .or_else(|| cfg.state.dir.clone())
         .unwrap_or_else(StateStore::default_base);
     let store = StateStore::for_target(&base, &spec.platform, &spec.state_key());
-    Ok(Context_ { cfg, spec, store })
+    Ok(Context_ {
+        cfg,
+        spec,
+        store,
+        state_base: base,
+    })
+}
+
+fn state_base(cli: &Cli, cfg: &FileConfig) -> PathBuf {
+    cli.state_dir
+        .clone()
+        .or_else(|| cfg.state.dir.clone())
+        .unwrap_or_else(StateStore::default_base)
 }
 
 fn scan_options(
     args: &ScanOptionArgs,
     cfg: &FileConfig,
     dry_run: bool,
+    state_base: &std::path::Path,
 ) -> anyhow::Result<ScanOptions> {
-    let mut o = ScanOptions::default();
+    let mut o = ScanOptions {
+        online: args.online || cfg.scan.online,
+        ..Default::default()
+    };
+    // Downloaded advisories (`ecomsec advisories update`) are always merged.
+    let downloaded = advisories_cmd::download_dir(state_base);
+    if downloaded.is_dir() {
+        o.advisory_dirs.push(downloaded);
+    }
+    o.advisory_dirs
+        .extend(cfg.scan.advisory_dirs.iter().cloned());
+    o.advisory_dirs.extend(args.advisory_dirs.iter().cloned());
     if let Some(d) = args.reference_date.or_else(|| {
         cfg.scan
             .reference_date
@@ -440,11 +477,19 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
         }
         _ => {}
     }
+    if matches!(cli.command, Command::Advisories { .. }) {
+        let cfg = FileConfig::load(cli.config.as_deref())?;
+        let base = state_base(&cli, &cfg);
+        let Command::Advisories { command } = cli.command else {
+            unreachable!()
+        };
+        return advisories_cmd::run(command, &base, &cfg.scan.advisory_dirs);
+    }
 
     let ctx = build_context(&cli)?;
     match cli.command {
         Command::Scan(args) => {
-            let options = scan_options(&args.opts, &ctx.cfg, args.dry_run)?;
+            let options = scan_options(&args.opts, &ctx.cfg, args.dry_run, &ctx.state_base)?;
             let platform = ctx.spec.open()?;
             let engine = Engine::new(&options)?;
             let show_progress = args.format == Format::Text
@@ -522,7 +567,7 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
             Ok(0)
         }
         Command::Serve(args) => {
-            let options = scan_options(&args.opts, &ctx.cfg, false)?;
+            let options = scan_options(&args.opts, &ctx.cfg, false, &ctx.state_base)?;
             let bind: std::net::SocketAddr = args
                 .bind
                 .as_deref()
@@ -539,7 +584,7 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
             web::serve(bind, token, ctx.spec, options, ctx.store)?;
             Ok(0)
         }
-        Command::Platforms | Command::Rules { .. } => unreachable!(),
+        Command::Platforms | Command::Rules { .. } | Command::Advisories { .. } => unreachable!(),
     }
 }
 

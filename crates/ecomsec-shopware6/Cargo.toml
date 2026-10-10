@@ -9,6 +9,7 @@ rust-version.workspace = true
 
 [dependencies]
 ecomsec-core.workspace = true
+ecomsec-osv.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 regex.workspace = true

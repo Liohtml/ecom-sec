@@ -349,3 +349,64 @@ fn unknown_directory_fails_with_exit_10() {
         .unwrap();
     assert_eq!(out.status.code(), Some(10));
 }
+
+#[test]
+fn advisories_lint_and_list_work_on_repo_files() {
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../advisories");
+    let out = bin()
+        .args(["advisories", "lint"])
+        .arg(&repo)
+        .output()
+        .unwrap();
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let out = bin()
+        .args(["advisories", "list", "--platform", "jtl5"])
+        .output()
+        .unwrap();
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(text.contains("CVE-2026-54390"));
+}
+
+#[test]
+fn extra_advisory_dir_overrides_embedded_entries() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    write(
+        &root,
+        "includes/defines.php",
+        b"<?php\nconst APPLICATION_VERSION = '5.7.2';\n",
+    );
+    backdate(&root);
+    let adv = tmp.path().join("adv");
+    write(
+        &adv,
+        "jtl5.toml",
+        b"[[advisory]]\nid = \"CVE-2099-0001\"\nplatform = \"jtl5\"\ntitle = \"Test\"\nseverity = \"warning\"\naffected = [\"<9.0\"]\nfixed_in = [\"9.0\"]\npublished = 2026-10-01\n",
+    );
+    let report = scan_json(&root, &state, &["--advisories", adv.to_str().unwrap()]);
+    let ids: Vec<&str> = report["advisories"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|a| a["advisory"]["id"].as_str().unwrap())
+        .collect();
+    assert!(ids.contains(&"CVE-2099-0001"));
+    assert!(ids.contains(&"CVE-2026-54390"));
+    assert!(rules_of(&report)
+        .iter()
+        .any(|(r, _)| r == "advisory_cve-2099-0001"));
+    // Without --online the dependency row says "nicht geprüft".
+    let dep = report["integrity"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["key"] == "dependencies.osv")
+        .unwrap();
+    assert_eq!(dep["status"], "unknown");
+}

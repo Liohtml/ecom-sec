@@ -18,6 +18,7 @@
 //!   ([`state`]),
 //! * prioritised recommendations ([`recommendations`]).
 
+pub mod advisories;
 pub mod baseline;
 pub mod db;
 pub mod engine;
@@ -31,6 +32,7 @@ pub mod state;
 pub mod util;
 pub mod version;
 
+pub use advisories::{AdvisoryDb, AdvisorySpec};
 pub use engine::{Engine, ScanOptions, ScanOutcome};
 pub use finding::{Category, Finding, FindingId, Severity};
 pub use platform::{

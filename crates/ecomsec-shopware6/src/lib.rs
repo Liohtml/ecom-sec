@@ -25,13 +25,16 @@ use ecomsec_core::platform::{
 use ecomsec_core::recommendations::{Recommendation, RecommendationGroupKind};
 use ecomsec_core::report::Report;
 use ecomsec_core::rules::RuleSet;
-use ecomsec_core::version::{Version, VersionRange};
+use ecomsec_core::version::Version;
 use regex::Regex;
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 pub const PLATFORM_ID: &str = "shopware6";
 pub const RULES_TOML: &str = include_str!("../signatures/rules_shopware6.toml");
+
+/// Composer inventories of a Shopware project (core, plugins, libraries).
+pub const COMPOSER_INVENTORY: &[&str] = &["composer.lock", "vendor/composer/installed.json"];
 
 #[derive(Debug, Clone, Default)]
 pub struct ShopwareEnv {
@@ -187,36 +190,14 @@ pub fn detect_version(root: &Path) -> (Option<Version>, String) {
     (None, "nicht gefunden".into())
 }
 
+/// Embedded advisory file (`advisories/shopware6.toml` in the repository).
+pub const ADVISORIES_TOML: &str = include_str!("../../../advisories/shopware6.toml");
+
 fn advisories() -> Vec<Advisory> {
-    vec![
-        Advisory {
-            id: "CVE-2023-2017".into(),
-            title: "Twig Server-Side Template Injection über Flow Builder / Mail-Templates".into(),
-            severity: Severity::Critical,
-            score: Some(8.8),
-            affected: vec![VersionRange::new(Some("6.0.0"), Some("6.4.20.1"))],
-            fixed_in: vec![Version::parse("6.4.20.1").unwrap()],
-            backpatch_note: Some("Für ältere 6.4-Versionen stellt Shopware das Security-Plugin (swag/security) bereit.".into()),
-            reference: Some("https://nvd.nist.gov/vuln/detail/CVE-2023-2017".into()),
-            published: chrono::NaiveDate::from_ymd_opt(2023, 4, 19).unwrap(),
-            tags: vec!["ssti".into(), "twig".into()],
-        },
-        Advisory {
-            id: "CVE-2024-22406".into(),
-            title: "SQL-Injection über Sortierparameter der Store-API (Criteria)".into(),
-            severity: Severity::Critical,
-            score: Some(8.1),
-            affected: vec![
-                VersionRange::new(Some("6.4.0"), Some("6.4.20.2")),
-                VersionRange::new(Some("6.5.0"), Some("6.5.7.4")),
-            ],
-            fixed_in: vec![Version::parse("6.4.20.2").unwrap(), Version::parse("6.5.7.4").unwrap()],
-            backpatch_note: Some("Alternativ das Shopware Security-Plugin (swag/security) installieren.".into()),
-            reference: Some("https://nvd.nist.gov/vuln/detail/CVE-2024-22406".into()),
-            published: chrono::NaiveDate::from_ymd_opt(2024, 1, 16).unwrap(),
-            tags: vec!["sqli".into()],
-        },
-    ]
+    let mut db = ecomsec_core::AdvisoryDb::new();
+    db.merge_toml("builtin:advisories/shopware6.toml", ADVISORIES_TOML)
+        .expect("embedded Shopware advisories are valid");
+    db.for_platform(PLATFORM_ID)
 }
 
 impl Platform for Shopware6 {
@@ -344,6 +325,7 @@ impl Platform for Shopware6 {
             )),
         }
         permission_checks(&self.root, &mut report);
+        dependency_check(&self.root, ctx, &mut report);
         if ctx.skip_remote {
             report
                 .limitations
@@ -410,6 +392,34 @@ impl Platform for Shopware6 {
             "Der Document Root muss auf `public/` zeigen; `.env`, `var/`, `config/` und `vendor/` dürfen nie per HTTP erreichbar sein. `APP_ENV=prod` und Deploy mit `bin/console cache:clear` statt manueller Änderungen in var/cache.",
         ));
         recs
+    }
+}
+
+/// OSV.dev lookup of all Composer packages (only with `--online`).
+fn dependency_check(root: &Path, ctx: &PlatformContext, report: &mut IntegrityReport) {
+    if !ctx.online {
+        report
+            .items
+            .push(ecomsec_osv::offline_item(root, COMPOSER_INVENTORY));
+        return;
+    }
+    match ecomsec_osv::check_root(root, COMPOSER_INVENTORY, &ecomsec_osv::OsvClient::default()) {
+        None => report
+            .items
+            .push(ecomsec_osv::offline_item(root, COMPOSER_INVENTORY)),
+        Some(Ok(out)) => {
+            report.findings.extend(out.findings);
+            report.items.push(out.item);
+            report.limitations.extend(out.limitations);
+        }
+        Some(Err(e)) => {
+            report
+                .limitations
+                .push(format!("OSV-Abgleich fehlgeschlagen: {e}"));
+            report
+                .items
+                .push(ecomsec_osv::offline_item(root, COMPOSER_INVENTORY));
+        }
     }
 }
 

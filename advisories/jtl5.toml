@@ -1,0 +1,22 @@
+# Bekannte Schwachstellen in JTL-Shop 5.
+#
+# Diese Datei wird in das Binary eingebettet UND kann zur Laufzeit per
+# `ecomsec advisories update` bzw. `--advisories DIR` durch eine neuere Fassung
+# ersetzt werden (Einträge mit gleicher `id` überschreiben die eingebauten).
+#
+# Format siehe docs/ADVISORIES.md. Versionsbereiche: ">=a <b", "<b", ">=a".
+# Pflege: wöchentlicher Workflow .github/workflows/advisories.yml + Review.
+
+[[advisory]]
+id = "CVE-2026-54390"
+platform = "jtl5"
+title = "Unauthentifizierte Smarty Template Injection (SSTI) mit RCE ab 5.4.0"
+severity = "critical"
+score = 9.8
+affected = [">=5.2.0 <5.5.4", ">=5.6.0 <5.6.2", ">=5.7.0 <5.7.2"]
+fixed_in = ["5.5.4", "5.6.2", "5.7.2"]
+backpatch_note = "Für ältere 5.x-Zweige stellt JTL einen Back-Patch bereit; ein eingespielter Back-Patch wird anhand des Smarty-Mail-Renderers erkannt. Nach dem Patch Blowfish-Key, DB-Passwort und alle im Shop hinterlegten Zugangsdaten rotieren, da diese vor dem Patch auslesbar waren."
+reference = "https://sansec.io/research/jtl-shop-ssti-rce"
+published = 2026-06-17
+tags = ["ssti", "rce", "unauthenticated"]
+source = "https://nvd.nist.gov/vuln/detail/CVE-2026-54390"

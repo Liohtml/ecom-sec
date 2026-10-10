@@ -1,0 +1,879 @@
+# Bekannte Schwachstellen in Shopware 6 (Core).
+#
+# Hinweis: Mit `ecomsec scan --online` werden zusätzlich ALLE Composer-Pakete
+# (shopware/core, Plugins, Symfony, …) tagesaktuell gegen OSV.dev geprüft.
+# Diese Datei deckt den Offline-Fall ab und wird automatisiert gepflegt.
+
+[[advisory]]
+id = "CVE-2023-2017"
+platform = "shopware6"
+title = "Twig Server-Side Template Injection über Flow Builder / Mail-Templates"
+severity = "critical"
+score = 8.8
+affected = [">=6.0.0 <6.4.20.1"]
+fixed_in = ["6.4.20.1"]
+backpatch_note = "Für ältere 6.4-Versionen stellt Shopware das Security-Plugin (swag/security) bereit."
+reference = "https://nvd.nist.gov/vuln/detail/CVE-2023-2017"
+published = 2023-04-19
+tags = ["ssti", "twig"]
+
+[[advisory]]
+id = "CVE-2024-22406"
+platform = "shopware6"
+title = "SQL-Injection über Sortierparameter der Store-API (Criteria)"
+severity = "critical"
+score = 8.1
+affected = [">=6.4.0 <6.4.20.2", ">=6.5.0 <6.5.7.4"]
+fixed_in = ["6.4.20.2", "6.5.7.4"]
+backpatch_note = "Alternativ das Shopware Security-Plugin (swag/security) installieren."
+reference = "https://nvd.nist.gov/vuln/detail/CVE-2024-22406"
+published = 2024-01-16
+tags = ["sqli"]
+
+# ---------------------------------------------------------------------------
+# Automatisch aus OSV.dev übernommen (GitHub-reviewed Advisories für
+# shopware/core, shopware/platform, shopware/administration, shopware/storefront).
+# Versionsbereiche stammen aus der GitHub Advisory Database.
+# ---------------------------------------------------------------------------
+
+[[advisory]]
+id = "GHSA-qvc5-cfrr-384v"
+platform = "shopware6"
+title = "RCE in Third Party Library in Shopware"
+severity = "info"
+affected = ["<6.3.1.1"]
+fixed_in = ["6.3.1.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-qvc5-cfrr-384v"
+published = 2020-09-23
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-qvhr-55hg-3qwv"
+platform = "shopware6"
+title = "Non-persistent XSS in the Storefront in Shopware"
+severity = "info"
+affected = ["<6.3.1.1"]
+fixed_in = ["6.3.1.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-qvhr-55hg-3qwv"
+published = 2020-09-23
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-8xv9-qcr9-ww9j"
+platform = "shopware6"
+title = "Authenticated XML External Entity Processing"
+severity = "warning"
+affected = ["<6.3.2.1"]
+fixed_in = ["6.3.2.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-8xv9-qcr9-ww9j"
+published = 2020-10-19
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-p68v-frgx-4rjp"
+platform = "shopware6"
+title = "Denial of Service via Cache Flooding"
+severity = "info"
+affected = ["<6.3.2.1"]
+fixed_in = ["6.3.2.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-p68v-frgx-4rjp"
+published = 2020-10-19
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-5q58-x5h2-v5rx"
+platform = "shopware6"
+title = "Authenticated Privilege Escalation"
+severity = "info"
+affected = ["<6.3.4.1"]
+fixed_in = ["6.3.4.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-5q58-x5h2-v5rx"
+published = 2020-12-21
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-8pfh-mm2g-hmc3"
+platform = "shopware6"
+title = "Authenticated Server Side Request Forgery"
+severity = "info"
+affected = ["<6.3.4.1"]
+fixed_in = ["6.3.4.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-8pfh-mm2g-hmc3"
+published = 2020-12-21
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-cq6h-w3mc-57f4"
+platform = "shopware6"
+title = "Information exposure via query strings in URL"
+severity = "info"
+affected = ["<6.3.4.1"]
+fixed_in = ["6.3.4.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-cq6h-w3mc-57f4"
+published = 2020-12-21
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-jvg4-9rc2-wvcr"
+platform = "shopware6"
+title = "Generation of fake documents via public GET-call"
+severity = "info"
+affected = ["<6.3.5.1"]
+fixed_in = ["6.3.5.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-jvg4-9rc2-wvcr"
+published = 2021-02-10
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "CVE-2021-32710"
+platform = "shopware6"
+title = "Potential Session Hijacking"
+severity = "info"
+affected = ["<6.3.5.2"]
+fixed_in = ["6.3.5.2"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-h9q8-5gv2-v6mg"
+published = 2021-03-12
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-h9q8-5gv2-v6mg"]
+
+[[advisory]]
+id = "GHSA-pjj4-jjgc-h3r8"
+platform = "shopware6"
+title = "Authenticated remote code execution"
+severity = "warning"
+affected = ["<6.3.5.2"]
+fixed_in = ["6.3.5.2"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-pjj4-jjgc-h3r8"
+published = 2021-03-12
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-88rc-3p98-rgvx"
+platform = "shopware6"
+title = "After order payment process manipulation in shopware/platform and shopware/core "
+severity = "critical"
+affected = ["<6.3.5.3"]
+fixed_in = ["6.3.5.3"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-88rc-3p98-rgvx"
+published = 2021-04-13
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-qg7c-q3vq-rgxr"
+platform = "shopware6"
+title = "Leak of information via Store-API aggregations in shopware/platform and shopware/core"
+severity = "critical"
+affected = ["<6.3.5.3"]
+fixed_in = ["6.3.5.3"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-qg7c-q3vq-rgxr"
+published = 2021-04-13
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-243q-g9j3-qf6r"
+platform = "shopware6"
+title = "non-admin users can create integration role with administrator role"
+severity = "warning"
+affected = ["<6.4.1.1"]
+fixed_in = ["6.4.1.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-243q-g9j3-qf6r"
+published = 2021-06-28
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "CVE-2021-32709"
+platform = "shopware6"
+title = "Creation of order credits was not validated by acl in admin orders"
+severity = "info"
+affected = ["<6.4.1.1"]
+fixed_in = ["6.4.1.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-g7w8-pp9w-7p32"
+published = 2021-06-28
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-g7w8-pp9w-7p32", "GHSA-p696-gf58-9w97"]
+
+[[advisory]]
+id = "CVE-2021-32716"
+platform = "shopware6"
+title = "Internal hidden fields are visible on to many associations in admin api"
+severity = "warning"
+affected = ["<6.4.1.1"]
+fixed_in = ["6.4.1.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-gpmh-g94g-qrhr"
+published = 2021-06-28
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-68v9-3jjq-rvp4", "GHSA-gpmh-g94g-qrhr"]
+
+[[advisory]]
+id = "CVE-2021-32717"
+platform = "shopware6"
+title = "Private files publicly accessible with Cloud Storage providers"
+severity = "critical"
+affected = ["<6.4.1.1"]
+fixed_in = ["6.4.1.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-vrf2-xghr-j52v"
+published = 2021-06-28
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-6gr8-c3m5-mvrg", "GHSA-vrf2-xghr-j52v"]
+
+[[advisory]]
+id = "GHSA-wq3r-jwrq-xg6w"
+platform = "shopware6"
+title = "Canceling of orders not related to the logged-in user"
+severity = "warning"
+affected = ["<6.4.1.1"]
+fixed_in = ["6.4.1.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-wq3r-jwrq-xg6w"
+published = 2021-06-28
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "CVE-2021-37710"
+platform = "shopware6"
+title = "Cross-Site Scripting via SVG media files"
+severity = "critical"
+affected = ["<6.4.3.1"]
+fixed_in = ["6.4.3.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-fc38-mxwr-pfhx"
+published = 2021-08-23
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-fc38-mxwr-pfhx"]
+
+[[advisory]]
+id = "CVE-2021-37711"
+platform = "shopware6"
+title = "Authenticated server-side request forgery in file upload via URL."
+severity = "critical"
+affected = ["<6.4.3.1"]
+fixed_in = ["6.4.3.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-gcvv-gq92-x94r"
+published = 2021-08-23
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-gcvv-gq92-x94r"]
+
+[[advisory]]
+id = "CVE-2021-37709"
+platform = "shopware6"
+title = "Insecure direct object reference of log files of the Import/Export feature"
+severity = "warning"
+affected = ["<6.4.3.1"]
+fixed_in = ["6.4.3.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-54gp-qff8-946c"
+published = 2021-08-30
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-54gp-qff8-946c"]
+
+[[advisory]]
+id = "CVE-2021-37707"
+platform = "shopware6"
+title = "Manipulation of product reviews via API"
+severity = "warning"
+affected = ["<6.4.3.1"]
+fixed_in = ["6.4.3.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-9f8f-574q-8jmf"
+published = 2021-08-30
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-9f8f-574q-8jmf"]
+
+[[advisory]]
+id = "CVE-2021-37708"
+platform = "shopware6"
+title = "Command injection in mail agent settings"
+severity = "critical"
+affected = ["<6.4.3.1"]
+fixed_in = ["6.4.3.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-xh55-2fqp-p775"
+published = 2021-08-30
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-xh55-2fqp-p775"]
+
+[[advisory]]
+id = "CVE-2021-32711"
+platform = "shopware6"
+title = "Exposure of Sensitive Information to an Unauthorized Actor"
+severity = "critical"
+affected = ["<6.3.5.1"]
+fixed_in = ["6.3.5.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-f2vv-h5x4-57gr"
+published = 2021-09-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-2p89-5f22-8qvf", "GHSA-f2vv-h5x4-57gr"]
+
+[[advisory]]
+id = "GHSA-r64m-qchj-hrjp"
+platform = "shopware6"
+title = "Webcache Poisoning in shopware/platform and shopware/core"
+severity = "critical"
+affected = ["<6.4.6.1"]
+fixed_in = ["6.4.6.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-r64m-qchj-hrjp"
+published = 2021-11-24
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "CVE-2022-24747"
+platform = "shopware6"
+title = "HTTP caching is marking private HTTP headers as public in Shopware"
+severity = "warning"
+affected = ["<6.4.8.2"]
+fixed_in = ["6.4.8.2"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-6wrh-279j-6hvw"
+published = 2022-03-10
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-6wrh-279j-6hvw"]
+
+[[advisory]]
+id = "CVE-2022-24748"
+platform = "shopware6"
+title = "Incorrect Authentication in shopware"
+severity = "warning"
+affected = ["<6.4.8.2"]
+fixed_in = ["6.4.8.2"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-83vp-6jqg-6cmr"
+published = 2022-03-10
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-83vp-6jqg-6cmr"]
+
+[[advisory]]
+id = "CVE-2022-24746"
+platform = "shopware6"
+title = "HTML injection possibility in voucher code form in Shopware"
+severity = "warning"
+affected = ["<6.4.8.1"]
+fixed_in = ["6.4.8.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-952p-fqcp-g8pc"
+published = 2022-03-10
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-952p-fqcp-g8pc"]
+
+[[advisory]]
+id = "CVE-2022-24744"
+platform = "shopware6"
+title = "Shopware user session is not logged out if the password is reset via password recovery"
+severity = "info"
+affected = ["<6.4.8.1"]
+fixed_in = ["6.4.8.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-w267-m9c4-8555"
+published = 2022-03-10
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-w267-m9c4-8555"]
+
+[[advisory]]
+id = "CVE-2022-24745"
+platform = "shopware6"
+title = "Shopware guest session is shared between customers"
+severity = "warning"
+affected = ["<6.4.8.2"]
+fixed_in = ["6.4.8.2"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-jp6h-mxhx-pgqh"
+published = 2022-03-10
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-jp6h-mxhx-pgqh"]
+
+[[advisory]]
+id = "CVE-2022-24871"
+platform = "shopware6"
+title = "Server-Side Request Forgery (SSRF) in Shopware"
+severity = "critical"
+affected = ["<6.4.10.1"]
+fixed_in = ["6.4.10.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-7gm7-8q8v-9gf2"
+published = 2022-04-22
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-7gm7-8q8v-9gf2"]
+
+[[advisory]]
+id = "CVE-2022-24872"
+platform = "shopware6"
+title = "Improper Access Control in Shopware"
+severity = "critical"
+affected = ["<6.4.10.1"]
+fixed_in = ["6.4.10.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-9wrv-g75h-8ccc"
+published = 2022-04-22
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-9wrv-g75h-8ccc"]
+
+[[advisory]]
+id = "CVE-2020-13997"
+platform = "shopware6"
+title = "Shopware database password is leaked to an unauthenticated users"
+severity = "critical"
+affected = [">=6.0.0 <6.2.3"]
+fixed_in = ["6.2.3"]
+reference = "https://nvd.nist.gov/vuln/detail/CVE-2020-13997"
+published = 2022-05-24
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-r4ph-mx67-x58p"]
+
+[[advisory]]
+id = "CVE-2020-13970"
+platform = "shopware6"
+title = "Shopware vulnerable to SSRF"
+severity = "critical"
+affected = ["<6.2.3"]
+fixed_in = ["6.2.3"]
+reference = "https://nvd.nist.gov/vuln/detail/CVE-2020-13970"
+published = 2022-05-24
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-5vmg-x99g-396q"]
+
+[[advisory]]
+id = "CVE-2020-13971"
+platform = "shopware6"
+title = "Shopware vulnerable to Cross-site Scripting"
+severity = "warning"
+affected = ["<6.2.3"]
+fixed_in = ["6.2.3"]
+reference = "https://nvd.nist.gov/vuln/detail/CVE-2020-13971"
+published = 2022-05-24
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-fxf3-wx3c-76pf"]
+
+[[advisory]]
+id = "CVE-2023-22730"
+platform = "shopware6"
+title = "Shopware vulnerable to Improper Input Validation of Clearance sale in cart"
+severity = "warning"
+affected = ["<6.4.18.1"]
+fixed_in = ["6.4.18.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-8r6h-m72v-38fg"
+published = 2023-01-17
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-8r6h-m72v-38fg"]
+
+[[advisory]]
+id = "CVE-2023-22731"
+platform = "shopware6"
+title = "Shopware vulnerable to Improper Control of Generation of Code in Twig rendered views"
+severity = "critical"
+affected = ["<6.4.18.1"]
+fixed_in = ["6.4.18.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-93cw-f5jj-x85w"
+published = 2023-01-17
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-93cw-f5jj-x85w"]
+
+[[advisory]]
+id = "CVE-2023-22734"
+platform = "shopware6"
+title = "Shopware has Improper Input Validation issue in newsletter subscription"
+severity = "warning"
+affected = ["<6.4.18.1"]
+fixed_in = ["6.4.18.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-46h7-vj7x-fxg2"
+published = 2023-01-20
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-46h7-vj7x-fxg2"]
+
+[[advisory]]
+id = "CVE-2023-22732"
+platform = "shopware6"
+title = "Shopware has Insufficient Session Expiration in Administration"
+severity = "info"
+affected = ["<6.4.18.1"]
+fixed_in = ["6.4.18.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-59qg-93jg-236f"
+published = 2023-01-20
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-59qg-93jg-236f"]
+
+[[advisory]]
+id = "CVE-2023-22733"
+platform = "shopware6"
+title = "Shopware's log module vulnerable to Improper Output Neutralization"
+severity = "info"
+affected = ["<6.4.18.1"]
+fixed_in = ["6.4.18.1"]
+reference = "https://github.com/shopware/platform/security/advisories/GHSA-7cp7-jfp6-jh4f"
+published = 2023-01-20
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-7cp7-jfp6-jh4f"]
+
+[[advisory]]
+id = "CVE-2024-22407"
+platform = "shopware6"
+title = "Broken Access Control order API in Shopware"
+severity = "warning"
+affected = ["<6.5.7.4"]
+fixed_in = ["6.5.7.4"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-3867-jc5c-66qf"
+published = 2024-01-17
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-3867-jc5c-66qf"]
+
+[[advisory]]
+id = "CVE-2024-27917"
+platform = "shopware6"
+title = "Shopware's session is persistent in Cache for 404 pages"
+severity = "critical"
+affected = [">=6.5.8.0 <6.5.8.7"]
+fixed_in = ["6.5.8.7"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-c2f9-4jmm-v45m"
+published = 2024-03-06
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-c2f9-4jmm-v45m"]
+
+[[advisory]]
+id = "CVE-2024-31447"
+platform = "shopware6"
+title = "Shopware Improper Session Handling in store-api account logout"
+severity = "warning"
+affected = [">=6.3.5.0 <6.5.8.8", ">=6.6.0.0-rc1 <6.6.1.0"]
+fixed_in = ["6.5.8.8", "6.6.1.0"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-5297-wrrp-rcj7"
+published = 2024-04-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-5297-wrrp-rcj7"]
+
+[[advisory]]
+id = "CVE-2024-42355"
+platform = "shopware6"
+title = "Shopware vulnerable to Server Side Template Injection in Twig using deprecation silence tag"
+severity = "critical"
+affected = ["<6.5.8.13", ">=6.6.0.0 <6.6.5.1"]
+fixed_in = ["6.5.8.13", "6.6.5.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-27wp-jvhw-v4xp"
+published = 2024-08-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-27wp-jvhw-v4xp"]
+
+[[advisory]]
+id = "CVE-2024-42356"
+platform = "shopware6"
+title = "Shopware vulnerable to Server Side Template Injection in Twig using Context functions"
+severity = "critical"
+affected = ["<6.5.8.13", ">=6.6.0.0 <6.6.5.1"]
+fixed_in = ["6.5.8.13", "6.6.5.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-35jp-8cgg-p4wj"
+published = 2024-08-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-35jp-8cgg-p4wj"]
+
+[[advisory]]
+id = "CVE-2024-42354"
+platform = "shopware6"
+title = "Shopware vulnerable to Improper Access Control with ManyToMany associations in store-api"
+severity = "warning"
+affected = ["<6.5.8.13", ">=6.6.0.0 <6.6.5.1"]
+fixed_in = ["6.5.8.13", "6.6.5.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-hhcq-ph6w-494g"
+published = 2024-08-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-hhcq-ph6w-494g"]
+
+[[advisory]]
+id = "CVE-2024-42357"
+platform = "shopware6"
+title = "Shopware vulnerable to blind SQL-injection in DAL aggregations"
+severity = "warning"
+affected = ["<6.5.8.13", ">=6.6.0.0 <6.6.5.1"]
+fixed_in = ["6.5.8.13", "6.6.5.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-p6w9-r443-r752"
+published = 2024-08-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-p6w9-r443-r752"]
+
+[[advisory]]
+id = "GHSA-68wv-g3fw-pq7q"
+platform = "shopware6"
+title = "Shopware Broken ACL on Document retrieval to access other customers documents"
+severity = "warning"
+affected = [">=6.6.0.0 <6.6.10.3", ">=6.7.0.0-rc1 <6.7.0.0-rc2", "<6.5.8.17"]
+fixed_in = ["6.6.10.3", "6.7.0.0-rc2", "6.5.8.17"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-68wv-g3fw-pq7q"
+published = 2025-04-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "CVE-2025-27892"
+platform = "shopware6"
+title = "Shopware Vulnerable to Blind SQL-injection in DAL aggregations"
+severity = "critical"
+affected = [">=6.7.0.0-rc1 <6.7.0.0-rc2", ">=6.6.0.0 <6.6.10.3", "<6.5.8.18"]
+fixed_in = ["6.7.0.0-rc2", "6.6.10.3", "6.5.8.18"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-8g35-7rmw-7f59"
+published = 2025-04-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-8g35-7rmw-7f59"]
+
+[[advisory]]
+id = "CVE-2025-30151"
+platform = "shopware6"
+title = "Shopware allows Denial Of Service via password length"
+severity = "critical"
+affected = [">=6.6.0.0 <6.6.10.3", ">=6.7.0.0-rc1 <6.7.0.0-rc2", "<6.5.8.17"]
+fixed_in = ["6.6.10.3", "6.7.0.0-rc2", "6.5.8.17"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-cgfj-hj93-rmh2"
+published = 2025-04-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-cgfj-hj93-rmh2"]
+
+[[advisory]]
+id = "CVE-2025-30150"
+platform = "shopware6"
+title = "Shopware 6 allows attackers to check for registered accounts through the store-api"
+severity = "warning"
+affected = [">=6.6.0.0 <6.6.10.3", ">=6.7.0.0-rc1 <6.7.0.0-rc2", "<6.5.8.18"]
+fixed_in = ["6.6.10.3", "6.7.0.0-rc2", "6.5.8.18"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-hh7j-6x3q-f52h"
+published = 2025-04-08
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-hh7j-6x3q-f52h"]
+
+[[advisory]]
+id = "CVE-2025-32378"
+platform = "shopware6"
+title = "Shopware default newsletter opt-in settings allow for mass sign-up abuse"
+severity = "info"
+affected = [">=6.6.0.0-rc1 <6.6.10.3", ">=6.7.0.0-rc1 <6.7.0.0-rc2", "<6.5.8.17"]
+fixed_in = ["6.6.10.3", "6.7.0.0-rc2", "6.5.8.17"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-4h9w-7vfp-px8m"
+published = 2025-04-09
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-4h9w-7vfp-px8m"]
+
+[[advisory]]
+id = "GHSA-9v82-vcjx-m76j"
+platform = "shopware6"
+title = "Shopware: Reflective Cross Site-Scripting (XSS) in CMS components"
+severity = "critical"
+affected = [">=6.7.0.0 <6.7.2.1"]
+fixed_in = ["6.7.2.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-9v82-vcjx-m76j"
+published = 2025-09-10
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-27c9-vp3w-6ww8"
+platform = "shopware6"
+title = "Shopware exposes sensitive user information via CSV export mapping"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.3.1", "<6.6.10.7"]
+fixed_in = ["6.7.3.1", "6.6.10.7"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-27c9-vp3w-6ww8"
+published = 2025-10-21
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-3cpp-fv95-mpr5"
+platform = "shopware6"
+title = "Shopware vulnerable to Server-Side Request Forgery (SSRF) – order invoice"
+severity = "info"
+affected = [">=6.7.0.0 <6.7.3.1", "<6.6.10.7"]
+fixed_in = ["6.7.3.1", "6.6.10.7"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-3cpp-fv95-mpr5"
+published = 2025-10-21
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-6wh5-mw9h-5c3w"
+platform = "shopware6"
+title = "Shopware vulnerable to path traversal via Plugin upload"
+severity = "info"
+affected = [">=6.7.0.0 <6.7.3.1", "<6.6.10.7"]
+fixed_in = ["6.7.3.1", "6.6.10.7"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-6wh5-mw9h-5c3w"
+published = 2025-10-21
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-m895-2hj3-8cg9"
+platform = "shopware6"
+title = "Shopware vulnerable to MediaVisibilityRestrictionSubscriber bypass when reading media entities by aggregating fields individually"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.3.1", "<6.6.10.7"]
+fixed_in = ["6.7.3.1", "6.6.10.7"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-m895-2hj3-8cg9"
+published = 2025-10-21
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-r2vg-hvjm-fg38"
+platform = "shopware6"
+title = "Shopware Customer Orders can be canceled, even if refunds are disabled"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.3.1", "<6.6.10.7"]
+fixed_in = ["6.7.3.1", "6.6.10.7"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-r2vg-hvjm-fg38"
+published = 2025-10-21
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "GHSA-2w46-vq8h-98vh"
+platform = "shopware6"
+title = "Shopware 6's password recovery link does not expire after email change"
+severity = "warning"
+affected = ["<6.6.10.9", ">=6.7.0.0 <6.7.4.1"]
+fixed_in = ["6.6.10.9", "6.7.4.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-2w46-vq8h-98vh"
+published = 2025-11-14
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+
+[[advisory]]
+id = "CVE-2025-67648"
+platform = "shopware6"
+title = "Shopware Storefront Reflected XSS in Storefront Login Page"
+severity = "critical"
+affected = [">=6.4.6.0 <6.6.10.10", ">=6.7.0.0 <6.7.5.1"]
+fixed_in = ["6.6.10.10", "6.7.5.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-6w82-v552-wjw2"
+published = 2025-12-09
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-6w82-v552-wjw2"]
+
+[[advisory]]
+id = "CVE-2026-23498"
+platform = "shopware6"
+title = "Shopware Has Improper Control of Generation of Code in Twig rendered views"
+severity = "critical"
+affected = [">=6.7.0.0 <6.7.6.1"]
+fixed_in = ["6.7.6.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-7cw6-7h3h-v8pf"
+published = 2026-01-14
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-7cw6-7h3h-v8pf"]
+
+[[advisory]]
+id = "CVE-2026-31887"
+platform = "shopware6"
+title = "Shopware: Unauthenticated data extraction possible through store-api.order endpoint"
+severity = "critical"
+affected = [">=6.7.0.0 <6.7.8.1", "<6.6.10.15"]
+fixed_in = ["6.7.8.1", "6.6.10.15"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-7vvp-j573-5584"
+published = 2026-03-11
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-7vvp-j573-5584"]
+
+[[advisory]]
+id = "CVE-2026-31889"
+platform = "shopware6"
+title = "Shopware vulnerable to a potential take over of app credentials"
+severity = "critical"
+affected = [">=6.7.0.0 <6.7.8.1", "<6.6.10.15"]
+fixed_in = ["6.7.8.1", "6.6.10.15"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-c4p7-rwrg-pf6p"
+published = 2026-03-11
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-c4p7-rwrg-pf6p"]
+
+[[advisory]]
+id = "CVE-2026-31888"
+platform = "shopware6"
+title = "Shopware has user enumeration via distinct error codes on Store API login endpoint"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.8.1", "<6.6.10.15"]
+fixed_in = ["6.7.8.1", "6.6.10.15"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-gqc5-xv7m-gcjq"
+published = 2026-03-11
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-gqc5-xv7m-gcjq"]
+
+[[advisory]]
+id = "CVE-2026-48012"
+platform = "shopware6"
+title = "Shopware SSO referer trust leading to an arbitrary redirect target"
+severity = "warning"
+affected = [">=6.7.3.0 <6.7.10.1"]
+fixed_in = ["6.7.10.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-4x3x-869w-xx3m"
+published = 2026-06-04
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-4x3x-869w-xx3m"]
+
+[[advisory]]
+id = "CVE-2026-48011"
+platform = "shopware6"
+title = "Shopware: Timing-attack on admin panel allowing enumeration of administrator usernames"
+severity = "info"
+affected = [">=6.7.0.0 <6.7.10.1", "<6.6.10.18"]
+fixed_in = ["6.7.10.1", "6.6.10.18"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-7w52-7jvm-m9vw"
+published = 2026-06-04
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-7w52-7jvm-m9vw"]
+
+[[advisory]]
+id = "CVE-2026-48009"
+platform = "shopware6"
+title = "Shopware: Admin Account Takeover via User Recovery Hash Exposure"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.10.1", "<6.6.10.18"]
+fixed_in = ["6.7.10.1", "6.6.10.18"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-8v9p-g828-v98f"
+published = 2026-06-04
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-8v9p-g828-v98f"]
+
+[[advisory]]
+id = "CVE-2026-48016"
+platform = "shopware6"
+title = "Shopware: Unauthorized Payment Trigger for Foreign Orders via /store-api/handle-payment"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.10.1", "<6.6.10.18"]
+fixed_in = ["6.7.10.1", "6.6.10.18"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-9v5m-39wh-5chq"
+published = 2026-06-04
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-9v5m-39wh-5chq"]
+
+[[advisory]]
+id = "CVE-2026-48014"
+platform = "shopware6"
+title = "Shopware: Admin API ACL Bypass in Order State Transition Endpoints"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.10.1", "<6.6.10.18"]
+fixed_in = ["6.7.10.1", "6.6.10.18"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-f8q6-3g5w-jjr6"
+published = 2026-06-04
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-f8q6-3g5w-jjr6"]
+
+[[advisory]]
+id = "CVE-2026-48013"
+platform = "shopware6"
+title = "Shopware: SSRF in Media External-Link Endpoint Bypasses IP Validation"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.10.1"]
+fixed_in = ["6.7.10.1"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-gq96-5pfx-f4vc"
+published = 2026-06-04
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-gq96-5pfx-f4vc"]
+
+[[advisory]]
+id = "CVE-2026-48008"
+platform = "shopware6"
+title = "Shopware: Privilege Escalation via Sync API Integration Admin Flag Bypass"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.10.1", "<6.6.10.18"]
+fixed_in = ["6.7.10.1", "6.6.10.18"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-gv8p-48fr-4fxg"
+published = 2026-06-04
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-gv8p-48fr-4fxg"]
+
+[[advisory]]
+id = "CVE-2026-48010"
+platform = "shopware6"
+title = "Shopware: Privilege escalation: non-admin user with user:create ACL can create admin accounts"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.10.1", "<6.6.10.18"]
+fixed_in = ["6.7.10.1", "6.6.10.18"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-v39m-97p8-gqg7"
+published = 2026-06-04
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-v39m-97p8-gqg7"]
+
+[[advisory]]
+id = "CVE-2026-48015"
+platform = "shopware6"
+title = "Shopware: Stored XSS via SVG file upload — no SVG sanitization"
+severity = "warning"
+affected = [">=6.7.0.0 <6.7.10.1", "<6.6.10.18"]
+fixed_in = ["6.7.10.1", "6.6.10.18"]
+reference = "https://github.com/shopware/shopware/security/advisories/GHSA-xvhc-gm7j-mhmc"
+published = 2026-06-04
+source = "osv.dev / GitHub Advisory Database (automatisch übernommen, Titel englisch)"
+aliases = ["GHSA-xvhc-gm7j-mhmc"]

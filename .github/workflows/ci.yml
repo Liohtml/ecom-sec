@@ -19,6 +19,7 @@ jobs:
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
+      - run: cargo run -q -p ecomsec -- advisories lint advisories
       - run: cargo build --release
       - uses: actions/upload-artifact@v4
         with:

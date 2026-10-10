@@ -267,6 +267,8 @@ pub struct PlatformContext {
     pub reference_date: NaiveDate,
     /// Database / API checks disabled by the user.
     pub skip_remote: bool,
+    /// Online lookups (OSV.dev) explicitly enabled by the user.
+    pub online: bool,
     pub state: StateStore,
 }
 
@@ -322,9 +324,9 @@ pub fn evaluate_advisories(
     platform: &dyn Platform,
     ctx: &PlatformContext,
     version: Option<&Version>,
+    advisories: Vec<Advisory>,
 ) -> Vec<AdvisoryStatus> {
-    platform
-        .advisories()
+    advisories
         .into_iter()
         .map(|adv| {
             let (state, basis) = match version {

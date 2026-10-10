@@ -5,6 +5,7 @@ members = [
     "crates/ecomsec-jtl5",
     "crates/ecomsec-shopware6",
     "crates/ecomsec-shopify",
+    "crates/ecomsec-osv",
     "crates/ecomsec-cli",
 ]
 
@@ -20,6 +21,7 @@ ecomsec-core = { path = "crates/ecomsec-core" }
 ecomsec-jtl5 = { path = "crates/ecomsec-jtl5" }
 ecomsec-shopware6 = { path = "crates/ecomsec-shopware6" }
 ecomsec-shopify = { path = "crates/ecomsec-shopify" }
+ecomsec-osv = { path = "crates/ecomsec-osv" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

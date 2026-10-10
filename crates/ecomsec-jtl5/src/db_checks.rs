@@ -870,6 +870,7 @@ mod tests {
             &PlatformContext {
                 reference_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
                 skip_remote: true,
+                online: false,
                 state: ecomsec_core::StateStore::new("/nonexistent"),
             }
         ));

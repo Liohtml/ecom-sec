@@ -3,6 +3,7 @@
 
 pub mod file_scan;
 
+use crate::advisories::{merge_by_id, AdvisoryDb};
 use crate::baseline::Baseline;
 use crate::finding::{Category, Finding, Severity, Source};
 use crate::platform::{
@@ -52,6 +53,12 @@ pub struct ScanOptions {
     /// Do not persist the report / history (dry run).
     #[serde(default)]
     pub no_persist: bool,
+    /// Additional advisory directories (`*.toml`), merged over the embedded ones.
+    #[serde(default)]
+    pub advisory_dirs: Vec<PathBuf>,
+    /// Allow online lookups (OSV.dev) – sends package names and versions.
+    #[serde(default)]
+    pub online: bool,
 }
 
 impl Default for ScanOptions {
@@ -67,6 +74,8 @@ impl Default for ScanOptions {
             extra_excludes: Vec::new(),
             max_file_size: 8 * 1024 * 1024,
             no_persist: false,
+            advisory_dirs: Vec::new(),
+            online: false,
         }
     }
 }
@@ -75,6 +84,7 @@ impl Default for ScanOptions {
 pub struct Engine {
     rules: RuleSet,
     iocs: IocList,
+    advisories: AdvisoryDb,
 }
 
 /// What a scan returns.
@@ -97,7 +107,23 @@ impl Engine {
             rules.extend(extra);
         }
         let iocs = IocList::builtin()?;
-        Ok(Engine { rules, iocs })
+        let mut advisories = AdvisoryDb::new();
+        for dir in &options.advisory_dirs {
+            if dir.is_dir() {
+                let n = advisories.merge_dir(dir)?;
+                log::info!("loaded {n} advisories from {}", dir.display());
+            }
+        }
+        Ok(Engine {
+            rules,
+            iocs,
+            advisories,
+        })
+    }
+
+    /// Advisories loaded from extra directories (not the embedded ones).
+    pub fn extra_advisories(&self) -> &AdvisoryDb {
+        &self.advisories
     }
 
     pub fn rules(&self) -> &RuleSet {
@@ -130,6 +156,7 @@ impl Engine {
         let ctx = PlatformContext {
             reference_date: options.reference_date,
             skip_remote: options.skip_remote,
+            online: options.online,
             state: state.clone(),
         };
         let mut findings: Vec<Finding> = Vec::new();
@@ -221,7 +248,11 @@ impl Engine {
         }
 
         // ---------------------------------------------------------- advisories
-        let advisories = evaluate_advisories(platform, &ctx, info.version.as_ref());
+        let merged = merge_by_id(
+            platform.advisories(),
+            self.advisories.for_platform(&info.id),
+        );
+        let advisories = evaluate_advisories(platform, &ctx, info.version.as_ref(), merged);
         for status in &advisories {
             let adv = &status.advisory;
             let (istatus, label) = match status.state {

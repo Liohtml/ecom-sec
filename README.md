@@ -125,6 +125,7 @@ der Shop abgeschaltet wird), **Sofortmaßnahmen**, **Kompromittierungs-Prüfung*
 - **Shared-Hosting-tauglich:** Mit `--time-budget 45s` scannt `ecomsec` in Etappen und setzt beim nächsten Aufruf fort – kein Timeout, keine Last.
 - **Hell und dunkel:** Dashboard und HTML-Bericht folgen deinem System oder per Klick.
 - **Scan-Verlauf:** Jeder Lauf wird mit Ergebnis gespeichert, damit du Veränderungen siehst.
+- **Aktuelle Schwachstellen:** Die Advisory-Datenbank liegt als Datei im Repository, wird wöchentlich von einem Agenten nachgepflegt und lässt sich ohne neues Release per `ecomsec advisories update` holen. Mit `--online` prüft der Scan zusätzlich alle Composer-Pakete (Shopware-Core, Plugins, Symfony, Smarty …) tagesaktuell gegen OSV.dev.
 
 ---
 
@@ -232,6 +233,11 @@ Zuerst anhand der Shop-Version (5.5.4, 5.6.2, 5.7.2 und ab 5.8 gelten als gepatc
 </details>
 
 <details>
+<summary><b>Findet das Tool auch neue CVEs für Shopsysteme und Plugins?</b></summary>
+Ja, auf drei Wegen. <b>1.</b> Die eingebaute Advisory-Datenbank (<code>advisories/*.toml</code>) wird wöchentlich automatisch aktualisiert: ein Workflow sucht in NVD und OSV.dev nach neuen Einträgen, ein Claude-Agent recherchiert Versionsbereiche in den Primärquellen und öffnet einen Pull Request, den ein Mensch freigibt. <b>2.</b> <code>ecomsec advisories update</code> lädt den aktuellen Stand, ohne dass du ein neues Release brauchst. <b>3.</b> <code>ecomsec scan --online</code> prüft alle Composer-Pakete deiner Installation (bei Shopware Core und Plugins, bei JTL die mitgelieferten Bibliotheken) tagesaktuell gegen OSV.dev – dabei verlassen nur Paketnamen und Versionen den Server. Für JTL-Plugins aus dem Extension Store und Shopify-Apps gibt es keine öffentliche Schwachstellen-Datenbank; hier bleibt die Risikobewertung nach Installationsdatum, Herkunft und Berechtigungen. Details: <a href="docs/ADVISORIES.md">docs/ADVISORIES.md</a>.
+</details>
+
+<details>
 <summary><b>Brauche ich Datenbank-Zugang?</b></summary>
 Nicht zwingend. Ohne Datenbank läuft der komplette Dateiscan, der Patch-Status und die Rechteprüfung. Admin-Konten, PayPal, E-Mail-Historie und Plugins benötigen die Datenbank; <code>ecomsec</code> nutzt dafür die Zugangsdaten aus der Shop-Konfiguration. Mit <code>--skip-remote</code> schaltest du diese Prüfungen bewusst ab.
 </details>
@@ -268,6 +274,8 @@ Gleicher Prüfumfang und gleiche drei Ansichten – aber als eigenständiges Pro
 ecomsec scan      [--root PFAD | --platform shopify --shop … --token …]
                   [--format text|json|html] [--output DATEI] [--time-budget 45s]
                   [--reference-date YYYY-MM-DD] [--skip-remote] [--fail-on never|warning|critical]
+                  [--online] [--advisories DIR]
+ecomsec advisories list | lint [PFAD…] | update [--url BASIS-URL]
 ecomsec serve     [--bind 127.0.0.1:8787] [--auth-token GEHEIM]
 ecomsec findings  list | accept <ID…> [--group DIR] [--rule REGEL] [--reason TEXT] | unaccept <ID…> [--all]
 ecomsec baseline  create [--core-only] | diff | show
@@ -285,6 +293,7 @@ Optional per Konfigurationsdatei: [`ecomsec.example.toml`](ecomsec.example.toml)
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) – Aufbau, `Platform`-Trait, neue Shopsysteme anbinden
 - [docs/RULES.md](docs/RULES.md) – Regelformat, Dateiklassen, Kategorien
+- [docs/ADVISORIES.md](docs/ADVISORIES.md) – Schwachstellen-Datenbank, OSV-Abgleich, automatische Pflege per Agent
 - Workspace: `ecomsec-core` (Engine), `ecomsec-jtl5`, `ecomsec-shopware6`, `ecomsec-shopify`, `ecomsec-cli`
 - `cargo test --workspace` · `cargo clippy --workspace --all-targets` · `cargo fmt --all`
 
@@ -293,5 +302,6 @@ Optional per Konfigurationsdatei: [`ecomsec.example.toml`](ecomsec.example.toml)
 MIT-Lizenz. Signaturen und IOC-Listen stammen aus öffentlichen Quellen (CISA, NSA/ASD, MITRE ATT&CK,
 Sansec-Analyse zu CVE-2026-54390) und erheben keinen Vollständigkeitsanspruch. Der dateibasierte
 Patch-Nachweis ist eine Heuristik; Versionsbereiche der Advisories sind gegen die jeweiligen
-Hersteller-Mitteilungen zu verifizieren. Dieses Projekt steht in keiner Verbindung zu JTL-Software,
+Hersteller-Mitteilungen zu verifizieren; die Advisory-Datenbank unter `advisories/` wird automatisiert
+aus NVD und OSV.dev gespeist und vor dem Merge geprüft. Dieses Projekt steht in keiner Verbindung zu JTL-Software,
 Shopware AG oder Shopify Inc.

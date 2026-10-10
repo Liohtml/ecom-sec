@@ -41,13 +41,14 @@ pub trait Platform: Send + Sync {
 | `info` | Id, Name, Art (`SelfHosted`/`Hosted`), erkannte Version, Webroot bzw. Ziel, Details |
 | `file_scan_profile` | Webroot, Public-Root, ausgeschlossene/generierte/Upload-/Log-/Kern-Verzeichnisse, sensible Konfigurationsdateien, Template-Endungen |
 | `rules` | zusätzliche Regeln (z. B. CVE-Payloads der Template-Engine) – werden mit den Kernregeln zusammengeführt |
-| `advisories` | bekannte Schwachstellen mit betroffenen Versionsbereichen und Fix-Versionen |
+| `advisories` | bekannte Schwachstellen mit betroffenen Versionsbereichen und Fix-Versionen – Adapter betten `advisories/<id>.toml` ein; die Engine mergt heruntergeladene/zusätzliche Dateien per `id` darüber (siehe ADVISORIES.md) |
 | `patch_evidence` | wird nur gefragt, wenn die Version fehlt oder im betroffenen Bereich liegt: dateibasierter Nachweis (Back-Patch, entfernte gefährliche Funktionen) |
 | `integrity` | Zeilen für die Ansicht „Shop-Integrität“ (`IntegrityItem`) plus daraus abgeleitete Findings und Einschränkungen |
 | `additional_checks` | weitere Findings (E-Mail-Historie, API-Scans …) |
 | `recommendations` | plattformspezifische Empfehlungen, die in die vier Gruppen einsortiert werden |
 
-`PlatformContext` liefert Referenzdatum, `skip_remote` und den `StateStore` für Snapshots
+`PlatformContext` liefert Referenzdatum, `skip_remote`, `online` (OSV-Abgleich erlaubt; das Crate
+`ecomsec-osv` liefert `check_root`/`offline_item` für Composer-Inventare) und den `StateStore` für Snapshots
 (`ctx.state.snapshot("key")` / `save_snapshot`), mit denen Änderungen zwischen Scans erkannt werden
 (neue Admin-Konten, geänderte Zahlungsempfänger, neue Script-Tags …).
 

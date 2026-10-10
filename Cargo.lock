@@ -488,6 +488,7 @@ dependencies = [
  "clap",
  "ecomsec-core",
  "ecomsec-jtl5",
+ "ecomsec-osv",
  "ecomsec-shopify",
  "ecomsec-shopware6",
  "env_logger",
@@ -499,6 +500,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "toml",
+ "ureq",
  "walkdir",
 ]
 
@@ -529,12 +531,27 @@ dependencies = [
  "anyhow",
  "chrono",
  "ecomsec-core",
+ "ecomsec-osv",
  "log",
  "mysql",
  "regex",
  "serde",
  "serde_json",
  "tempfile",
+]
+
+[[package]]
+name = "ecomsec-osv"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ecomsec-core",
+ "log",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
+ "ureq",
 ]
 
 [[package]]
@@ -559,6 +576,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "ecomsec-core",
+ "ecomsec-osv",
  "log",
  "mysql",
  "regex",

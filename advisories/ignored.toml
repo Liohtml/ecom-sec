@@ -1,0 +1,6 @@
+# CVE-/GHSA-IDs, die der Sync-Workflow bewusst nicht als Kandidaten vorschlägt
+# (falsche Treffer der Stichwortsuche, nicht betroffene Produkte, Duplikate).
+
+[[ignore]]
+id = "CVE-2010-0691"
+reason = "JTL-Shop 2 (druckansicht.php) – nicht relevant für JTL-Shop 5"

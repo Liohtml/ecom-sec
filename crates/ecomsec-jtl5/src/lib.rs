@@ -28,12 +28,20 @@ use ecomsec_core::platform::{
 use ecomsec_core::recommendations::{Recommendation, RecommendationGroupKind};
 use ecomsec_core::report::Report;
 use ecomsec_core::rules::RuleSet;
-use ecomsec_core::version::{Version, VersionRange};
+use ecomsec_core::version::Version;
 use regex::Regex;
 use std::path::{Path, PathBuf};
 
 pub const PLATFORM_ID: &str = "jtl5";
 pub const RULES_TOML: &str = include_str!("../signatures/rules_jtl5.toml");
+
+/// Composer inventories shipped with JTL-Shop 5 (vendor libraries such as
+/// Smarty, Symfony components, Guzzle).
+pub const COMPOSER_INVENTORY: &[&str] = &[
+    "includes/vendor/composer/installed.json",
+    "vendor/composer/installed.json",
+    "composer.lock",
+];
 
 /// Candidate locations of the Smarty mail renderer whose patch state is
 /// inspected when the version number alone is not conclusive.
@@ -138,31 +146,41 @@ pub fn detect_version(root: &Path) -> (Option<Version>, String) {
     (None, "nicht gefunden".into())
 }
 
-fn cve_2026_54390() -> Advisory {
-    Advisory {
-        id: "CVE-2026-54390".into(),
-        title: "Unauthentifizierte Smarty Template Injection (SSTI) mit RCE ab 5.4.0".into(),
-        severity: Severity::Critical,
-        score: Some(9.8),
-        affected: vec![
-            VersionRange::new(Some("5.2.0"), Some("5.5.4")),
-            VersionRange::new(Some("5.6.0"), Some("5.6.2")),
-            VersionRange::new(Some("5.7.0"), Some("5.7.2")),
-        ],
-        fixed_in: vec![
-            Version::parse("5.5.4").unwrap(),
-            Version::parse("5.6.2").unwrap(),
-            Version::parse("5.7.2").unwrap(),
-        ],
-        backpatch_note: Some(
-            "Für ältere 5.x-Zweige stellt JTL einen Back-Patch bereit; ein eingespielter Back-Patch wird \
-             anhand des Smarty-Mail-Renderers erkannt. Nach dem Patch Blowfish-Key, DB-Passwort und alle \
-             im Shop hinterlegten Zugangsdaten rotieren, da diese vor dem Patch auslesbar waren."
-                .into(),
-        ),
-        reference: Some("https://sansec.io/research/jtl-shop-ssti-rce".into()),
-        published: chrono::NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
-        tags: vec!["ssti".into(), "rce".into(), "unauthenticated".into()],
+/// Embedded advisory file (`advisories/jtl5.toml` in the repository).
+pub const ADVISORIES_TOML: &str = include_str!("../../../advisories/jtl5.toml");
+
+fn embedded_advisories() -> Vec<Advisory> {
+    let mut db = ecomsec_core::AdvisoryDb::new();
+    db.merge_toml("builtin:advisories/jtl5.toml", ADVISORIES_TOML)
+        .expect("embedded JTL advisories are valid");
+    db.for_platform(PLATFORM_ID)
+}
+
+/// OSV.dev lookup of the bundled Composer packages (only with `--online`).
+fn dependency_check(root: &Path, ctx: &PlatformContext, report: &mut IntegrityReport) {
+    if !ctx.online {
+        report
+            .items
+            .push(ecomsec_osv::offline_item(root, COMPOSER_INVENTORY));
+        return;
+    }
+    match ecomsec_osv::check_root(root, COMPOSER_INVENTORY, &ecomsec_osv::OsvClient::default()) {
+        None => report
+            .items
+            .push(ecomsec_osv::offline_item(root, COMPOSER_INVENTORY)),
+        Some(Ok(out)) => {
+            report.findings.extend(out.findings);
+            report.items.push(out.item);
+            report.limitations.extend(out.limitations);
+        }
+        Some(Err(e)) => {
+            report
+                .limitations
+                .push(format!("OSV-Abgleich fehlgeschlagen: {e}"));
+            report
+                .items
+                .push(ecomsec_osv::offline_item(root, COMPOSER_INVENTORY));
+        }
     }
 }
 
@@ -235,7 +253,7 @@ impl Platform for Jtl5 {
     }
 
     fn advisories(&self) -> Vec<Advisory> {
-        vec![cve_2026_54390()]
+        embedded_advisories()
     }
 
     fn patch_evidence(&self, advisory: &Advisory, _ctx: &PlatformContext) -> Option<PatchEvidence> {
@@ -315,6 +333,7 @@ impl Platform for Jtl5 {
             .with_detail(format!("Quelle: {}", self.version_source)),
         );
         config::permission_checks(&self.root, &mut report);
+        dependency_check(&self.root, ctx, &mut report);
         if ctx.skip_remote {
             report
                 .limitations

@@ -1,0 +1,20 @@
+[package]
+name = "ecomsec-osv"
+description = "Composer dependency inventory and OSV.dev vulnerability lookup for ecomsec"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ecomsec-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+log.workspace = true
+ureq.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

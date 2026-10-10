@@ -16,6 +16,10 @@ exclude = []
 rule_dirs = []
 # Maximale Dateigröße für die Inhaltsprüfung (Bytes)
 # max_file_size = 8388608
+# Composer-Pakete bei jedem Scan gegen OSV.dev prüfen (sendet Paketname + Version)
+online = false
+# Zusätzliche Advisory-Verzeichnisse (*.toml); heruntergeladene (advisories update) werden immer geladen
+advisory_dirs = []
 
 [shopify]
 # shop = "my-store.myshopify.com"

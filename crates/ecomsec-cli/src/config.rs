@@ -28,6 +28,10 @@ pub struct ScanSection {
     #[serde(default)]
     pub rule_dirs: Vec<PathBuf>,
     pub max_file_size: Option<u64>,
+    #[serde(default)]
+    pub advisory_dirs: Vec<PathBuf>,
+    #[serde(default)]
+    pub online: bool,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
