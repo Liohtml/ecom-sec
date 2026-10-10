@@ -1,0 +1,44 @@
+//! # ecomsec-core
+//!
+//! Platform-agnostic compromise-check engine ("Kompromittierungs-Check") for
+//! e-commerce installations.  The engine is deliberately read-only: it never
+//! modifies a shop, never contacts external services and works without SSH or
+//! root access as long as the web root (and optionally the database) is
+//! readable.
+//!
+//! The crate provides:
+//!
+//! * a [`Finding`] model with severities, categories and stable identifiers,
+//! * a YARA-like rule engine ([`rules`]) driven by embedded signature files,
+//! * a resumable, time-budgeted file scanner ([`engine::file_scan`]),
+//! * the [`Platform`] trait that shop adapters (JTL-Shop 5, Shopware 6,
+//!   Shopify, …) implement to contribute paths, version/CVE knowledge and
+//!   integrity checks,
+//! * persistent state for risk acceptance, baselines and scan history
+//!   ([`state`]),
+//! * prioritised recommendations ([`recommendations`]).
+
+pub mod baseline;
+pub mod db;
+pub mod engine;
+pub mod finding;
+pub mod platform;
+pub mod recommendations;
+pub mod report;
+pub mod rules;
+pub mod signatures;
+pub mod state;
+pub mod util;
+pub mod version;
+
+pub use engine::{Engine, ScanOptions, ScanOutcome};
+pub use finding::{Category, Finding, FindingId, Severity};
+pub use platform::{
+    Advisory, FileScanProfile, IntegrityItem, IntegrityStatus, Platform, PlatformContext,
+    PlatformInfo, PlatformKind,
+};
+pub use recommendations::{Recommendation, RecommendationGroup};
+pub use report::{Report, Summary, Verdict};
+pub use rules::{Rule, RuleSet};
+pub use state::StateStore;
+pub use version::Version;

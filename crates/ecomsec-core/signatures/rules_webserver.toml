@@ -1,0 +1,80 @@
+# Rules for web server configuration files (.htaccess, .user.ini, php.ini,
+# web.config) that turn harmless uploads into executable code or hide
+# backdoors from the file system view.
+
+[[rule]]
+name = "htaccess_php_handler_for_non_php"
+description = ".htaccess leitet Nicht-PHP-Endungen (Bilder, txt, …) an den PHP-Handler"
+severity = "critical"
+category = "webserver_config_manipulation"
+tags = ["htaccess"]
+applies_to = ["htaccess"]
+strings = [
+  { regex = '(AddHandler|SetHandler|AddType)\s+(application/x-httpd-php[0-9.]*|php[0-9-]*-script|proxy:fcgi|proxy:unix)[^\n]*\.(jpe?g|png|gif|txt|html?|xml|csv|pdf|ico|svg|css|js|zip|dat|log|tmp)\b', nocase = true },
+  { regex = '<Files(Match)?\s+[^>]*\.(jpe?g|png|gif|txt|ico|svg)[^>]*>\s*\n?\s*SetHandler\s+application/x-httpd-php', nocase = true },
+  { regex = 'AddHandler\s+[^\n]*\s\.(phtml|pht|php[3-8]|phar|inc)\b', nocase = true },
+]
+
+[[rule]]
+name = "htaccess_auto_prepend"
+description = "auto_prepend_file/auto_append_file injiziert Code in jeden PHP-Request"
+severity = "critical"
+category = "webserver_config_manipulation"
+tags = ["htaccess", "persistence"]
+applies_to = ["htaccess", "ini"]
+strings = [
+  { regex = '(php_value|php_admin_value)\s+auto_(prepend|append)_file\s+\S', nocase = true },
+  { regex = '^\s*auto_(prepend|append)_file\s*=\s*\S', nocase = true },
+]
+
+[[rule]]
+name = "htaccess_disable_security"
+description = "Sicherheitseinstellungen deaktiviert (open_basedir, disable_functions, mod_security, allow_url_include)"
+severity = "warning"
+category = "webserver_config_manipulation"
+tags = ["htaccess"]
+applies_to = ["htaccess", "ini"]
+strings = [
+  { regex = 'php_(admin_)?value\s+(open_basedir|disable_functions)\s+(none|""|\x27\x27|0)?\s*$', nocase = true },
+  { regex = 'php_(admin_)?flag\s+(allow_url_include|allow_url_fopen|engine)\s+(on|1)', nocase = true },
+  { regex = 'SecFilterEngine\s+Off|SecRuleEngine\s+Off|SecFilterScanPOST\s+Off', nocase = true },
+  { regex = '^\s*(open_basedir|disable_functions)\s*=\s*$', nocase = true },
+]
+
+[[rule]]
+name = "htaccess_rewrite_to_hidden_script"
+description = "RewriteRule/ErrorDocument zeigt auf PHP-Datei in Upload- oder verstecktem Verzeichnis"
+severity = "warning"
+category = "webserver_config_manipulation"
+tags = ["htaccess"]
+applies_to = ["htaccess"]
+strings = [
+  { regex = 'RewriteRule\s+[^\n]*\s+/?[^\s]*(mediafiles|media|bilder|images|img|upload|uploads|files|tmp|cache|templates_c|thumbnail|\.[a-z]+)/[^\s]*\.(php|phtml)', nocase = true },
+  { regex = 'ErrorDocument\s+\d{3}\s+[^\n]*\.(php|phtml)\b', nocase = true },
+  { regex = 'RewriteCond\s+%\{HTTP_USER_AGENT\}\s+[^\n]*(google|bing|yahoo|msn|yandex)[^\n]*\n\s*RewriteRule\s+[^\n]*https?://', nocase = true },
+]
+
+[[rule]]
+name = "htaccess_base64_or_eval"
+description = "Ausführbarer Code oder kodierter Block in einer Webserver-Konfigurationsdatei"
+severity = "critical"
+category = "webserver_config_manipulation"
+tags = ["htaccess"]
+applies_to = ["htaccess", "ini"]
+strings = [
+  { regex = '<\?php|eval\s*\(|base64_decode\s*\(', nocase = true },
+  { regex = '[A-Za-z0-9+/=]{200,}' },
+]
+
+[[rule]]
+name = "htaccess_hide_files_from_listing"
+description = "Verzeichnisoptionen geöffnet (Indexes, ExecCGI, CGI-Handler für Nicht-Scripte)"
+severity = "warning"
+category = "webserver_config_manipulation"
+tags = ["htaccess"]
+applies_to = ["htaccess"]
+strings = [
+  { regex = 'Options\s+[^\n]*\+?ExecCGI', nocase = true },
+  { regex = 'AddHandler\s+cgi-script\s+[^\n]*\.(php|txt|jpg|png|gif|pl|py|sh)', nocase = true },
+  { regex = 'Options\s+\+?Indexes', nocase = true },
+]

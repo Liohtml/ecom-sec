@@ -1,0 +1,70 @@
+# Shopware 6 specific content rules: Twig server-side template injection
+# (e.g. CVE-2023-2017 in the Flow Builder / mail templates) and storefront
+# injection patterns.
+
+[[rule]]
+name = "shopware_twig_ssti_env_access"
+description = "Twig-SSTI: Zugriff auf _self.env / Runtime-Objekte in Template-Daten"
+severity = "critical"
+category = "exploit_payload"
+tags = ["ssti", "twig", "shopware"]
+reference = "https://github.com/shopware/shopware/security/advisories"
+applies_to = ["template", "log", "php", "js"]
+strings = [
+  { regex = '\{\{[^}]{0,200}_self\.env\b', nocase = true },
+  { regex = '\{\{[^}]{0,200}registerUndefinedFilterCallback', nocase = true },
+  { regex = '\{\{[^}]{0,200}getRuntime\s*\(', nocase = true },
+  { regex = '\{\{[^}]{0,200}\.env\.(getFilter|getFunction|addFilter|setLoader|createTemplate)', nocase = true },
+]
+
+[[rule]]
+name = "shopware_twig_ssti_filter_exec"
+description = "Twig-SSTI: filter/map/sort mit Systemfunktionen (system, exec, passthru, shell_exec)"
+severity = "critical"
+category = "exploit_payload"
+tags = ["ssti", "twig", "shopware"]
+applies_to = ["template", "log", "php", "js"]
+strings = [
+  { regex = '\|\s*(filter|map|sort|reduce)\s*\(\s*["\x27](system|exec|passthru|shell_exec|popen|proc_open|file_put_contents|unserialize|eval|assert|call_user_func)["\x27]', nocase = true },
+  { regex = '\{\{[^}]{0,200}\b(system|exec|passthru|shell_exec)\s*\(', nocase = true },
+  { regex = '\{\{[^}]{0,200}\bconstant\s*\(\s*["\x27][^"\x27]{0,40}(PHP_|SHELL|ENV)', nocase = true },
+]
+
+[[rule]]
+name = "shopware_twig_ssti_probe"
+description = "Twig-SSTI-Sonde: {{7*7}}, {{ 'a'~'b' }}, {{ app.request.server }}, {{ dump() }}"
+severity = "warning"
+category = "attack_trace"
+tags = ["ssti", "twig", "shopware"]
+applies_to = ["log", "template"]
+strings = [
+  { regex = '(\{\{|%7B%7B)\s*\d+\s*\*\s*\d+\s*(\}\}|%7D%7D)' },
+  { regex = '\{\{[^}]{0,120}app\.request\.(server|headers|cookies)\b', nocase = true },
+  { regex = '\{\{[^}]{0,120}\bdump\s*\(', nocase = true },
+  { regex = '\{\{[^}]{0,120}(source|include)\s*\(\s*["\x27](/etc/passwd|\.env|php://)', nocase = true },
+]
+
+[[rule]]
+name = "shopware_storefront_script_injection"
+description = "Externes <script>-Tag mit verdächtiger Domain in Template-/Snippet-/CMS-Daten"
+severity = "warning"
+category = "third_party_injection"
+tags = ["skimmer", "shopware"]
+applies_to = ["template"]
+strings = [
+  { regex = '<script[^>]{0,200}src\s*=\s*["\x27]?https?://[^"\x27\s>]*\.(ru|cn|su|tk|ml|ga|cf|gq|top|xyz|buzz|icu|club|work|click|link|pw)(/|["\x27\s>])', nocase = true },
+  { regex = '<script[^>]{0,200}src\s*=\s*["\x27]?https?://\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', nocase = true },
+  { regex = '<script[^>]{0,200}src\s*=\s*["\x27]?https?://[^"\x27\s>]*(jquery|google|gstatic|analytics|shopware|paypal|stripe|klarna|cloudflare)[^"\x27\s>]*\.(ru|cn|su|tk|ml|ga|cf|gq|top|xyz|buzz|icu|club|work|click|link|pw|net|org|info|biz|io|cc|co)\b', nocase = true },
+]
+
+[[rule]]
+name = "shopware_app_script_dangerous"
+description = "App-Script / Twig-Code mit Zugriff auf Systemfunktionen"
+severity = "warning"
+category = "suspicious_pattern"
+tags = ["shopware"]
+applies_to = ["template"]
+strings = [
+  { regex = '\{%\s*set\s+\w+\s*=\s*[^%]{0,120}(system|exec|passthru|shell_exec|file_put_contents)\s*\(', nocase = true },
+  { regex = '\{%\s*do\s+[^%]{0,120}(file_put_contents|unlink|chmod|exec)\s*\(', nocase = true },
+]
