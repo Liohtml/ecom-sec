@@ -1,0 +1,37 @@
+# Beispielkonfiguration für ecomsec. Kopieren nach ./ecomsec.toml oder per --config angeben.
+
+[target]
+# auto | jtl5 | shopware6 | shopify
+platform = "auto"
+root = "/var/www/shop"
+
+[scan]
+# Dateien ab diesem Datum gelten als neu/geändert (Standard: 17.06.2026, CVE-2026-54390)
+reference_date = "2026-06-17"
+# Zeitbudget für den Dateiscan; danach Checkpoint und Fortsetzung beim nächsten Lauf
+# time_budget = "45s"
+# Relative Verzeichnisse, die der Dateiscan überspringt
+exclude = []
+# Zusätzliche Regelverzeichnisse (*.toml)
+rule_dirs = []
+# Maximale Dateigröße für die Inhaltsprüfung (Bytes)
+# max_file_size = 8388608
+
+[shopify]
+# shop = "my-store.myshopify.com"
+# Token aus Umgebungsvariable lesen (empfohlen) …
+token_env = "SHOPIFY_ACCESS_TOKEN"
+# … oder direkt (nicht empfohlen)
+# token = "shpat_..."
+api_version = "2025-07"
+# Zusätzlich vertrauenswürdige Hosts für Script-Tags, Webhooks und Theme-Skripte
+allow_hosts = []
+# Obergrenze geladener Theme-Dateien
+max_assets = 150
+
+[state]
+# dir = "/var/lib/ecomsec"
+
+[serve]
+bind = "127.0.0.1:8787"
+# token = "geheim"

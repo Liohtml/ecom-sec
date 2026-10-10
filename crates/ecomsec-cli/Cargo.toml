@@ -1,0 +1,37 @@
+[package]
+name = "ecomsec"
+description = "ecomsec – compromise check (Kompromittierungs-Check) for e-commerce installations"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+default-run = "ecomsec"
+
+[[bin]]
+name = "ecomsec"
+path = "src/main.rs"
+
+[dependencies]
+ecomsec-core.workspace = true
+ecomsec-jtl5.workspace = true
+ecomsec-shopware6.workspace = true
+ecomsec-shopify.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+clap.workspace = true
+anyhow.workspace = true
+toml.workspace = true
+log.workspace = true
+env_logger.workspace = true
+axum.workspace = true
+tokio.workspace = true
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+tempfile.workspace = true
+filetime.workspace = true
+walkdir.workspace = true

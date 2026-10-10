@@ -1,0 +1,47 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/ecomsec-core",
+    "crates/ecomsec-jtl5",
+    "crates/ecomsec-shopware6",
+    "crates/ecomsec-shopify",
+    "crates/ecomsec-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/liohtml/ecom-sec"
+rust-version = "1.80"
+
+[workspace.dependencies]
+ecomsec-core = { path = "crates/ecomsec-core" }
+ecomsec-jtl5 = { path = "crates/ecomsec-jtl5" }
+ecomsec-shopware6 = { path = "crates/ecomsec-shopware6" }
+ecomsec-shopify = { path = "crates/ecomsec-shopify" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+walkdir = "2"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4", features = ["derive", "env"] }
+anyhow = "1"
+thiserror = "2"
+sha2 = "0.10"
+hex = "0.4"
+toml = "0.8"
+mysql = { version = "26", default-features = false, features = ["minimal", "default-rust"] }
+ureq = { version = "3", features = ["json"] }
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+tempfile = "3"
+filetime = "0.2"
+log = "0.4"
+env_logger = "0.11"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

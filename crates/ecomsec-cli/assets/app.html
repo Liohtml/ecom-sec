@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ecomsec Security Scan</title>
+<style>
+:root{--bg:#f5f6f8;--panel:#fff;--text:#1b1f24;--muted:#5b6470;--border:#dde1e6;--accent:#2563eb;--crit:#c81e1e;--crit-bg:#fde8e8;--warn:#b45309;--warn-bg:#fdf3e1;--ok:#15803d;--ok-bg:#e4f5ea;--info:#1d4ed8;--info-bg:#e5edff;--code:#eef1f5}
+:root[data-theme="dark"]{--bg:#0f1318;--panel:#171c23;--text:#e6e9ee;--muted:#9aa4b1;--border:#2a323d;--accent:#60a5fa;--crit:#f87171;--crit-bg:#3a1515;--warn:#fbbf24;--warn-bg:#3a2a0c;--ok:#4ade80;--ok-bg:#0f3320;--info:#93c5fd;--info-bg:#17243d;--code:#0d1117}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1318;--panel:#171c23;--text:#e6e9ee;--muted:#9aa4b1;--border:#2a323d;--accent:#60a5fa;--crit:#f87171;--crit-bg:#3a1515;--warn:#fbbf24;--warn-bg:#3a2a0c;--ok:#4ade80;--ok-bg:#0f3320;--info:#93c5fd;--info-bg:#17243d;--code:#0d1117}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{background:var(--panel);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;flex:1}header .meta{color:var(--muted);font-size:12px}
+button{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:8px 14px;font-weight:600;cursor:pointer}button.secondary{background:transparent;color:var(--accent);border:1px solid var(--accent)}button:disabled{opacity:.5;cursor:default}
+main{max-width:1200px;margin:0 auto;padding:20px}
+.banner{border-radius:10px;padding:18px 20px;margin-bottom:18px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.banner.critical{background:var(--crit-bg);border-left:6px solid var(--crit)}.banner.warning{background:var(--warn-bg);border-left:6px solid var(--warn)}.banner.clean{background:var(--ok-bg);border-left:6px solid var(--ok)}
+.banner h2{margin:0;font-size:20px}.banner .counts{display:flex;gap:14px;margin-left:auto}.counts div{text-align:center}.counts b{display:block;font-size:22px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}.tabs button{background:none;color:var(--muted);border:0;border-bottom:3px solid transparent;border-radius:0;padding:10px 14px}.tabs button.active{color:var(--text);border-bottom-color:var(--accent)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.toolbar input,.toolbar select{padding:7px 9px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)}
+.finding{border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px;display:grid;grid-template-columns:auto 1fr;gap:6px 12px}
+.finding.accepted{opacity:.6}.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.02em}
+.badge.critical{background:var(--crit-bg);color:var(--crit)}.badge.warning{background:var(--warn-bg);color:var(--warn)}.badge.info{background:var(--info-bg);color:var(--info)}.badge.ok{background:var(--ok-bg);color:var(--ok)}.badge.unknown{background:var(--code);color:var(--muted)}
+.finding h4{margin:0;font-size:14px}.finding .sub{color:var(--muted);font-size:12px;word-break:break-all}.finding .desc{font-size:13px;margin-top:4px}
+.finding code,.ev{display:block;background:var(--code);border-radius:4px;padding:3px 6px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;margin-top:4px;word-break:break-all;white-space:pre-wrap}
+.finding .actions{grid-column:1/3;display:flex;gap:8px;justify-content:flex-end}.finding .actions button{padding:4px 10px;font-size:12px}
+table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}th{color:var(--muted);font-weight:600;font-size:12px}
+.status{font-weight:700}.status.ok{color:var(--ok)}.status.warning{color:var(--warn)}.status.critical{color:var(--crit)}.status.unknown{color:var(--muted)}
+h3{margin:18px 0 8px;font-size:15px}.muted{color:var(--muted)}.rec{border-left:3px solid var(--border);padding:6px 12px;margin:8px 0}.rec.p1{border-color:var(--crit)}.rec.p2{border-color:var(--warn)}.rec.p3{border-color:var(--accent)}.rec b{display:block}
+.progress{height:8px;background:var(--code);border-radius:4px;overflow:hidden;margin-top:8px}.progress div{height:100%;background:var(--accent);width:0;transition:width .3s}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center}.modal.open{display:flex}.modal .box{background:var(--panel);padding:20px;border-radius:10px;max-width:560px;width:92%;max-height:80vh;overflow:auto}.modal textarea{width:100%;min-height:70px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px}
+.modal ul{max-height:180px;overflow:auto;font-size:12px;padding-left:18px}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:30px 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>ecomsec Security Scan <span class="meta" id="platformName"></span></h1>
+  <span class="meta" id="scanMeta"></span>
+  <button class="secondary" id="themeToggle" title="Dark/Light">◐</button>
+  <button id="scanBtn" class="hidden">Scan starten</button>
+</header>
+<main>
+  <div id="progressWrap" class="panel hidden"><div id="progressText">Scan läuft …</div><div class="progress"><div id="progressBar"></div></div></div>
+  <div id="banner" class="banner clean"><div><h2 id="verdict">–</h2><div class="muted" id="verdictSub"></div></div>
+    <div class="counts"><div><b id="cCrit">0</b>kritisch</div><div><b id="cWarn">0</b>Warnungen</div><div><b id="cInfo">0</b>Hinweise</div><div><b id="cAcc">0</b>unbedenklich</div></div></div>
+  <div class="tabs">
+    <button data-tab="scan" class="active">Security Scan</button>
+    <button data-tab="integrity">Shop-Integrität</button>
+    <button data-tab="recs">Handlungsempfehlungen</button>
+    <button data-tab="help">Hilfe &amp; Service</button>
+  </div>
+  <section id="tab-scan">
+    <div class="panel">
+      <div class="toolbar">
+        <input id="filterText" placeholder="Filter (Pfad, Regel, Text)…" style="flex:1;min-width:200px">
+        <select id="filterSev"><option value="">alle Schweregrade</option><option value="critical">kritisch</option><option value="warning">Warnung</option><option value="info">Hinweis</option></select>
+        <select id="filterCat"><option value="">alle Kategorien</option></select>
+        <label><input type="checkbox" id="showAccepted"> unbedenkliche anzeigen</label>
+        <label><input type="checkbox" id="groupDirs"> nach Verzeichnis gruppieren</label>
+        <button class="secondary hidden" id="bulkAccept">Auswahl als unbedenklich markieren</button>
+      </div>
+      <div id="findings"></div>
+    </div>
+  </section>
+  <section id="tab-integrity" class="hidden">
+    <div class="panel" id="advisories"></div>
+    <div class="panel" id="integrity"></div>
+  </section>
+  <section id="tab-recs" class="hidden"><div class="panel" id="recs"></div></section>
+  <section id="tab-help" class="hidden">
+    <div class="panel">
+      <h3>Was dieser Scan leistet</h3>
+      <p>Der Kompromittierungs-Check prüft eine Shop-Installation read-only auf Spuren eines Angriffs: bekannte Webshell-Namen (IOC-Listen von CISA/NSA/MITRE), seit dem Referenzdatum neue oder geänderte ausführbare Dateien inkl. Zeitstempel-Manipulation, PHP in Upload-Verzeichnissen, manipulierte Webserver-Konfiguration, verdächtige Code-Muster (YARA-ähnliche Regeln), CVE-spezifische Exploit-Payloads, Angriffsspuren in E-Mail-Historie und Logs sowie die Shop-Integrität (Patch-Status, Admin-Konten, Zahlungsempfänger, Dateirechte, Fremdcode).</p>
+      <h3>Einschränkungen</h3>
+      <ul id="limitations"></ul>
+      <p class="muted">Der Scan ist eine Triage-Hilfe und ersetzt keine forensische Analyse. Ein sauberes Ergebnis ist keine Garantie für einen nicht kompromittierten Shop.</p>
+      <h3>Scan-Verlauf</h3>
+      <div id="history" class="muted">–</div>
+      <h3>Im Notfall</h3>
+      <ol>
+        <li>Shop nicht sofort abschalten – kritische Befunde zuerst verifizieren (Tab „Handlungsempfehlungen“, Abschnitt „Zuerst prüfen“).</li>
+        <li>Bestätigte Fremddateien sichern (Forensik), dann entfernen; alle Zugangsdaten rotieren.</li>
+        <li>Patch einspielen, Baseline erzeugen, Scan wöchentlich wiederholen. Eine Web Application Firewall reduziert die Angriffsfläche.</li>
+        <li>Bei Datenabfluss: Meldepflicht nach DSGVO Art. 33 (72 Stunden) prüfen.</li>
+      </ol>
+    </div>
+  </section>
+</main>
+<footer>ecomsec · Kompromittierungs-Check · read-only · keine externen Dienste</footer>
+<div class="modal" id="acceptModal"><div class="box">
+  <h3 style="margin-top:0">Als unbedenklich markieren</h3>
+  <p class="muted">Die Markierung bleibt über künftige Scans erhalten und zählt nicht mehr in die Bewertung.</p>
+  <ul id="acceptList"></ul>
+  <label>Begründung (optional)<textarea id="acceptReason" placeholder="z. B. eigene Anpassung durch Agentur XY am 20.06."></textarea></label>
+  <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button class="secondary" id="acceptCancel">Abbrechen</button><button id="acceptConfirm">Markieren</button></div>
+</div></div>
+<script>
+const MODE = "__MODE__";
+let REPORT = __REPORT_JSON__;
+const TOKEN = new URLSearchParams(location.search).get("token") || "";
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const sevLabel = {critical:"KRITISCH",warning:"WARNUNG",info:"HINWEIS"};
+const stLabel = {ok:"OK",warning:"Prüfen",critical:"Kritisch",unknown:"?"};
+const selected = new Set();
+
+function applyTheme(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("ecomsec-theme",t)}catch(e){}}
+try{const t=localStorage.getItem("ecomsec-theme");if(t)applyTheme(t)}catch(e){}
+$("#themeToggle").onclick=()=>{const cur=document.documentElement.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");applyTheme(cur==="dark"?"light":"dark")};
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("active",x===b));["scan","integrity","recs","help"].forEach(t=>$("#tab-"+t).classList.toggle("hidden",t!==b.dataset.tab))});
+
+async function api(path, opts={}){const h=Object.assign({"Content-Type":"application/json"},opts.headers||{});if(TOKEN)h["X-Auth-Token"]=TOKEN;const r=await fetch(path,Object.assign({},opts,{headers:h}));if(!r.ok){throw new Error((await r.text())||r.statusText)}return r.status===204?null:r.json()}
+
+function render(){
+  const r=REPORT; if(!r){$("#verdict").textContent="Noch kein Scan vorhanden";$("#findings").innerHTML='<p class="muted">Starten Sie einen Scan.</p>';return}
+  $("#platformName").textContent="· "+r.platform.name+(r.platform.version?" "+r.platform.version:"");
+  $("#scanMeta").textContent=(r.platform.root||r.platform.target||"")+" · "+new Date(r.generated_at).toLocaleString("de-DE")+" · Referenzdatum "+r.reference_date.split("-").reverse().join(".")+(r.summary.complete?"":" · UNVOLLSTÄNDIG");
+  const b=$("#banner");b.className="banner "+r.verdict;
+  $("#verdict").textContent={critical:"Kritische Befunde – sofort handeln",warning:"Warnungen – zeitnah prüfen",clean:"Keine kritischen Befunde"}[r.verdict];
+  $("#verdictSub").textContent=r.summary.files_scanned+" Dateien geprüft · "+(r.summary.duration_ms/1000).toFixed(1)+" s"+(r.summary.complete?"":" · Scan unvollständig (Zeitbudget) – erneut starten");
+  $("#cCrit").textContent=r.summary.critical;$("#cWarn").textContent=r.summary.warning;$("#cInfo").textContent=r.summary.info;$("#cAcc").textContent=r.summary.accepted;
+  const cats=[...new Set(r.findings.map(f=>f.category))].sort();const sel=$("#filterCat");const cur=sel.value;sel.innerHTML='<option value="">alle Kategorien</option>'+cats.map(c=>`<option value="${c}">${esc(catLabel(c))}</option>`).join("");sel.value=cur;
+  renderFindings();renderIntegrity();renderRecs();renderHelp();
+}
+function catLabel(c){return ({known_webshell:"Bekannte Webshell",modified_since_reference:"Neue/geänderte Datei",code_in_upload_dir:"Code im Upload-Verzeichnis",webserver_config_manipulation:"Webserver-Konfiguration",suspicious_pattern:"Verdächtiges Code-Muster",exploit_payload:"Exploit-Payload",timestamp_anomaly:"Zeitstempel-Anomalie",attack_trace:"Angriffsspur",patch_status:"Patch-Status",admin_account:"Admin-Konto",payment_configuration:"Zahlungs-Konfiguration",config_permissions:"Dateirechte",exposed_file:"Öffentlich erreichbare Datei",integrity_deviation:"Integritätsabweichung",third_party_injection:"Fremdcode / Injection",scan_limitation:"Scan-Einschränkung",informational:"Information"})[c]||c}
+function sevRank(s){return {critical:0,warning:1,info:2}[s]}
+function renderFindings(){
+  const r=REPORT;const q=$("#filterText").value.toLowerCase();const sev=$("#filterSev").value;const cat=$("#filterCat").value;const showAcc=$("#showAccepted").checked;
+  let list=r.findings.filter(f=>(showAcc||!f.accepted)&&(!sev||f.severity===sev)&&(!cat||f.category===cat)&&(!q||(f.subject+" "+f.title+" "+f.rule+" "+(f.evidence||[]).join(" ")).toLowerCase().includes(q)));
+  list.sort((a,b)=>(a.accepted-b.accepted)||(sevRank(a.severity)-sevRank(b.severity))||a.subject.localeCompare(b.subject));
+  const el=$("#findings");if(!list.length){el.innerHTML='<p class="muted">Keine Befunde für diesen Filter.</p>';return}
+  const card=f=>`<div class="finding ${f.accepted?"accepted":""}" data-id="${f.id}">
+    <div>${MODE==="web"&&!f.accepted?`<input type="checkbox" class="sel" data-id="${f.id}" ${selected.has(f.id)?"checked":""}> `:""}<span class="badge ${f.severity}">${sevLabel[f.severity]}</span></div>
+    <div><h4>${esc(f.title)} <span class="muted" style="font-weight:400;font-size:11px">#${f.id}</span>${f.accepted?' <span class="badge ok">unbedenklich</span>':""}</h4>
+      <div class="sub">${esc(catLabel(f.category))} · ${esc(f.subject)}</div>
+      ${f.description?`<div class="desc">${esc(f.description)}</div>`:""}
+      ${(f.evidence||[]).map(e=>`<span class="ev">${esc(e)}</span>`).join("")}
+      ${f.accepted_reason?`<div class="desc muted">Begründung: ${esc(f.accepted_reason)}</div>`:""}
+    </div>
+    ${MODE==="web"?`<div class="actions">${f.accepted?`<button class="secondary unaccept" data-id="${f.id}">Markierung aufheben</button>`:`<button class="secondary accept" data-id="${f.id}">unbedenklich</button>${f.group?`<button class="secondary accept-group" data-group="${esc(f.group)}" title="Alle Befunde in ${esc(f.group)}">Verzeichnis unbedenklich</button>`:""}`}</div>`:""}
+  </div>`;
+  if($("#groupDirs").checked){const groups={};list.forEach(f=>{(groups[f.group||"(ohne Verzeichnis)"]=groups[f.group||"(ohne Verzeichnis)"]||[]).push(f)});
+    el.innerHTML=Object.keys(groups).sort().map(g=>`<h3>${esc(g)} <span class="muted">(${groups[g].length})</span></h3>`+groups[g].map(card).join("")).join("")}
+  else el.innerHTML=list.map(card).join("");
+  el.querySelectorAll(".sel").forEach(c=>c.onchange=()=>{c.checked?selected.add(c.dataset.id):selected.delete(c.dataset.id);$("#bulkAccept").classList.toggle("hidden",!selected.size)});
+  el.querySelectorAll(".accept").forEach(b=>b.onclick=()=>openAccept([b.dataset.id]));
+  el.querySelectorAll(".accept-group").forEach(b=>b.onclick=()=>openAccept(REPORT.findings.filter(f=>!f.accepted&&f.group===b.dataset.group).map(f=>f.id)));
+  el.querySelectorAll(".unaccept").forEach(b=>b.onclick=async()=>{try{REPORT=await api("/api/findings/unaccept",{method:"POST",body:JSON.stringify({ids:[b.dataset.id]})});render()}catch(e){alert(e.message)}});
+}
+function renderIntegrity(){
+  const r=REPORT;
+  $("#advisories").innerHTML="<h3 style='margin-top:0'>Bekannte Schwachstellen</h3>"+(r.advisories.length?"<table><tr><th>Advisory</th><th>Status</th><th>Bewertung</th></tr>"+r.advisories.map(a=>{const st={patched:"ok",not_affected:"ok",vulnerable:"critical",unknown:"warning"}[a.state];const lab={patched:"gepatcht",not_affected:"nicht betroffen",vulnerable:"VERWUNDBAR",unknown:"unbekannt"}[a.state];return `<tr><td><b>${esc(a.advisory.id)}</b><br><span class="muted">${esc(a.advisory.title)}</span>${a.advisory.reference?`<br><a href="${esc(a.advisory.reference)}" target="_blank" rel="noopener">Referenz</a>`:""}</td><td class="status ${st}">${lab}</td><td>${esc(a.basis)}${a.advisory.backpatch_note?`<br><span class="muted">${esc(a.advisory.backpatch_note)}</span>`:""}</td></tr>`}).join("")+"</table>":'<p class="muted">Für diese Plattform sind keine Advisories hinterlegt.</p>');
+  const sections=[...new Set(r.integrity.map(i=>i.section))];
+  $("#integrity").innerHTML=sections.map(s=>`<h3>${esc(s)}</h3><table><tr><th style="width:30px"></th><th>Prüfung</th><th>Wert</th></tr>`+r.integrity.filter(i=>i.section===s).map(i=>`<tr><td class="status ${i.status}">${i.status==="ok"?"✔":i.status==="critical"?"✖":i.status==="warning"?"!":"?"}</td><td>${esc(i.label)}${i.detail?`<br><span class="muted">${esc(i.detail)}</span>`:""}</td><td>${esc(i.value)}</td></tr>`).join("")+"</table>").join("")||'<p class="muted">Keine Integritätsdaten.</p>';
+}
+function renderRecs(){
+  const r=REPORT;$("#recs").innerHTML=r.recommendations.map(g=>`<h3>${esc(g.label)}</h3>`+g.items.map(i=>`<div class="rec p${i.priority}"><b>${esc(i.title)}</b>${esc(i.detail)}${i.related&&i.related.length?`<div class="muted" style="font-size:12px;margin-top:4px">Befunde: ${i.related.slice(0,10).map(x=>"#"+esc(x)).join(" ")}${i.related.length>10?" …":""}</div>`:""}</div>`).join("")).join("");
+}
+function renderHelp(){
+  const r=REPORT;$("#limitations").innerHTML=r.limitations.length?r.limitations.map(l=>`<li>${esc(l)}</li>`).join(""):"<li>keine</li>";
+  if(MODE==="web"){api("/api/history").then(h=>{$("#history").innerHTML=h.length?"<table><tr><th>Zeitpunkt</th><th>Version</th><th>Ergebnis</th><th>kritisch</th><th>Warnungen</th><th>Dateien</th></tr>"+h.slice().reverse().slice(0,30).map(e=>`<tr><td>${new Date(e.generated_at).toLocaleString("de-DE")}</td><td>${esc(e.version||"")}</td><td class="status ${e.verdict==="clean"?"ok":e.verdict}">${esc(e.verdict)}${e.complete?"":" (unvollständig)"}</td><td>${e.critical}</td><td>${e.warning}</td><td>${e.files_scanned}</td></tr>`).join("")+"</table>":"noch kein Verlauf"}).catch(()=>{})}
+}
+let pendingIds=[];
+function openAccept(ids){pendingIds=ids;$("#acceptList").innerHTML=ids.map(id=>{const f=REPORT.findings.find(x=>x.id===id);return `<li>${esc(f?f.subject:id)} – ${esc(f?f.title:"")}</li>`}).join("");$("#acceptReason").value="";$("#acceptModal").classList.add("open")}
+$("#acceptCancel").onclick=()=>$("#acceptModal").classList.remove("open");
+$("#acceptConfirm").onclick=async()=>{try{REPORT=await api("/api/findings/accept",{method:"POST",body:JSON.stringify({ids:pendingIds,reason:$("#acceptReason").value||null})});selected.clear();$("#bulkAccept").classList.add("hidden");$("#acceptModal").classList.remove("open");render()}catch(e){alert(e.message)}};
+$("#bulkAccept").onclick=()=>openAccept([...selected]);
+["#filterText","#filterSev","#filterCat","#showAccepted","#groupDirs"].forEach(s=>$(s).addEventListener("input",renderFindings));
+if(MODE==="web"){
+  $("#scanBtn").classList.remove("hidden");
+  let polling=null;
+  async function poll(){try{const s=await api("/api/status");$("#progressWrap").classList.toggle("hidden",!s.running);$("#scanBtn").disabled=s.running;if(s.running){const pct=s.total?Math.round(100*s.done/s.total):0;$("#progressText").textContent=`Scan läuft … ${s.done}/${s.total} Dateien (${pct}%)`;$("#progressBar").style.width=pct+"%"}else{if(polling){clearInterval(polling);polling=null;REPORT=await api("/api/report").catch(()=>REPORT);render();if(s.error)alert("Scan fehlgeschlagen: "+s.error)}}}catch(e){}}
+  $("#scanBtn").onclick=async()=>{try{await api("/api/scan",{method:"POST"});$("#progressWrap").classList.remove("hidden");$("#scanBtn").disabled=true;polling=setInterval(poll,1000)}catch(e){alert(e.message)}};
+  api("/api/report").then(r=>{REPORT=r;render()}).catch(()=>render());
+  api("/api/status").then(s=>{if(s.running){$("#scanBtn").disabled=true;polling=setInterval(poll,1000)}}).catch(()=>{});
+} else { render(); }
+</script>
+</body>
+</html>

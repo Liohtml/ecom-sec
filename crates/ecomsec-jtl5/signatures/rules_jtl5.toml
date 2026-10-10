@@ -1,0 +1,98 @@
+# JTL-Shop 5 specific content rules.
+#
+# CVE-2026-54390 (unauthenticated Smarty SSTI, 5.2.0 – 5.7.1): user input is
+# rendered by Smarty inside e-mail templates.  On 5.4.0+ the shop registers
+# `unserialize` and `file_get_contents` as Smarty modifiers, which attackers
+# chain into a webshell drop.  The raw payload therefore contains Smarty tags
+# such as `{capture}` … `{eval}` or modifier chains.
+
+[[rule]]
+name = "jtl_ssti_capture_eval"
+description = "Rohes SSTI-Angriffsmuster für CVE-2026-54390: {capture} … {eval}"
+severity = "critical"
+category = "exploit_payload"
+condition = "all"
+tags = ["cve-2026-54390", "ssti", "jtl"]
+reference = "https://sansec.io/research/jtl-shop-ssti-rce"
+applies_to = ["php", "template", "log", "js", "htaccess", "ini"]
+strings = [
+  { regex = '\{capture\b', nocase = true },
+  { regex = '\{eval\b', nocase = true },
+]
+
+[[rule]]
+name = "jtl_ssti_eval_tag_with_var"
+description = "Smarty {eval var=…} mit Variableninhalt – Codeausführung über Template-Injection"
+severity = "critical"
+category = "exploit_payload"
+tags = ["cve-2026-54390", "ssti", "jtl"]
+applies_to = ["php", "template", "log", "js"]
+strings = [
+  { regex = '\{eval\s+var\s*=\s*(\$|["\x27]\{)', nocase = true },
+  { regex = '\{eval\s+var\s*=\s*\$smarty\.capture', nocase = true },
+]
+
+[[rule]]
+name = "jtl_smarty_dangerous_modifier_chain"
+description = "Smarty-Modifier-Kette mit unserialize/file_get_contents/system (RCE-Kette von CVE-2026-54390)"
+severity = "critical"
+category = "exploit_payload"
+tags = ["cve-2026-54390", "ssti", "jtl"]
+applies_to = ["php", "template", "log", "js", "htaccess", "ini"]
+strings = [
+  { regex = '\{[^}\n]{0,300}\|\s*(unserialize|file_get_contents|file_put_contents|system|exec|passthru|shell_exec|popen|proc_open|eval|assert|call_user_func|array_map)\b', nocase = true },
+  { regex = '\{\$[a-z_][\w.\[\]\x27"$]*\|[\w|:]*(unserialize|file_get_contents)', nocase = true },
+]
+
+[[rule]]
+name = "jtl_smarty_php_block"
+description = "Smarty-Sonderkonstrukte in Daten: {php}, {include}/{fetch} mit Stream-Wrapper, {$smarty.server/env/cookies}"
+severity = "warning"
+category = "exploit_payload"
+tags = ["ssti", "jtl"]
+applies_to = ["template", "log"]
+strings = [
+  { regex = '\{php\b', nocase = true },
+  { regex = '\{(include|fetch|extends)\s+file\s*=\s*["\x27]?(php://|data:|https?://|ftp://|phar://)', nocase = true },
+  { regex = '\{\$smarty\.(server|env|cookies|request)\b[^}]{0,80}\}', nocase = true },
+]
+
+[[rule]]
+name = "jtl_compiled_template_with_eval"
+description = "Kompiliertes Smarty-Template enthält eval()/Modifier-Aufrufe aus einer Injection"
+severity = "critical"
+category = "exploit_payload"
+tags = ["cve-2026-54390", "jtl"]
+condition = "2"
+applies_to = ["php"]
+strings = [
+  { regex = 'Smarty_Internal_Template|\$_smarty_tpl', nocase = false },
+  { regex = '\beval\s*\(', nocase = true },
+  { regex = 'smarty_modifier_(unserialize|file_get_contents)|\b(unserialize|file_get_contents)\s*\(\s*\$_smarty_tpl', nocase = true },
+]
+
+[[rule]]
+name = "jtl_webshell_in_plugin_dir_marker"
+description = "Plugin-Datei mit typischer Dropper-Signatur (Upload + Ausführung in einem Script)"
+severity = "critical"
+category = "suspicious_pattern"
+tags = ["jtl", "webshell"]
+condition = "all"
+applies_to = ["php"]
+strings = [
+  { regex = 'PFAD_ROOT\s*\.\s*[\x27"](mediafiles|bilder|uploads|export)', nocase = true },
+  { regex = '(file_put_contents|fwrite|move_uploaded_file)\s*\(', nocase = true },
+  { regex = '\$_(GET|POST|REQUEST|COOKIE|FILES)\s*\[', nocase = true },
+]
+
+[[rule]]
+name = "jtl_log_ssti_probe"
+description = "Angriffsversuch im Log: Smarty-Tags in Request-Parametern"
+severity = "warning"
+category = "attack_trace"
+tags = ["cve-2026-54390", "jtl"]
+applies_to = ["log"]
+strings = [
+  { regex = '(%7B|\{)(capture|eval|php|literal|include)\b[^%}\n]{0,120}(%7D|\})', nocase = true },
+  { regex = '\{\$smarty\.', nocase = true },
+]

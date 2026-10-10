@@ -1,0 +1,96 @@
+# Known webshell / backdoor file names.
+#
+# Compiled from public IOC collections (CISA TA15-314A "Compromised Web
+# Servers and Web Shells", NSA/ASD "Detect and Prevent Web Shell Malware",
+# MITRE ATT&CK T1505.003) and from names commonly observed after e-commerce
+# compromises.  Matching is case-insensitive on the file name (not the path).
+#
+# `exact`  – the whole file name must match
+# `prefix` – the file name starts with the value
+# `regex`  – regular expression applied to the file name
+
+[[entry]]
+name = "c99 / c100 shell family"
+severity = "critical"
+regex = '^(c99|c100|c99shell|c99madshell|c99ud)[a-z0-9_-]*\.(php|phtml|php[3-8]|phar|inc)$'
+reference = "https://www.cisa.gov/news-events/alerts/2015/11/10/compromised-web-servers-and-web-shells-threat-awareness-and-guidance"
+
+[[entry]]
+name = "r57 shell family"
+severity = "critical"
+regex = '^r57[a-z0-9_-]*\.(php|phtml|php[3-8]|phar|inc)$'
+
+[[entry]]
+name = "WSO (web shell by orb)"
+severity = "critical"
+regex = '^wso[0-9_.-]*\.(php|phtml|php[3-8]|phar|inc)$'
+
+[[entry]]
+name = "b374k shell"
+severity = "critical"
+regex = '^b374k[a-z0-9_.-]*\.(php|phtml|php[3-8]|phar|inc)$'
+
+[[entry]]
+name = "China Chopper style one-liner"
+severity = "critical"
+regex = '^(chopper|caidao|cmd[0-9]*|cmdx?|shell[0-9]*|sh3ll|webshell[0-9]*|backdoor[0-9]*|bd[0-9]*)\.(php|phtml|php[3-8]|phar|inc|asp|aspx|jsp)$'
+
+[[entry]]
+name = "Known PHP shell names (alfa, indoxploit, filesman, mini, bypass, …)"
+severity = "critical"
+regex = '^(alfa|alfav?[0-9]*|alfashell|indoxploit|idx|filesman|filemanager|mini|minishell|bypass|symlink|sym|marijuana|php-backdoor|phpjackal|locus7s|dq|dqshell|lol|haxor|hacker|hacked|pwn|pwned|exploit|xshell|zshell|k2ll33d|uploader|up|upl|upload_?shell|moon|fx29|fx|antichat|safe0ver|ghost|gh0st|dark|darkshell|priv8|priv|madspot|wh|weevely|wshell|p0wny|p0wnyshell|pwnyshell|tiny|tinyshell|rev|revshell|reverse|connect|back|bind|bindshell|nc|netcat|spy|r00t|root|rootkit|0byt3|byp4ss|shell_cmd|cmdshell|phpspy|phpshell|cyber|cyberwarfare|ssh|telnet|cgitelnet|cgi-telnet|anonsec|anon|sqli|sqlshell|dbshell|mysql_shell|adminer-?[0-9.]*)\.(php|phtml|php[3-8]|phar|inc)$'
+
+[[entry]]
+name = "Single-character / numeric PHP file in web root (typical dropper name)"
+severity = "warning"
+regex = '^[a-z0-9]{1,2}\.(php|phtml|php[3-8]|phar)$'
+
+[[entry]]
+name = "Disguised error page shell (404.php, 403.php, 500.php …)"
+severity = "warning"
+regex = '^(40[0-9]|50[0-9]|error|errors|err)\.(php|phtml|php[3-8]|phar)$'
+
+[[entry]]
+name = "Diagnostic file left on the server (phpinfo, info, test)"
+severity = "warning"
+regex = '^(phpinfo|php_info|pinfo|info|test|tests|testing|debug|phptest|test[0-9]+)\.(php|phtml|php[3-8])$'
+
+[[entry]]
+name = "Database tools reachable from the web (adminer, phpmyadmin dumps)"
+severity = "warning"
+regex = '^(adminer|phpmyadmin|pma|myadmin|dbadmin|sqladmin)[a-z0-9_.-]*\.(php|phtml)$'
+
+[[entry]]
+name = "PHP file with image or document double extension"
+severity = "critical"
+regex = '\.(jpe?g|png|gif|webp|svg|bmp|ico|pdf|txt|csv|xml|json|zip|rar|docx?|xlsx?)\.(php|phtml|php[3-8]|phar|pht)$'
+
+[[entry]]
+name = "Image or document name with PHP double extension"
+severity = "critical"
+regex = '\.(php|phtml|php[3-8]|phar|pht)\.(jpe?g|png|gif|webp|svg|bmp|ico|pdf|txt|csv|xml|json|zip)$'
+
+[[entry]]
+name = "Rare executable PHP extension (phtml, php7, phar, pht, pgif)"
+severity = "warning"
+regex = '\.(pht|phtm|php[3-8]|phps|pgif|phar)$'
+
+[[entry]]
+name = "Hidden PHP file (dot-file)"
+severity = "critical"
+regex = '^\.[^.].*\.(php|phtml|php[3-8]|phar)$'
+
+[[entry]]
+name = "PHP file disguised with trailing whitespace or unusual unicode"
+severity = "critical"
+regex = '\.(php|phtml)[\s\u00a0\u200b]+$'
+
+[[entry]]
+name = "Compressed source / backup of a PHP file in web root"
+severity = "warning"
+regex = '\.(php|phtml|inc)\.(bak|old|orig|save|swp|tmp|~|txt|1|2)$'
+
+[[entry]]
+name = "Ransom / defacement note"
+severity = "critical"
+regex = '^(readme_?(to)?_?(restore|decrypt)|how_?to_?(restore|decrypt)|hacked|defaced|owned|pwned)[a-z0-9_.-]*\.(txt|html?|php)$'
