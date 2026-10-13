@@ -8,7 +8,13 @@ use std::path::{Path, PathBuf};
 /// Raw URL of the curated advisory files in the repository.
 pub const DEFAULT_UPDATE_URL: &str =
     "https://raw.githubusercontent.com/liohtml/ecom-sec/main/advisories";
-pub const FILES: &[&str] = &["jtl5.toml", "shopware6.toml", "shopify.toml"];
+pub const FILES: &[&str] = &[
+    "jtl5.toml",
+    "shopware6.toml",
+    "shopify.toml",
+    "woocommerce.toml",
+    "magento2.toml",
+];
 
 #[derive(Subcommand)]
 pub enum AdvisoriesCommand {
@@ -43,6 +49,8 @@ fn embedded() -> anyhow::Result<AdvisoryDb> {
     let mut db = AdvisoryDb::new();
     db.merge_toml("builtin:jtl5", ecomsec_jtl5::ADVISORIES_TOML)?;
     db.merge_toml("builtin:shopware6", ecomsec_shopware6::ADVISORIES_TOML)?;
+    db.merge_toml("builtin:woocommerce", ecomsec_woocommerce::ADVISORIES_TOML)?;
+    db.merge_toml("builtin:magento2", ecomsec_magento2::ADVISORIES_TOML)?;
     Ok(db)
 }
 

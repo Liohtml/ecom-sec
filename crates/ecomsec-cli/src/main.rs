@@ -28,7 +28,7 @@ const EXIT_ERROR: u8 = 10;
 #[command(
     name = "ecomsec",
     version,
-    about = "Kompromittierungs-Check für Shop-Systeme (JTL-Shop 5, Shopware 6, Shopify) – read-only, ohne externe Dienste",
+    about = "Kompromittierungs-Check für Shop-Systeme (JTL-Shop 5, Shopware 6, WooCommerce, Magento 2, Shopify) – read-only, ohne externe Dienste",
     long_about = None,
     propagate_version = true
 )]
@@ -50,7 +50,7 @@ struct Cli {
 
 #[derive(Args, Clone)]
 struct TargetArgs {
-    /// Plattform: auto, jtl5, shopware6, shopify
+    /// Plattform: auto, jtl5, shopware6, woocommerce, magento2, shopify
     #[arg(short, long, global = true, value_name = "ID")]
     platform: Option<String>,
     /// Webroot / Projektverzeichnis (self-hosted)
@@ -424,14 +424,14 @@ fn last_report(ctx: &Context_) -> anyhow::Result<Report> {
 fn run(cli: Cli) -> anyhow::Result<u8> {
     match &cli.command {
         Command::Platforms => {
-            println!("{:<10} {:<12} {:<36} Prüfungen", "ID", "Name", "Art");
+            println!("{:<12} {:<27} {:<36} Prüfungen", "ID", "Name", "Art");
             for p in platforms::PLATFORMS {
                 println!(
-                    "{:<10} {:<12} {:<36} {}",
+                    "{:<12} {:<27} {:<36} {}",
                     p.id, p.name, p.kind, p.description
                 );
             }
-            println!("\nErkennung: `ecomsec scan --root <PFAD>` erkennt JTL-Shop 5 und Shopware 6 automatisch; Shopify über --shop/--token.");
+            println!("\nErkennung: `ecomsec scan --root <PFAD>` erkennt JTL-Shop 5, Shopware 6, Magento 2 und WooCommerce/WordPress automatisch; Shopify über --shop/--token.");
             return Ok(0);
         }
         Command::Rules { tag } => {
@@ -449,6 +449,14 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
             rules.extend(ecomsec_core::RuleSet::from_toml(
                 "shopware6",
                 ecomsec_shopware6::RULES_TOML,
+            )?);
+            rules.extend(ecomsec_core::RuleSet::from_toml(
+                "woocommerce",
+                ecomsec_woocommerce::RULES_TOML,
+            )?);
+            rules.extend(ecomsec_core::RuleSet::from_toml(
+                "magento2",
+                ecomsec_magento2::RULES_TOML,
             )?);
             println!("IOC-Dateinamen: {} Einträge", engine.iocs().len());
             for e in engine.iocs().iter() {
