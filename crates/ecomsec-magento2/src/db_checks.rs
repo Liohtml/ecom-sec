@@ -280,12 +280,10 @@ fn admin_users(
             });
         }
     }
-    let role_join = if run.exists(conn, "authorization_role")? {
+    if run.exists(conn, "authorization_role")? {
+        // Role name via the user's role entry (role_type U) and its parent group.
         select.push("(SELECT p.role_name FROM {roles} r JOIN {roles} p ON p.role_id = r.parent_id WHERE r.user_id = a.user_id AND r.role_type = 'U' AND r.user_type = '2' LIMIT 1) AS role_name");
-        true
-    } else {
-        false
-    };
+    }
     let sql = format!(
         "SELECT {} FROM {} a ORDER BY a.user_id",
         select.join(", "),
@@ -427,7 +425,6 @@ fn admin_users(
             );
         }
     }
-    let _ = role_join;
     report.items.push(IntegrityItem::new(
         "admin.summary",
         "Admin-Konten",
