@@ -31,7 +31,7 @@ strings = [
 | `php` | `.php .phtml .php3-8 .phar .inc .pht …` |
 | `htaccess` | `.htaccess`, `.htpasswd`, `web.config` |
 | `ini` | `.user.ini`, `php.ini` |
-| `template` | Template-Endungen der Plattform (`tpl`, `twig`, `liquid`) sowie DB-gespeicherte Templates |
+| `template` | Template-Endungen der Plattform (`tpl`, `twig`, `liquid`, Magento-Knockout-`html`) sowie DB-gespeicherte Inhalte (Templates, CMS-Blöcke, WordPress-Optionen und -Beiträge) |
 | `js` | `.js .mjs .cjs` und Theme-JavaScript (Shopify) |
 | `log` | Dateien in Log-Verzeichnissen der Plattform oder mit Endung `.log` (bei großen Dateien nur die letzten 64 MiB) |
 | `image` | Bilder (nur die ersten 2 MiB; für Polyglot-Prüfungen) |

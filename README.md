@@ -5,7 +5,7 @@
 <h1 align="center">ecomsec Security Scan</h1>
 
 <p align="center">
-  <b>Wurde mein Shop gehackt?</b> – In unter einer Minute Klarheit. Für JTL-Shop 5, Shopware 6 und Shopify.
+  <b>Wurde mein Shop gehackt?</b> – In unter einer Minute Klarheit. Für JTL-Shop 5, Shopware 6, WooCommerce, Magento 2 und Shopify.
 </p>
 
 <p align="center">
@@ -22,7 +22,7 @@
   <img alt="Lizenz MIT" src="https://img.shields.io/badge/Lizenz-MIT-blue">
   <img alt="Rust" src="https://img.shields.io/badge/Rust-1.80%2B-orange">
   <img alt="Read-only" src="https://img.shields.io/badge/Zugriff-nur%20lesend-informational">
-  <img alt="Plattformen" src="https://img.shields.io/badge/JTL--Shop%205%20%C2%B7%20Shopware%206%20%C2%B7%20Shopify-unterst%C3%BCtzt-6f42c1">
+  <img alt="Plattformen" src="https://img.shields.io/badge/JTL--Shop%205%20%C2%B7%20Shopware%206%20%C2%B7%20WooCommerce%20%C2%B7%20Magento%202%20%C2%B7%20Shopify-unterst%C3%BCtzt-6f42c1">
 </p>
 
 ---
@@ -62,7 +62,7 @@ cargo build --release
 # → target/release/ecomsec
 ```
 
-**2. Scan starten** (JTL-Shop 5 und Shopware 6 werden automatisch erkannt)
+**2. Scan starten** (JTL-Shop 5, Shopware 6, WooCommerce/WordPress und Magento 2 werden automatisch erkannt)
 
 ```bash
 ecomsec scan --root /var/www/shop
@@ -100,11 +100,14 @@ ecomsec serve --root /var/www/shop
 - **Manipulierte `.htaccess` / `.user.ini`**, die Bilder als PHP ausführen oder Code in jede Seite einschleusen
 - **Verdächtige Code-Muster** mit YARA-ähnlichen Regeln: `eval(base64_decode(…))`, China Chopper, Hex-Verschleierung, Reverse Shells, Dropper, Spam-Mailer, Karten-Skimmer
 - **CVE-2026-54390-Angriffsmuster** (`{capture}…{eval}`, gefährliche Smarty-Modifier) in Dateien, kompilierten Templates und Logs
+- **WordPress-/WooCommerce-Hintertüren** (versteckte Admin-Anlage, Login-Bypass, Must-Use-Plugins, Schein-Plugins, `.ico`-Loader) und **Magecart-Skimmer** in WooCommerce- und Magento-Checkouts, RequireJS-Konfigurationen und CMS-Inhalten
 - **Öffentlich erreichbare Backups, Datenbank-Dumps und Konfigurationskopien**
 
 ### 2 · Shop-Integrität – ist dein Shop noch deiner?
 
 - **Patch-Status** für CVE-2026-54390: zuerst anhand der Version (5.5.4 / 5.6.2 / 5.7.2 / ab 5.8), sonst anhand der geprüften Datei – das Ergebnis sagt immer, worauf es beruht
+- **Patch-Status für WordPress, WooCommerce und Magento** inklusive Patch-Level (`2.4.6-p6`) – z. B. CosmicSting, SessionReaper, WP_Query-SQL-Injection, WooCommerce-Store-API
+- **Zahlungs-, URL- und Script-Einstellungen in der Datenbank** (Head-/Footer-Scripts, `siteurl`, Basis-URLs, Webhooks, API-Schlüssel) mit Änderungserkennung zwischen zwei Scans
 - **Admin-Konten** mit letztem Login und 2FA-Status; **neue Konten seit dem letzten Scan** werden kritisch gemeldet
 - **PayPal-Empfängerkonto** (teilmaskiert) mit Änderungserkennung zwischen zwei Scans
 - **E-Mail-Historie der letzten 90 Tage** auf eingeschleuste Angriffs-Payloads
@@ -125,7 +128,7 @@ der Shop abgeschaltet wird), **Sofortmaßnahmen**, **Kompromittierungs-Prüfung*
 - **Shared-Hosting-tauglich:** Mit `--time-budget 45s` scannt `ecomsec` in Etappen und setzt beim nächsten Aufruf fort – kein Timeout, keine Last.
 - **Hell und dunkel:** Dashboard und HTML-Bericht folgen deinem System oder per Klick.
 - **Scan-Verlauf:** Jeder Lauf wird mit Ergebnis gespeichert, damit du Veränderungen siehst.
-- **Aktuelle Schwachstellen:** Die Advisory-Datenbank liegt als Datei im Repository, wird wöchentlich von einem Agenten nachgepflegt und lässt sich ohne neues Release per `ecomsec advisories update` holen. Mit `--online` prüft der Scan zusätzlich alle Composer-Pakete (Shopware-Core, Plugins, Symfony, Smarty …) tagesaktuell gegen OSV.dev.
+- **Aktuelle Schwachstellen:** Die Advisory-Datenbank liegt als Datei im Repository, wird wöchentlich von einem Agenten nachgepflegt und lässt sich ohne neues Release per `ecomsec advisories update` holen. Mit `--online` prüft der Scan zusätzlich alle Composer-Pakete (Shopware-Core, Magento, Plugins, Symfony, Smarty …) tagesaktuell gegen OSV.dev und vergleicht WordPress-Plugins mit dem WordPress.org-Verzeichnis.
 
 ---
 
@@ -154,10 +157,12 @@ der Shop abgeschaltet wird), **Sofortmaßnahmen**, **Kompromittierungs-Prüfung*
 |---|---|---|---|
 | **JTL-Shop 5** (5.0 – 5.8+) | Shop-Verzeichnis, optional MySQL | automatisch | Admin-Konten, PayPal, E-Mail-Historie, Vorlagen, Kundendaten, Plugins, Cronjobs |
 | **Shopware 6** (6.4+) | Projekt-Verzeichnis, optional MySQL | automatisch | Benutzer, API-Integrationen, Apps/Plugins, Zahlungsanbieter, Mail-Templates, Flows, Snippets/CMS |
+| **WooCommerce / WordPress** (WordPress 4.x+, WooCommerce 3.x+) | Webroot, optional MySQL | automatisch | Administratoren & Sitzungen, Standardrolle, siteurl/home, aktive Plugins, Options-/Beitrags-Injection, WP-Cron, PayPal/Stripe/BACS, REST-API-Schlüssel, Webhooks |
+| **Magento 2 / Adobe Commerce** (2.3+) | Projekt-Verzeichnis, optional MySQL | automatisch | Admin-Benutzer & Sitzungen, Integrationen/OAuth, Basis-URLs, Head-/Footer-Scripts, Zahlungskonfiguration, CMS-Blöcke/-Seiten, Template-Direktiven, Cron-Jobs |
 | **Shopify** | Admin-API-Token (nur Lese-Rechte) | `--platform shopify` | Script-Tags, Webhooks, Apps & Berechtigungen, Mitarbeiter (Plus), Live-Theme |
 
-Die Datenbank-Zugangsdaten liest `ecomsec` aus der Shop-Konfiguration (`config.JTL-Shop.ini.php`
-bzw. `.env`). Ist keine Datenbank erreichbar, läuft der Dateiscan trotzdem vollständig – die
+Die Datenbank-Zugangsdaten liest `ecomsec` aus der Shop-Konfiguration (`config.JTL-Shop.ini.php`,
+`.env`, `wp-config.php` – auch eine Ebene über dem Webroot – bzw. `app/etc/env.php`). Ist keine Datenbank erreichbar, läuft der Dateiscan trotzdem vollständig – die
 fehlenden Prüfungen werden im Bericht genannt.
 
 ```bash
@@ -234,7 +239,7 @@ Zuerst anhand der Shop-Version (5.5.4, 5.6.2, 5.7.2 und ab 5.8 gelten als gepatc
 
 <details>
 <summary><b>Findet das Tool auch neue CVEs für Shopsysteme und Plugins?</b></summary>
-Ja, auf drei Wegen. <b>1.</b> Die eingebaute Advisory-Datenbank (<code>advisories/*.toml</code>) wird wöchentlich automatisch aktualisiert: ein Workflow sucht in NVD und OSV.dev nach neuen Einträgen, ein Claude-Agent recherchiert Versionsbereiche in den Primärquellen und öffnet einen Pull Request, den ein Mensch freigibt. <b>2.</b> <code>ecomsec advisories update</code> lädt den aktuellen Stand, ohne dass du ein neues Release brauchst. <b>3.</b> <code>ecomsec scan --online</code> prüft alle Composer-Pakete deiner Installation (bei Shopware Core und Plugins, bei JTL die mitgelieferten Bibliotheken) tagesaktuell gegen OSV.dev – dabei verlassen nur Paketnamen und Versionen den Server. Für JTL-Plugins aus dem Extension Store und Shopify-Apps gibt es keine öffentliche Schwachstellen-Datenbank; hier bleibt die Risikobewertung nach Installationsdatum, Herkunft und Berechtigungen. Details: <a href="docs/ADVISORIES.md">docs/ADVISORIES.md</a>.
+Ja, auf drei Wegen. <b>1.</b> Die eingebaute Advisory-Datenbank (<code>advisories/*.toml</code>) wird wöchentlich automatisch aktualisiert: ein Workflow sucht in NVD und OSV.dev nach neuen Einträgen, ein Claude-Agent recherchiert Versionsbereiche in den Primärquellen und öffnet einen Pull Request, den ein Mensch freigibt. <b>2.</b> <code>ecomsec advisories update</code> lädt den aktuellen Stand, ohne dass du ein neues Release brauchst. <b>3.</b> <code>ecomsec scan --online</code> prüft alle Composer-Pakete deiner Installation (bei Shopware und Magento Core und Erweiterungen, bei JTL die mitgelieferten Bibliotheken) tagesaktuell gegen OSV.dev – dabei verlassen nur Paketnamen und Versionen den Server. Bei WordPress werden die installierten Plugins mit dem WordPress.org-Verzeichnis verglichen (nur der Plugin-Name wird gesendet). Für JTL-Plugins aus dem Extension Store, WordPress-Plugins außerhalb von WooCommerce und Shopify-Apps gibt es keine frei nutzbare Schwachstellen-Datenbank; hier bleibt die Risikobewertung nach Installationsdatum, Herkunft und Berechtigungen. Details: <a href="docs/ADVISORIES.md">docs/ADVISORIES.md</a>.
 </details>
 
 <details>
@@ -294,7 +299,7 @@ Optional per Konfigurationsdatei: [`ecomsec.example.toml`](ecomsec.example.toml)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) – Aufbau, `Platform`-Trait, neue Shopsysteme anbinden
 - [docs/RULES.md](docs/RULES.md) – Regelformat, Dateiklassen, Kategorien
 - [docs/ADVISORIES.md](docs/ADVISORIES.md) – Schwachstellen-Datenbank, OSV-Abgleich, automatische Pflege per Agent
-- Workspace: `ecomsec-core` (Engine), `ecomsec-jtl5`, `ecomsec-shopware6`, `ecomsec-shopify`, `ecomsec-cli`
+- Workspace: `ecomsec-core` (Engine), `ecomsec-jtl5`, `ecomsec-shopware6`, `ecomsec-woocommerce`, `ecomsec-magento2`, `ecomsec-shopify`, `ecomsec-osv`, `ecomsec-cli`
 - `cargo test --workspace` · `cargo clippy --workspace --all-targets` · `cargo fmt --all`
 
 ## 📜 Lizenz und Hinweise
@@ -304,4 +309,4 @@ Sansec-Analyse zu CVE-2026-54390) und erheben keinen Vollständigkeitsanspruch. 
 Patch-Nachweis ist eine Heuristik; Versionsbereiche der Advisories sind gegen die jeweiligen
 Hersteller-Mitteilungen zu verifizieren; die Advisory-Datenbank unter `advisories/` wird automatisiert
 aus NVD und OSV.dev gespeist und vor dem Merge geprüft. Dieses Projekt steht in keiner Verbindung zu JTL-Software,
-Shopware AG oder Shopify Inc.
+Shopware AG, Shopify Inc., Automattic (WooCommerce), der WordPress Foundation oder Adobe (Magento).
