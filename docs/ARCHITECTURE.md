@@ -88,6 +88,8 @@ Pro Ziel (`<platform>-<hash(root|shop)>`) im State-Verzeichnis:
 ## Report-Schema
 
 `Report` (Version 1) enthält `platform`, `reference_date`, `verdict`, `summary`, `findings[]`,
-`integrity[]`, `advisories[]`, `recommendations[]`, `limitations[]`. Der HTML-Report und das
+`integrity[]`, `advisories[]`, `recommendations[]`, `limitations[]` sowie das Sicherheitsniveau
+`score` (0–100), `grade` (A–F) und `score_drivers[]` (Modul `ecomsec_core::score`, Gewichte siehe
+[CI.md](CI.md#sicherheitsniveau-score); fehlt in älteren Reports und wird dann beim Lesen berechnet). Der HTML-Report und das
 Web-Dashboard rendern dasselbe JSON; `--format json` ist daher die stabile Schnittstelle für
 Monitoring und Weiterverarbeitung.

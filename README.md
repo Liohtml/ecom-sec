@@ -90,6 +90,35 @@ ecomsec serve --root /var/www/shop
 
 ---
 
+## 📦 Installation & Updates
+
+**Linux & macOS – ein Befehl** (erkennt System und Prozessor, prüft die SHA-256-Prüfsumme,
+installiert nach `/usr/local/bin` bzw. `~/.local/bin`):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/liohtml/ecom-sec/main/install.sh | sh
+# bestimmte Version / eigenes Verzeichnis:
+curl -fsSL https://raw.githubusercontent.com/liohtml/ecom-sec/main/install.sh | sh -s -- --version v0.2.0 --dir ~/bin
+```
+
+**Windows:** ZIP-Paket `ecomsec-<version>-x86_64-pc-windows-msvc.zip` aus den [Releases](../../releases)
+laden und `ecomsec.exe` entpacken. Jedes Release enthält `SHA256SUMS` zum Prüfen.
+
+**Docker** (Shop read-only eingehängt, Zustand im Volume – Details in [docker/README.md](docker/README.md)):
+
+```bash
+docker run --rm -v /var/www/shop:/shop:ro -v ecomsec-state:/state ghcr.io/liohtml/ecom-sec scan --skip-remote
+```
+
+**Aktualisieren:**
+
+```bash
+ecomsec self-update --check   # nur nachsehen
+ecomsec self-update           # neueste Version laden, Prüfsumme prüfen, Programm ersetzen
+```
+
+---
+
 ## 🧰 Das bekommst du
 
 ### 1 · Security Scan – findet, was nicht in deinen Shop gehört
@@ -121,7 +150,7 @@ der Shop abgeschaltet wird), **Sofortmaßnahmen**, **Kompromittierungs-Prüfung*
 ### Außerdem
 
 - **Risikoakzeptanz:** Befunde einzeln, pro Verzeichnis oder pro Regel als unbedenklich markieren, mit Begründung. Bleibt über alle künftigen Scans erhalten.
-- **Berichte:** Terminal, JSON (für Monitoring) oder eine einzelne HTML-Datei zum Weitergeben.
+- **Berichte:** Terminal, JSON (für Monitoring), eine einzelne HTML-Datei zum Weitergeben sowie SARIF, JUnit und Markdown für CI und Security-Dashboards.
 - **Shared-Hosting-tauglich:** Mit `--time-budget 45s` scannt `ecomsec` in Etappen und setzt beim nächsten Aufruf fort – kein Timeout, keine Last.
 - **Hell und dunkel:** Dashboard und HTML-Bericht folgen deinem System oder per Klick.
 - **Scan-Verlauf:** Jeder Lauf wird mit Ergebnis gespeichert, damit du Veränderungen siehst.
@@ -185,6 +214,22 @@ Auf Shared Hosting mit knappen Laufzeiten:
 ```bash
 ecomsec scan --root /var/www/shop --time-budget 45s   # beim nächsten Aufruf geht es weiter
 ```
+
+Jeder Bericht enthält ein **Sicherheitsniveau** von 0–100 mit Note A–F und den drei wichtigsten
+Gründen für Punktabzüge – im Dashboard (Tab *Hilfe & Service*) als Verlauf der letzten 30 Scans.
+
+---
+
+## 🧩 Integrationen
+
+| Format | Befehl | Wofür |
+|---|---|---|
+| SARIF 2.1.0 | `ecomsec scan --format sarif` | GitHub Code Scanning (`upload-sarif`), GitLab, DefectDojo |
+| JUnit-XML | `ecomsec scan --format junit` | Test-Ansicht in GitLab, Jenkins, Azure DevOps – ein Testfall pro Befund-Kategorie |
+| Markdown | `ecomsec scan --format markdown` | Kommentar im Pull/Merge Request, Chat-Nachricht |
+| SBOM | `ecomsec sbom --format cyclonedx` / `spdx-json` | Software-Stückliste der Composer-Pakete für Dependency-Track & Co. |
+
+Fertige Pipeline-Beispiele für GitHub Actions und GitLab CI, Exit-Codes und Docker: [docs/CI.md](docs/CI.md).
 
 ---
 
@@ -272,14 +317,16 @@ Gleicher Prüfumfang und gleiche drei Ansichten – aber als eigenständiges Pro
 
 ```
 ecomsec scan      [--root PFAD | --platform shopify --shop … --token …]
-                  [--format text|json|html] [--output DATEI] [--time-budget 45s]
+                  [--format text|json|html|sarif|junit|markdown] [--output DATEI] [--time-budget 45s]
                   [--reference-date YYYY-MM-DD] [--skip-remote] [--fail-on never|warning|critical]
                   [--online] [--advisories DIR]
 ecomsec advisories list | lint [PFAD…] | update [--url BASIS-URL]
 ecomsec serve     [--bind 127.0.0.1:8787] [--auth-token GEHEIM]
 ecomsec findings  list | accept <ID…> [--group DIR] [--rule REGEL] [--reason TEXT] | unaccept <ID…> [--all]
 ecomsec baseline  create [--core-only] | diff | show
-ecomsec report    [--format text|json|html] [--output DATEI]
+ecomsec report    [--format text|json|html|sarif|junit|markdown] [--output DATEI]
+ecomsec sbom      [--format cyclonedx|spdx-json] [--output DATEI] [--no-dev]
+ecomsec self-update [--check] [--force]
 ecomsec history
 ecomsec platforms
 ecomsec rules     [--tag cve-2026-54390]
@@ -294,6 +341,7 @@ Optional per Konfigurationsdatei: [`ecomsec.example.toml`](ecomsec.example.toml)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) – Aufbau, `Platform`-Trait, neue Shopsysteme anbinden
 - [docs/RULES.md](docs/RULES.md) – Regelformat, Dateiklassen, Kategorien
 - [docs/ADVISORIES.md](docs/ADVISORIES.md) – Schwachstellen-Datenbank, OSV-Abgleich, automatische Pflege per Agent
+- [docs/CI.md](docs/CI.md) – SARIF/JUnit/Markdown/SBOM, GitHub Actions, GitLab CI, Docker, `self-update`
 - Workspace: `ecomsec-core` (Engine), `ecomsec-jtl5`, `ecomsec-shopware6`, `ecomsec-shopify`, `ecomsec-cli`
 - `cargo test --workspace` · `cargo clippy --workspace --all-targets` · `cargo fmt --all`
 
