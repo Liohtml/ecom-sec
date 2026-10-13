@@ -149,7 +149,7 @@ fn exposed_regex() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| {
         Regex::new(
-            r"(?i)(\.(sql|sql\.gz|sql\.zip|sql\.bz2|dump|mysql)$|^(backup|bak|sicherung|dump|db|database|export)[\w.-]*\.(zip|tar|tar\.gz|tgz|gz|7z|rar)$|\.(zip|tar\.gz|tgz|rar|7z)$|^(config|configuration|settings|\.env|wp-config|local)[\w.-]*\.(bak|old|orig|save|txt|copy|dist|~|[0-9]+)$|\.(php|phtml|inc)\.(bak|old|orig|save|txt|copy|~|[0-9]+)$|^\.env(\..+)?$|\.(pem|key|p12|pfx|ppk)$)",
+            r"(?i)(\.(sql|sql\.gz|sql\.zip|sql\.bz2|dump|mysql)$|^(backup|bak|sicherung|dump|db|database|export)[\w.-]*\.(zip|tar|tar\.gz|tgz|gz|7z|rar)$|\.(zip|tar\.gz|tgz|rar|7z)$|^(config|configuration|settings|wp-config|local|env)[\w-]*(\.(php|ini|json|yml|yaml|xml|env|toml))?\.(bak|old|orig|save|copy|dist|~|[0-9]+)$|^(config|wp-config|settings|env)[\w-]*\.(php|ini|json|yml|yaml|env)\.txt$|\.(php|phtml|inc)\.(bak|old|orig|save|txt|copy|~|[0-9]+)$|^\.env(\..+)?$|\.(pem|key|p12|pfx|ppk)$)",
         )
         .expect("valid regex")
     })
@@ -315,13 +315,21 @@ impl<'a> FileScanner<'a> {
         let mut bytes_read = 0u64;
 
         // ----------------------------------------------------------- IOC names
+        let in_core = under_any(&rel, &self.profile.core_dirs)
+            || rel.starts_with("vendor/")
+            || rel.contains("/vendor/")
+            || rel.contains("/node_modules/");
         if matches!(
             class,
             FileClass::Php | FileClass::Other | FileClass::Image | FileClass::Archive
         ) {
             if let Some(ioc) = self.iocs.lookup(name) {
+                // A name alone is weak evidence inside vendor-supplied code
+                // (`Text/Diff/Engine/shell.php`), strong evidence in uploads.
                 let severity = if in_upload && ioc.spec.severity == Severity::Warning {
                     Severity::Critical
+                } else if in_core && ioc.spec.severity == Severity::Critical {
+                    Severity::Warning
                 } else {
                     ioc.spec.severity
                 };

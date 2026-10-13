@@ -31,6 +31,9 @@ pub struct IocEntrySpec {
     pub regex: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reference: Option<String>,
+    /// Match case-sensitively (regex / exact / prefix as written).
+    #[serde(default)]
+    pub case_sensitive: bool,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -54,10 +57,14 @@ pub struct IocEntry {
 
 impl IocEntry {
     pub fn matches(&self, file_name: &str) -> bool {
-        let lower = file_name.to_ascii_lowercase();
+        let name = if self.spec.case_sensitive {
+            file_name.to_string()
+        } else {
+            file_name.to_ascii_lowercase()
+        };
         match &self.matcher {
-            Matcher::Exact(e) => lower == *e,
-            Matcher::Prefix(p) => lower.starts_with(p.as_str()),
+            Matcher::Exact(e) => name == *e,
+            Matcher::Prefix(p) => name.starts_with(p.as_str()),
             Matcher::Regex(r) => r.is_match(file_name),
         }
     }
@@ -79,13 +86,22 @@ impl IocList {
             toml::from_str(text).map_err(|e| RuleError::Parse(name.to_string(), e.to_string()))?;
         let mut entries = Vec::with_capacity(file.entry.len());
         for spec in file.entry {
+            let cs = spec.case_sensitive;
             let matcher = if let Some(e) = &spec.exact {
-                Matcher::Exact(e.to_ascii_lowercase())
+                Matcher::Exact(if cs {
+                    e.clone()
+                } else {
+                    e.to_ascii_lowercase()
+                })
             } else if let Some(p) = &spec.prefix {
-                Matcher::Prefix(p.to_ascii_lowercase())
+                Matcher::Prefix(if cs {
+                    p.clone()
+                } else {
+                    p.to_ascii_lowercase()
+                })
             } else if let Some(r) = &spec.regex {
                 let re = RegexBuilder::new(r)
-                    .case_insensitive(true)
+                    .case_insensitive(!cs)
                     .build()
                     .map_err(|source| RuleError::Pattern {
                         rule: spec.name.clone(),
@@ -159,6 +175,31 @@ mod tests {
         );
         assert!(iocs.lookup("index.php").is_none());
         assert!(iocs.lookup("ProductController.php").is_none());
+        // PSR-4 class files that merely share a name with shell families.
+        assert!(iocs.lookup("Uploader.php").is_none());
+        assert!(iocs.lookup("Info.php").is_none());
+        assert!(iocs.lookup("Test.php").is_none());
+        assert!(iocs.lookup("uploader.php").is_some());
+        assert!(iocs.lookup("cmd.php").is_some());
+        // Templates and dev artefacts that share a name with shells or droppers.
+        assert!(iocs.lookup("info.phtml").is_none());
+        assert_eq!(
+            iocs.lookup("404.php").unwrap().spec.severity,
+            Severity::Info
+        );
+        assert_eq!(
+            iocs.lookup("objectsCode.php.txt").unwrap().spec.severity,
+            Severity::Warning
+        );
+        assert!(iocs.lookup(".php-cs-fixer.dist.php").is_none());
+        assert_eq!(
+            iocs.lookup(".x.php").unwrap().spec.severity,
+            Severity::Critical
+        );
+        assert_eq!(
+            iocs.lookup("1.php").unwrap().spec.severity,
+            Severity::Warning
+        );
     }
 
     #[test]
@@ -188,6 +229,19 @@ mod tests {
         }
         let clean = b"<?php\nnamespace JTL\\Shop;\nclass Product { public function price(): float { return 1.0; } }";
         assert!(rules.scan("php", clean).is_empty());
+        // Substrings of ordinary identifiers must not trigger shell markers.
+        let legit = b"<?php $x = 'Magento\\Core\\PublicFilesManagerInterface'; case Table::TYPE_DATETIME: $isUnsigned = null;";
+        assert!(rules.scan("php", legit).is_empty());
+        assert!(!rules
+            .scan("php", b"<?php FilesMan ... Uname: <b>Linux")
+            .is_empty());
+        // Random `<?=` bytes inside a JPEG are not a polyglot.
+        assert!(rules
+            .scan("image", b"\xff\xd8\xff\xe0JFIF\x00\x01<?=\xff\x00")
+            .is_empty());
+        assert!(!rules
+            .scan("image", b"\xff\xd8\xff\xe0JFIF<?php system($_GET['c']);")
+            .is_empty());
     }
 
     #[test]

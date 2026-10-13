@@ -8,6 +8,9 @@
 # `exact`  – the whole file name must match
 # `prefix` – the file name starts with the value
 # `regex`  – regular expression applied to the file name
+# `case_sensitive = true` – match exactly as written (used for generic names that
+#              collide with ordinary PSR-4 class files such as `Uploader.php`;
+#              dropped shells are practically always lower-case)
 
 [[entry]]
 name = "c99 / c100 shell family"
@@ -33,27 +36,32 @@ regex = '^b374k[a-z0-9_.-]*\.(php|phtml|php[3-8]|phar|inc)$'
 [[entry]]
 name = "China Chopper style one-liner"
 severity = "critical"
+case_sensitive = true
 regex = '^(chopper|caidao|cmd[0-9]*|cmdx?|shell[0-9]*|sh3ll|webshell[0-9]*|backdoor[0-9]*|bd[0-9]*)\.(php|phtml|php[3-8]|phar|inc|asp|aspx|jsp)$'
 
 [[entry]]
 name = "Known PHP shell names (alfa, indoxploit, filesman, mini, bypass, …)"
 severity = "critical"
-regex = '^(alfa|alfav?[0-9]*|alfashell|indoxploit|idx|filesman|filemanager|mini|minishell|bypass|symlink|sym|marijuana|php-backdoor|phpjackal|locus7s|dq|dqshell|lol|haxor|hacker|hacked|pwn|pwned|exploit|xshell|zshell|k2ll33d|uploader|up|upl|upload_?shell|moon|fx29|fx|antichat|safe0ver|ghost|gh0st|dark|darkshell|priv8|priv|madspot|wh|weevely|wshell|p0wny|p0wnyshell|pwnyshell|tiny|tinyshell|rev|revshell|reverse|connect|back|bind|bindshell|nc|netcat|spy|r00t|root|rootkit|0byt3|byp4ss|shell_cmd|cmdshell|phpspy|phpshell|cyber|cyberwarfare|ssh|telnet|cgitelnet|cgi-telnet|anonsec|anon|sqli|sqlshell|dbshell|mysql_shell|adminer-?[0-9.]*)\.(php|phtml|php[3-8]|phar|inc)$'
+case_sensitive = true
+regex = '^(alfa|alfav?[0-9]*|alfashell|indoxploit|idx|filesman|filemanager|mini|minishell|bypass|symlink|sym|marijuana|php-backdoor|phpjackal|locus7s|dq|dqshell|lol|haxor|hacker|hacked|pwn|pwned|exploit|xshell|zshell|k2ll33d|uploader|up|upl|upload_?shell|moon|fx29|fx|antichat|safe0ver|ghost|gh0st|dark|darkshell|priv8|priv|madspot|wh|weevely|wshell|p0wny|p0wnyshell|pwnyshell|tiny|tinyshell|rev|revshell|reverse|connect|back|bind|bindshell|nc|netcat|spy|r00t|root|rootkit|0byt3|byp4ss|shell_cmd|cmdshell|phpspy|phpshell|cyber|cyberwarfare|ssh|telnet|cgitelnet|cgi-telnet|anonsec|anon|sqli|sqlshell|dbshell|mysql_shell|adminer-?[0-9.]*)\.(php|php[3-8]|phar)$'
 
 [[entry]]
 name = "Single-character / numeric PHP file in web root (typical dropper name)"
 severity = "warning"
-regex = '^[a-z0-9]{1,2}\.(php|phtml|php[3-8]|phar)$'
+case_sensitive = true
+regex = '^([a-z]|[0-9]{1,2}|[a-z][0-9])\.(php|phtml|php[3-8]|phar)$'
 
 [[entry]]
 name = "Disguised error page shell (404.php, 403.php, 500.php …)"
-severity = "warning"
+severity = "info"
+case_sensitive = true
 regex = '^(40[0-9]|50[0-9]|error|errors|err)\.(php|phtml|php[3-8]|phar)$'
 
 [[entry]]
 name = "Diagnostic file left on the server (phpinfo, info, test)"
 severity = "warning"
-regex = '^(phpinfo|php_info|pinfo|info|test|tests|testing|debug|phptest|test[0-9]+)\.(php|phtml|php[3-8])$'
+case_sensitive = true
+regex = '^(phpinfo|php_info|pinfo|info|test|tests|testing|debug|phptest|test[0-9]+)\.(php|php[3-8])$'
 
 [[entry]]
 name = "Database tools reachable from the web (adminer, phpmyadmin dumps)"
@@ -68,7 +76,7 @@ regex = '\.(jpe?g|png|gif|webp|svg|bmp|ico|pdf|txt|csv|xml|json|zip|rar|docx?|xl
 [[entry]]
 name = "Image or document name with PHP double extension"
 severity = "critical"
-regex = '\.(php|phtml|php[3-8]|phar|pht)\.(jpe?g|png|gif|webp|svg|bmp|ico|pdf|txt|csv|xml|json|zip)$'
+regex = '\.(php|phtml|php[3-8]|phar|pht)\.(jpe?g|png|gif|webp|svg|bmp|ico|pdf)$'
 
 [[entry]]
 name = "Rare executable PHP extension (phtml, php7, phar, pht, pgif)"
@@ -78,7 +86,7 @@ regex = '\.(pht|phtm|php[3-8]|phps|pgif|phar)$'
 [[entry]]
 name = "Hidden PHP file (dot-file)"
 severity = "critical"
-regex = '^\.[^.].*\.(php|phtml|php[3-8]|phar)$'
+regex = '^\.[a-z0-9_]{1,10}\.(php|phtml|php[3-8]|phar)$'
 
 [[entry]]
 name = "PHP file disguised with trailing whitespace or unusual unicode"

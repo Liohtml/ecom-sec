@@ -55,11 +55,9 @@ severity = "critical"
 tags = ["webshell", "obfuscation"]
 condition = "all"
 strings = [
-  { regex = '\$[a-z_][a-z0-9_]*\s*=\s*(base64_decode|str_rot13|strrev|gzinflate|hex2bin)\s*\(', nocase = true },
+  { regex = '\$[a-z_][a-z0-9_]*\s*=\s*(base64_decode|str_rot13|strrev|gzinflate|hex2bin)\s*\(\s*(\$_(GET|POST|REQUEST|COOKIE|SERVER)\s*\[|[\x27"][A-Za-z0-9+/=]{16,}[\x27"])', nocase = true },
   { regex = '\$[a-z_][a-z0-9_]*\s*\(\s*(\$[a-z_][a-z0-9_]*|\$_(GET|POST|REQUEST|COOKIE)\s*\[)', nocase = true },
 ]
-
-# ---------------------------------------------------------------- obfuscation
 
 [[rule]]
 name = "php_hex_escaped_builtin"
@@ -67,12 +65,28 @@ description = "Funktionsname in Hex-/Oktal-Escapes versteckt (z. B. \\x65\\x76\\
 severity = "critical"
 tags = ["obfuscation"]
 strings = [
-  { regex = '(\\x[0-9a-f]{2}){4,}', nocase = true },
+  { regex = '\\x65\\x76\\x61\\x6c', nocase = true },
+  { regex = '\\x61\\x73\\x73\\x65\\x72\\x74', nocase = true },
+  { regex = '\\x73\\x79\\x73\\x74\\x65\\x6d', nocase = true },
+  { regex = '\\x62\\x61\\x73\\x65\\x36\\x34', nocase = true },
+  { regex = '\\x70\\x61\\x73\\x73\\x74\\x68\\x72\\x75', nocase = true },
+  { regex = '\\x73\\x68\\x65\\x6c\\x6c\\x5f\\x65\\x78\\x65\\x63', nocase = true },
+  { regex = '\\x67\\x7a\\x69\\x6e\\x66\\x6c\\x61\\x74\\x65', nocase = true },
   { regex = '"\\145\\166\\141\\154"' },
   { regex = '\$\{\s*"\\x47\\x4c\\x4f\\x42\\x41\\x4c\\x53"', nocase = true },
   { regex = '\$\{"\\x47LOBALS"\}', nocase = true },
 ]
-condition = "any"
+
+[[rule]]
+name = "php_hex_escaped_string_executed"
+description = "Lange Hex-Escape-Zeichenketten in Kombination mit dynamischer Ausführung"
+severity = "warning"
+tags = ["obfuscation"]
+condition = "all"
+strings = [
+  { regex = '(\\x[2-7][0-9a-f]){8,}', nocase = true },
+  { regex = '\b(eval|assert|create_function|call_user_func(_array)?)\s*\(|\$[a-z_][a-z0-9_]*\s*\(\s*\$', nocase = true },
+]
 
 [[rule]]
 name = "php_chr_concatenation"
@@ -124,10 +138,11 @@ description = "Kennzeichnende Strings bekannter Webshells (WSO, c99, b374k, File
 severity = "critical"
 tags = ["webshell"]
 strings = [
-  { literal = "FilesMan" },
-  { regex = 'c99sh(ell)?|c100|r57shell|b374k|wso_?(version|shell)|alfa\s?(shell|team)|indoxploit|p0wny|weevely|marijuana\s?shell|Locus7|phpjackal|CyberWarfare|Uname:|Safe-mode:', nocase = true },
+  { regex = '\bFilesMan\b' },
+  { regex = '\b(c99sh(ell)?|c100shell|r57shell|b374k|wso_?(version|shell)|alfa\s?(shell|team)|indoxploit|p0wny|weevely|marijuana\s?shell|Locus7s|phpjackal|CyberWarfare)\b', nocase = true },
+  { regex = '(Uname|Safe-mode|Safe mode|Disable functions):\s*(</?b>|\$|\{|<font|<span)', nocase = true },
   { regex = 'WSO\s+[0-9.]+\s*</title>', nocase = true },
-  { regex = '<title>.{0,30}(shell|webshell|backdoor|hacked by).{0,30}</title>', nocase = true },
+  { regex = '<title>.{0,30}(webshell|backdoor|hacked by|priv8|bypass shell).{0,30}</title>', nocase = true },
 ]
 
 [[rule]]
@@ -152,13 +167,10 @@ name = "php_reverse_shell"
 description = "Reverse Shell: Socket-Verbindung mit gestarteter Shell"
 severity = "critical"
 tags = ["webshell"]
-condition = "2"
+condition = "all"
 strings = [
-  { regex = 'fsockopen\s*\(\s*\$?[a-z_"\x27]', nocase = true },
-  { regex = '/bin/(ba)?sh\s+-i', nocase = true },
-  { regex = 'proc_open\s*\(\s*\$?(shell|cmd)', nocase = true },
-  { regex = 'pcntl_fork\s*\(', nocase = true },
-  { regex = 'stream_socket_client\s*\(', nocase = true },
+  { regex = '(fsockopen|stream_socket_client|socket_create|socket_connect)\s*\(', nocase = true },
+  { regex = '/bin/(ba)?sh\s+-i|proc_open\s*\(\s*\$?(shell|cmd|sh)\b|pcntl_fork\s*\(|(exec|popen|system|passthru)\s*\(\s*["\x27]?/bin/(ba)?sh|\$?(sock|socket|fp)\b[^;]{0,40}(STDIN|0=>|2>&1)', nocase = true },
 ]
 
 [[rule]]
@@ -215,12 +227,11 @@ severity = "critical"
 tags = ["skimmer", "magecart"]
 condition = "2"
 strings = [
-  { regex = '(cc_?number|card_?number|cardnumber|cc_?cid|cvv2?|cvc2?|expir(y|ation)|exp_?(month|year))', nocase = true },
-  { regex = '(curl_setopt|fsockopen|file_get_contents|stream_context_create)\s*\(', nocase = true },
+  { regex = '\$_(POST|REQUEST)\s*\[\s*[\x27"][^\x27"]{0,40}(cc_?number|card_?number|cardnumber|cc_?cid|cvv2?|cvc2?|cc_?exp|card_?exp|exp_?month|exp_?year)', nocase = true },
+  { regex = 'curl_setopt\s*\([^,]+,\s*CURLOPT_POSTFIELDS\s*,\s*(base64_encode|json_encode|serialize|http_build_query)\s*\(\s*\$_(POST|REQUEST)', nocase = true },
   { regex = 'base64_encode\s*\(\s*(json_encode|serialize)\s*\(\s*\$_(POST|REQUEST)', nocase = true },
+  { regex = '(mail|wp_mail|file_put_contents|fwrite)\s*\([^;]{0,120}\$_(POST|REQUEST)\s*\[\s*[\x27"][^\x27"]{0,40}(cc_?number|card_?number|cvv|cvc)', nocase = true },
 ]
-
-# ---------------------------------------------------------------- includes
 
 [[rule]]
 name = "php_remote_include"
@@ -241,18 +252,31 @@ applies_to = ["any"]
 condition = "all"
 strings = [
   { regex = '^(\xff\xd8\xff|\x89PNG|GIF8[79]a|RIFF....WEBP|BM)' },
-  { regex = '<\?php|<\?=|<script\s+language\s*=\s*[\x27"]php', nocase = true },
+  { regex = '<\?php[\s(]|<\?=\s*[$a-z]|<script\s+language\s*=\s*[\x27"]php', nocase = true },
 ]
 
 # ---------------------------------------------------------------- JS / storefront
 
 [[rule]]
-name = "js_skimmer_patterns"
-description = "Clientseitiger Skimmer (Magecart): Formulardaten abgegriffen und an externen Host gesendet"
+name = "js_skimmer_exfil"
+description = "Clientseitiger Skimmer (Magecart): Kartendaten werden kodiert und an einen Endpunkt gesendet"
 severity = "critical"
 tags = ["skimmer", "magecart"]
 applies_to = ["js", "template"]
-condition = "2"
+condition = "all"
+strings = [
+  { regex = '(cc_?number|card_?number|cardnumber|cvv2?\b|cvc2?\b|ccexp|cc_?exp(iry|_?date|_?month|_?year)|card_?exp(iry|_?date|_?month|_?year)|exp_?month|exp_?year)', nocase = true },
+  { regex = '((btoa|encodeURIComponent)\s*\(\s*(JSON\.stringify|unescape|btoa)|new\s+Image\(\)\.src\s*=|navigator\.sendBeacon\s*\(|\.src\s*=\s*["\x27`]https?://[^"\x27`]{1,120}\?[a-z0-9_]{1,20}=["\x27`]\s*\+\s*(btoa|encodeURIComponent|window\.btoa))', nocase = true },
+  { regex = '(document\.(querySelectorAll|getElementsByTagName|getElementById|querySelector)\s*\(|\.value\b|serialize\s*\()', nocase = true },
+]
+
+[[rule]]
+name = "js_skimmer_patterns"
+description = "Clientseitiger Skimmer (Magecart): Formulardaten abgegriffen und an externen Host gesendet"
+severity = "warning"
+tags = ["skimmer", "magecart"]
+applies_to = ["js", "template"]
+condition = "4"
 strings = [
   { regex = '(cc_?number|cardnumber|card_number|cvv|cvc|expiry|exp_?date|ccexp)', nocase = true },
   { regex = '(btoa|atob)\s*\(\s*(JSON\.stringify|unescape|encodeURIComponent)', nocase = true },
@@ -270,6 +294,6 @@ applies_to = ["js", "template"]
 strings = [
   { regex = 'eval\s*\(\s*(atob|unescape|decodeURIComponent|String\.fromCharCode)\s*\(', nocase = true },
   { regex = 'new\s+Function\s*\(\s*(atob|unescape)\s*\(', nocase = true },
-  { regex = '(\\x[0-9a-f]{2}){12,}', nocase = true },
+  { regex = '(\\x[2-7][0-9a-f]){12,}', nocase = true },
   { regex = 'String\.fromCharCode\((\s*\d{1,3}\s*,){20,}' },
 ]

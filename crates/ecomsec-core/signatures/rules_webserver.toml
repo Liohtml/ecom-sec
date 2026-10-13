@@ -30,7 +30,7 @@ strings = [
 [[rule]]
 name = "htaccess_disable_security"
 description = "Sicherheitseinstellungen deaktiviert (open_basedir, disable_functions, mod_security, allow_url_include)"
-severity = "warning"
+severity = "info"
 category = "webserver_config_manipulation"
 tags = ["htaccess"]
 applies_to = ["htaccess", "ini"]
@@ -50,7 +50,7 @@ tags = ["htaccess"]
 applies_to = ["htaccess"]
 strings = [
   { regex = 'RewriteRule\s+[^\n]*\s+/?[^\s]*(mediafiles|media|bilder|images|img|upload|uploads|files|tmp|cache|templates_c|thumbnail|\.[a-z]+)/[^\s]*\.(php|phtml)', nocase = true },
-  { regex = 'ErrorDocument\s+\d{3}\s+[^\n]*\.(php|phtml)\b', nocase = true },
+  { regex = 'ErrorDocument\s+\d{3}\s+[^\n]*(mediafiles|media|bilder|images|img|upload|uploads|files|tmp|cache|templates_c|thumbnail|/\.[a-z]+)/[^\n]*\.(php|phtml)\b', nocase = true },
   { regex = 'RewriteCond\s+%\{HTTP_USER_AGENT\}\s+[^\n]*(google|bing|yahoo|msn|yandex)[^\n]*\n\s*RewriteRule\s+[^\n]*https?://', nocase = true },
 ]
 
@@ -74,7 +74,6 @@ category = "webserver_config_manipulation"
 tags = ["htaccess"]
 applies_to = ["htaccess"]
 strings = [
-  { regex = 'Options\s+[^\n]*\+?ExecCGI', nocase = true },
-  { regex = 'AddHandler\s+cgi-script\s+[^\n]*\.(php|txt|jpg|png|gif|pl|py|sh)', nocase = true },
-  { regex = 'Options\s+\+?Indexes', nocase = true },
+  { regex = 'Options\s+[^\n-]*\+?ExecCGI', nocase = true },
+  { regex = 'Options\s+[^\n-]*\+?Indexes', nocase = true },
 ]

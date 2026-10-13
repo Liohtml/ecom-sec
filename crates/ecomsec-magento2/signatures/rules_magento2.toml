@@ -39,7 +39,7 @@ strings = [
 [[rule]]
 name = "magento_requirejs_remote_dep"
 description = "RequireJS-Konfiguration bindet Module von externen URLs ein (map/paths/deps)"
-severity = "warning"
+severity = "info"
 category = "third_party_injection"
 condition = "all"
 tags = ["magento", "requirejs", "skimmer"]
