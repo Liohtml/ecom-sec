@@ -637,3 +637,224 @@ fn watch_dry_run_and_file_notifications() {
     assert!(cron.contains("17 4 * * * "), "{cron}");
     assert!(cron.contains("--quiet"));
 }
+
+// ---------------------------------------------------------------- KI-Audit
+
+const PROXY_VARS: &[&str] = &[
+    "HTTPS_PROXY",
+    "https_proxy",
+    "HTTP_PROXY",
+    "http_proxy",
+    "ALL_PROXY",
+    "all_proxy",
+];
+
+#[test]
+fn audit_without_api_key_fails_with_german_error() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    let out = bin()
+        .env("ECOMSEC_STATE_DIR", &state)
+        .env_remove("ANTHROPIC_API_KEY")
+        .args(["audit", "--root"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(10));
+    let err = String::from_utf8_lossy(&out.stderr);
+    assert!(err.contains("Kein API-Schlüssel"), "{err}");
+    assert!(err.contains("ANTHROPIC_API_KEY"), "{err}");
+    // Nothing was scanned or stored.
+    assert!(!state.exists());
+
+    // A custom variable name from the configuration is honoured.
+    let cfg = tmp.path().join("ecomsec.toml");
+    fs::write(&cfg, "[audit]\napi_key_env = \"MY_AUDIT_KEY\"\n").unwrap();
+    let out = bin()
+        .env("ECOMSEC_STATE_DIR", &state)
+        .env_remove("MY_AUDIT_KEY")
+        .arg("--config")
+        .arg(&cfg)
+        .args(["audit", "--root"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(10));
+    assert!(String::from_utf8_lossy(&out.stderr).contains("MY_AUDIT_KEY"));
+}
+
+/// Minimal HTTP/1.1 server on 127.0.0.1 that answers each request with the
+/// next scripted JSON body and records the raw request (headers + body).
+fn fake_api(responses: Vec<serde_json::Value>) -> (String, std::thread::JoinHandle<Vec<String>>) {
+    use std::io::{BufRead, BufReader, Read, Write};
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let handle = std::thread::spawn(move || {
+        let mut seen = Vec::new();
+        for body in responses {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut reader = BufReader::new(stream.try_clone().unwrap());
+            let mut head = String::new();
+            let mut len = 0usize;
+            let mut chunked = false;
+            loop {
+                let mut line = String::new();
+                reader.read_line(&mut line).unwrap();
+                let lower = line.to_ascii_lowercase();
+                if let Some(v) = lower.strip_prefix("content-length:") {
+                    len = v.trim().parse().unwrap();
+                }
+                if lower.starts_with("transfer-encoding:") && lower.contains("chunked") {
+                    chunked = true;
+                }
+                head.push_str(&line);
+                if line == "\r\n" || line.is_empty() {
+                    break;
+                }
+            }
+            let mut req_body = Vec::new();
+            if chunked {
+                loop {
+                    let mut size = String::new();
+                    reader.read_line(&mut size).unwrap();
+                    let n = usize::from_str_radix(size.trim(), 16).unwrap_or(0);
+                    let mut chunk = vec![0; n + 2];
+                    reader.read_exact(&mut chunk).unwrap();
+                    if n == 0 {
+                        break;
+                    }
+                    req_body.extend_from_slice(&chunk[..n]);
+                }
+            } else {
+                req_body.resize(len, 0);
+                reader.read_exact(&mut req_body).unwrap();
+            }
+            seen.push(format!("{head}{}", String::from_utf8_lossy(&req_body)));
+            let text = body.to_string();
+            write!(
+                stream,
+                "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{text}",
+                text.len()
+            )
+            .unwrap();
+            stream.flush().unwrap();
+        }
+        seen
+    });
+    (format!("http://{addr}"), handle)
+}
+
+#[test]
+fn audit_end_to_end_against_local_fake_api() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    let report = scan_json(&root, &state, &[]);
+    let open: Vec<String> = report["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|f| f["severity"] != "info" && f["accepted"] != true)
+        .map(|f| f["id"].as_str().unwrap().to_string())
+        .collect();
+    assert!(!open.is_empty());
+    let usage = serde_json::json!({"input_tokens": 1200, "output_tokens": 150, "cache_read_input_tokens": 0});
+    let responses = vec![
+        serde_json::json!({
+            "id": "msg_1", "type": "message", "role": "assistant", "model": "claude-sonnet-5-5",
+            "stop_reason": "tool_use", "usage": usage,
+            "content": [
+                {"type": "text", "text": "Ich prüfe die Konfiguration."},
+                {"type": "tool_use", "id": "toolu_a", "name": "read_file", "input": {"path": "includes/config.JTL-Shop.ini.php"}},
+                {"type": "tool_use", "id": "toolu_b", "name": "record_verdict", "input": {
+                    "finding_ids": open, "verdict": "needs_human", "confidence": 0.6,
+                    "reasoning": "Testbewertung"}}
+            ]
+        }),
+        serde_json::json!({
+            "id": "msg_2", "type": "message", "role": "assistant", "model": "claude-sonnet-5-5",
+            "stop_reason": "end_turn", "usage": usage,
+            "content": [{"type": "text", "text": "Fertig.\n```json\n{\"overall_assessment\":\"unklar\",\"confidence\":0.5,\"summary\":\"Testlauf.\",\"next_steps\":[{\"priority\":1,\"action\":\"Befunde manuell prüfen\"}]}\n```"}]
+        }),
+    ];
+    let (base, server) = fake_api(responses);
+    let cfg = tmp.path().join("ecomsec.toml");
+    fs::write(
+        &cfg,
+        format!("[audit]\napi_base = \"{base}\"\nfallback = false\n"),
+    )
+    .unwrap();
+    let mut cmd = bin();
+    for v in PROXY_VARS {
+        cmd.env_remove(v);
+    }
+    let out = cmd
+        .env("ECOMSEC_STATE_DIR", &state)
+        .env("ANTHROPIC_API_KEY", "sk-test-key")
+        .arg("--config")
+        .arg(&cfg)
+        .args(["audit", "--skip-remote", "--format", "json", "--root"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    let stderr = String::from_utf8_lossy(&out.stderr).to_string();
+    assert_eq!(out.status.code(), Some(0), "stderr: {stderr}");
+    let audit: serde_json::Value = serde_json::from_slice(&out.stdout).expect("json");
+    assert_eq!(audit["status"], "completed");
+    assert_eq!(audit["model"], "claude-sonnet-5-5");
+    assert_eq!(audit["overall_assessment"], "unklar");
+    assert_eq!(audit["verdicts"].as_array().unwrap().len(), open.len());
+    assert_eq!(audit["tokens_in"], 2400);
+    assert!(stderr.contains("Token-Verbrauch"), "{stderr}");
+
+    let seen = server.join().unwrap();
+    assert_eq!(seen.len(), 2);
+    let first = seen[0].to_ascii_lowercase();
+    assert!(first.contains("x-api-key: sk-test-key"));
+    assert!(first.contains("anthropic-version: 2023-06-01"));
+    assert!(
+        seen[0].contains("\"model\":\"claude-sonnet-5-5\""),
+        "{}",
+        &seen[0][..seen[0].len().min(600)]
+    );
+    // The config file reached the model only in redacted form.
+    assert!(seen[1].contains("[REDIGIERT]"), "{}", seen[1]);
+    assert!(!seen[1].contains("define('DB_PASS','p')"));
+
+    // Stored results: audit files and reviews merged into the report.
+    let store_dir = fs::read_dir(&state)
+        .unwrap()
+        .flatten()
+        .find(|e| e.file_name().to_string_lossy().starts_with("jtl5-"))
+        .unwrap()
+        .path();
+    assert!(store_dir.join("last-audit.json").is_file());
+    assert!(fs::read_dir(&store_dir)
+        .unwrap()
+        .flatten()
+        .any(|e| e.file_name().to_string_lossy().starts_with("audit-")));
+    let out = bin()
+        .env("ECOMSEC_STATE_DIR", &state)
+        .args(["report", "--format", "json", "--root"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    let merged: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let reviewed = merged["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|f| f["review"]["verdict"] == "needs_human")
+        .count();
+    assert_eq!(reviewed, open.len());
+    let out = bin()
+        .env("ECOMSEC_STATE_DIR", &state)
+        .args(["report", "--root"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert!(String::from_utf8_lossy(&out.stdout).contains("KI: manuelle Prüfung nötig (60 %)"));
+}

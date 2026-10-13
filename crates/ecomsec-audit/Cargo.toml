@@ -1,0 +1,25 @@
+[package]
+name = "ecomsec-audit"
+description = "Optional AI audit for ecomsec: an agent with read-only tools that reviews scan findings"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+ecomsec-core.workspace = true
+ecomsec-osv.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+regex.workspace = true
+walkdir.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+log.workspace = true
+ureq.workspace = true
+base64.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true

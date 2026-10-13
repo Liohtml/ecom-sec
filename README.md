@@ -15,6 +15,7 @@
   <a href="#-screenshots">Screenshots</a> ·
   <a href="#-häufige-fragen">FAQ</a> ·
   <a href="#-unterstützte-shopsysteme">Shopsysteme</a> ·
+  <a href="#-ki-audit-optional">KI-Audit</a> ·
   <a href="docs/ARCHITECTURE.md">Für Entwickler</a>
 </p>
 
@@ -258,11 +259,55 @@ ecomsec baseline create --root /var/www/shop
 
 ---
 
+## 🤖 KI-Audit (optional)
+
+Zu viele Befunde, zu wenig Zeit? Auf Wunsch schaut nach dem Scan ein Claude-Modell als
+forensische Analystin drüber: Es liest gezielt die betroffenen Dateien und Datensätze, bewertet
+jeden kritischen Befund und jede Warnung (**bestätigt**, **wahrscheinlich Fehlalarm** oder
+**manuelle Prüfung nötig** – mit Konfidenz und Beleg) und schließt mit einer Gesamtbewertung und
+priorisierten nächsten Schritten ab. Im Modus `hunt` prüft es zusätzlich eigene Plugins und
+Templates auf SQL-Injection, XSS, SSTI, unsichere Uploads und fest einprogrammierte Zugangsdaten.
+
+```bash
+export ANTHROPIC_API_KEY="sk-ant-…"
+ecomsec audit --root /var/www/shop                 # Triage, claude-sonnet-5-5
+ecomsec audit --root /var/www/shop --mode hunt -v  # plus Code-Review, Werkzeugaufrufe anzeigen
+```
+
+```
+GESAMTBEWERTUNG
+wahrscheinlich kompromittiert (Konfidenz 85 %)
+In mediafiles/Bilder/wso.php liegt eine Webshell (eval auf $_POST, ctime 02.07.) …
+
+BEWERTUNGEN DER BEFUNDE (2)
+Bestätigt (1)
+  #5acb77c9c21963b4 mediafiles/Bilder/wso.php – Webshell-Muster eval($_POST) (95 %)
+Wahrscheinlich Fehlalarm (1)
+  #91e0d2a4b7c3f018 templates_c/a1b2.php – Neue PHP-Datei seit dem Referenzdatum (85 %)
+
+Token-Verbrauch: 412380 Eingabe (361902 aus Cache) / 9850 Ausgabe · ca. 0,35 USD · 2 Bewertungen, 0 neue Befunde.
+```
+
+Im Dashboard erscheint die Bewertung als Badge am Befund („KI: wahrscheinlich Fehlalarm (85 %)“)
+und als Panel „KI-Bewertung“ mit Zusammenfassung und nächsten Schritten.
+
+| | |
+|---|---|
+| 🔒 **Datenschutz** | Das Modell hat **nur lesende Werkzeuge**, beschränkt auf das Shop-Verzeichnis, den Scan-Report und `SELECT`-Abfragen (max. 200 Zeilen). An die Anthropic-API gehen **nur redigierte Ausschnitte, die das Modell anfordert** – Passwörter, Schlüssel, Tokens, Hashes, PEM-Blöcke, lange Hex-/Base64-Werte und E-Mail-Adressen werden vorher maskiert, `config.JTL-Shop.ini.php` und `.env` nie im Klartext gesendet, Schlüsseldateien gar nicht. |
+| 💶 **Kosten** | Über dein Anthropic-Konto, typisch wenige Cent bis ca. 1,50 USD je Triage; ein Token-Budget begrenzt jeden Lauf hart. |
+| 🧭 **Entscheidung bleibt bei dir** | Die KI ändert weder Schweregrad noch Markierungen und empfiehlt nie, ungeprüft zu löschen. |
+
+Ohne `ecomsec audit` und API-Schlüssel bleibt alles wie gehabt: nichts verlässt den Server.
+Details zu Werkzeugen, Redaktion, Kosten und Grenzen: [docs/AUDIT.md](docs/AUDIT.md).
+
+---
+
 ## ❓ Häufige Fragen
 
 <details>
 <summary><b>Verändert der Scan etwas an meinem Shop?</b></summary>
 Nein. <code>ecomsec</code> liest ausschließlich – Dateien, Datenbank (nur SELECT) bzw. Shopify-API (nur GET). Es werden keine Dateien gelöscht, keine Einstellungen geändert und keine Daten an Dritte übertragen – außer an Benachrichtigungskanäle, die du selbst einträgst. Der einzige Schreibzugriff ist das eigene Zustandsverzeichnis (Akzeptanzen, Verlauf, Reports, Baseline), standardmäßig unter <code>~/.local/state/ecomsec</code>.
+Nein. <code>ecomsec</code> liest ausschließlich – Dateien, Datenbank (nur SELECT) bzw. Shopify-API (nur GET). Es werden keine Dateien gelöscht, keine Einstellungen geändert und keine Daten an Dritte übertragen (einzige Ausnahme: das optionale <a href="#-ki-audit-optional">KI-Audit</a>, das du ausdrücklich mit eigenem API-Schlüssel startest). Der einzige Schreibzugriff ist das eigene Zustandsverzeichnis (Akzeptanzen, Verlauf, Baseline), standardmäßig unter <code>~/.local/state/ecomsec</code>.
 </details>
 
 <details>
@@ -335,6 +380,8 @@ ecomsec report    [--format text|json|html] [--output DATEI]
 ecomsec history
 ecomsec platforms
 ecomsec rules     [--tag cve-2026-54390]
+ecomsec audit     [--mode triage|hunt] [--model claude-sonnet-5-5|claude-opus-5-5] [--max-turns N]
+                  [--max-tokens-budget TOKENS] [--rescan] [--format text|json]   (optional, ANTHROPIC_API_KEY)
 ```
 
 Optional per Konfigurationsdatei: [`ecomsec.example.toml`](ecomsec.example.toml).
@@ -348,6 +395,8 @@ Optional per Konfigurationsdatei: [`ecomsec.example.toml`](ecomsec.example.toml)
 - [docs/ADVISORIES.md](docs/ADVISORIES.md) – Schwachstellen-Datenbank, OSV-Abgleich, automatische Pflege per Agent
 - [docs/MONITORING.md](docs/MONITORING.md) – tägliche Überwachung, Benachrichtigungskanäle, systemd/cron
 - Workspace: `ecomsec-core` (Engine), `ecomsec-jtl5`, `ecomsec-shopware6`, `ecomsec-shopify`, `ecomsec-osv`, `ecomsec-notify` (Benachrichtigungen), `ecomsec-cli`
+- [docs/AUDIT.md](docs/AUDIT.md) – optionales KI-Audit: Werkzeuge, Redaktion, Kosten, Grenzen
+- Workspace: `ecomsec-core` (Engine), `ecomsec-jtl5`, `ecomsec-shopware6`, `ecomsec-shopify`, `ecomsec-osv`, `ecomsec-audit` (KI-Audit), `ecomsec-cli`
 - `cargo test --workspace` · `cargo clippy --workspace --all-targets` · `cargo fmt --all`
 
 ## 📜 Lizenz und Hinweise

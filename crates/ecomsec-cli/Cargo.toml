@@ -19,6 +19,7 @@ ecomsec-shopware6.workspace = true
 ecomsec-shopify.workspace = true
 ecomsec-osv.workspace = true
 ecomsec-notify.workspace = true
+ecomsec-audit.workspace = true
 ureq.workspace = true
 serde.workspace = true
 serde_json.workspace = true

@@ -98,3 +98,24 @@ subject_prefix = "[ecomsec]"
 # kind = "file"                   # oder "stdout"
 # path = "/var/log/ecomsec/aenderungen.log"
 # format = "text"                 # text | json (eine Zeile pro Meldung)
+[audit]
+# Optionales KI-Audit (`ecomsec audit`), siehe docs/AUDIT.md. Überträgt nur redigierte
+# Ausschnitte an die Anthropic-API. Der Schlüssel steht nie in dieser Datei, nur der Name
+# der Umgebungsvariable, die ihn enthält:
+api_key_env = "ANTHROPIC_API_KEY"
+# claude-sonnet-5-5 (Standard, günstig) oder claude-opus-5-5 (gründlicher, ca. doppelte Kosten)
+model = "claude-sonnet-5-5"
+# triage = Befunde bewerten · hunt = zusätzlich eigenen Code (Plugins, Templates) prüfen
+mode = "triage"
+# Denktiefe: low | medium | high | xhigh | max
+effort = "medium"
+# Harte Grenzen pro Lauf (Standard: 40 Runden / 1,5 Mio. Tokens, im Hunt-Modus 80 / 4 Mio.)
+# max_turns = 40
+# max_tokens_budget = 1500000
+# Hunt-Modus: Anzahl und Gesamtgröße der vorausgewählten Code-Dateien
+# hunt_max_files = 40
+# hunt_max_bytes = 819200
+# Serverseitiges Ausweichmodell, falls eine Anfrage von den Sicherheitsfiltern abgelehnt wird
+fallback = true
+# Nur für Proxys/Gateways ändern
+# api_base = "https://api.anthropic.com"

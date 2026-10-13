@@ -69,6 +69,7 @@ pub fn serve(
             .route("/findings/unaccept", post(unaccept))
             .route("/history", get(history))
             .route("/diff", get(get_diff))
+            .route("/audit", get(get_audit))
             .route("/baseline", post(create_baseline))
             .route_layer(middleware::from_fn_with_state(state.clone(), auth));
         let app = Router::new()
@@ -111,12 +112,32 @@ async fn index() -> Html<String> {
 }
 
 async fn get_report(State(state): State<AppState>) -> Response {
-    let inner = state.inner.lock().expect("lock");
+    let mut inner = state.inner.lock().expect("lock");
+    // Pick up changes made by other commands (e.g. `ecomsec audit` merging
+    // AI reviews into the stored report) while the dashboard is running.
+    if !inner.running {
+        if let Some(r) = inner.store.last_report() {
+            inner.report = Some(r);
+        }
+    }
     match &inner.report {
         Some(r) => Json(r).into_response(),
         None => (
             StatusCode::NOT_FOUND,
             Json(json!({"error": "noch kein Scan vorhanden"})),
+        )
+            .into_response(),
+    }
+}
+
+/// Result of the last AI audit (`ecomsec audit`), if any.
+async fn get_audit(State(state): State<AppState>) -> Response {
+    let store = state.inner.lock().expect("lock").store.clone();
+    match store.document::<Value>(ecomsec_audit::LAST_AUDIT_FILE) {
+        Some(a) => Json(a).into_response(),
+        None => (
+            StatusCode::NOT_FOUND,
+            Json(json!({"error": "noch kein KI-Audit vorhanden"})),
         )
             .into_response(),
     }

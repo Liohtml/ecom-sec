@@ -525,6 +525,7 @@ dependencies = [
  "chrono",
  "clap",
  "ctrlc",
+ "ecomsec-audit",
  "ecomsec-core",
  "ecomsec-jtl5",
  "ecomsec-notify",
@@ -540,6 +541,25 @@ dependencies = [
  "tempfile",
  "tokio",
  "toml",
+ "ureq",
+ "walkdir",
+]
+
+[[package]]
+name = "ecomsec-audit"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base64 0.22.1",
+ "chrono",
+ "ecomsec-core",
+ "ecomsec-osv",
+ "log",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror",
  "ureq",
  "walkdir",
 ]

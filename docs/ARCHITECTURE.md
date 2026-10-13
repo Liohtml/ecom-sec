@@ -33,6 +33,7 @@ pub trait Platform: Send + Sync {
     fn integrity(&self, ctx: &PlatformContext) -> Result<IntegrityReport> { Ok(default) }
     fn additional_checks(&self, ctx: &PlatformContext) -> Result<Vec<Finding>> { Ok(vec![]) }
     fn recommendations(&self, report: &Report) -> Vec<Recommendation> { vec![] }
+    fn db_credentials(&self) -> Option<DbCredentials> { None }        // nur für das KI-Audit
 }
 ```
 
@@ -46,6 +47,12 @@ pub trait Platform: Send + Sync {
 | `integrity` | Zeilen für die Ansicht „Shop-Integrität“ (`IntegrityItem`) plus daraus abgeleitete Findings und Einschränkungen |
 | `additional_checks` | weitere Findings (E-Mail-Historie, API-Scans …) |
 | `recommendations` | plattformspezifische Empfehlungen, die in die vier Gruppen einsortiert werden |
+| `db_credentials` | Zugangsdaten der Shop-Datenbank für das optionale KI-Audit (`db_query` über `ecomsec_core::db::query_read_only`: nur `SELECT`/`SHOW`/`DESCRIBE`, `LIMIT` ≤ 200, 20 s); erscheinen nie im Report |
+
+Das optionale KI-Audit (`ecomsec-audit`, siehe [AUDIT.md](AUDIT.md)) setzt auf dem fertigen
+Report auf: eine Agenten-Schleife über die Messages-API (Trait `LlmClient`, in Tests ein
+`ScriptedClient`), nur lesende Werkzeuge mit Redaktion und Grenzen, Ergebnisse als
+`Finding::review` und `audit-*.json`.
 
 `PlatformContext` liefert Referenzdatum, `skip_remote`, `online` (OSV-Abgleich erlaubt; das Crate
 `ecomsec-osv` liefert `check_root`/`offline_item` für Composer-Inventare) und den `StateStore` für Snapshots
@@ -94,6 +101,8 @@ verwundbare bzw. behobene Advisories und geänderte Zeilen der Shop-Integrität 
 `relevance` ist der höchste Schweregrad der relevanten Änderungen und steuert Exit-Codes und
 Benachrichtigungen (`ecomsec diff`, `ecomsec watch`, Crate `ecomsec-notify`,
 `GET /api/diff`). Details für Betreiber: [MONITORING.md](MONITORING.md).
+| `last-report.json` | letzter vollständiger Report (inkl. `review` aus dem KI-Audit) |
+| `audit-*.json`, `last-audit.json` | Ergebnisse des optionalen KI-Audits |
 
 ## Report-Schema
 

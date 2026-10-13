@@ -177,6 +177,61 @@ pub struct Finding {
     /// Optional grouping key (e.g. directory) used by bulk triage.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub group: Option<String>,
+    /// Assessment by the optional AI audit (`ecomsec audit`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub review: Option<Review>,
+}
+
+/// Verdict of a reviewer (the optional AI audit) on a finding.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ReviewVerdict {
+    /// The finding is a real indicator of compromise / vulnerability.
+    Confirmed,
+    /// Most likely harmless (known plugin, deployment, generated file …).
+    LikelyFalsePositive,
+    /// Evidence is inconclusive; a human has to decide.
+    NeedsHuman,
+}
+
+impl ReviewVerdict {
+    pub fn label(self) -> &'static str {
+        match self {
+            ReviewVerdict::Confirmed => "bestätigt",
+            ReviewVerdict::LikelyFalsePositive => "wahrscheinlich Fehlalarm",
+            ReviewVerdict::NeedsHuman => "manuelle Prüfung nötig",
+        }
+    }
+
+    /// Parse the wire names (`confirmed`, `likely_false_positive`, `needs_human`).
+    pub fn parse(input: &str) -> Option<Self> {
+        match input.trim().to_ascii_lowercase().as_str() {
+            "confirmed" => Some(ReviewVerdict::Confirmed),
+            "likely_false_positive" | "false_positive" => Some(ReviewVerdict::LikelyFalsePositive),
+            "needs_human" => Some(ReviewVerdict::NeedsHuman),
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for ReviewVerdict {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.label())
+    }
+}
+
+/// Review attached to a finding.  Purely informational: it never changes the
+/// severity or the risk acceptance of a finding.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Review {
+    pub verdict: ReviewVerdict,
+    /// Confidence between 0.0 and 1.0.
+    pub confidence: f32,
+    pub reasoning: String,
+    /// Model (or reviewer) that produced the assessment.
+    pub model: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub reviewed_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 impl Finding {
@@ -204,6 +259,7 @@ impl Finding {
             accepted: false,
             accepted_reason: None,
             group: None,
+            review: None,
         }
     }
 

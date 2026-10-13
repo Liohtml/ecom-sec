@@ -37,7 +37,7 @@ pub mod version;
 pub use advisories::{AdvisoryDb, AdvisorySpec};
 pub use diff::ReportDiff;
 pub use engine::{Engine, ScanOptions, ScanOutcome};
-pub use finding::{Category, Finding, FindingId, Severity};
+pub use finding::{Category, Finding, FindingId, Review, ReviewVerdict, Severity};
 pub use platform::{
     Advisory, FileScanProfile, IntegrityItem, IntegrityStatus, Platform, PlatformContext,
     PlatformInfo, PlatformKind,

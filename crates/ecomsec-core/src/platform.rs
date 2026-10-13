@@ -316,6 +316,13 @@ pub trait Platform: Send + Sync {
     fn recommendations(&self, _report: &Report) -> Vec<Recommendation> {
         Vec::new()
     }
+
+    /// Database credentials of the installation, if the adapter knows them.
+    /// Only used by the optional AI audit for strictly read-only queries
+    /// ([`crate::db::query_read_only`]); never written into reports.
+    fn db_credentials(&self) -> Option<crate::db::DbCredentials> {
+        None
+    }
 }
 
 /// Evaluate advisories against a version.  Adapters may refine the result via

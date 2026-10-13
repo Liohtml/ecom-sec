@@ -1,6 +1,7 @@
 //! `ecomsec` – compromise check for e-commerce installations.
 
 mod advisories_cmd;
+mod audit_cmd;
 mod config;
 mod monitor;
 mod output;
@@ -118,6 +119,8 @@ enum Command {
         #[command(subcommand)]
         command: monitor::NotifyCommand,
     },
+    /// Optionales KI-Audit: Claude bewertet die Befunde mit Read-only-Werkzeugen (benötigt ANTHROPIC_API_KEY)
+    Audit(audit_cmd::AuditArgs),
 }
 
 #[derive(Args, Clone)]
@@ -606,6 +609,7 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
             Ok(0)
         }
         Command::Diff(args) => monitor::diff_latest(&ctx, &args),
+        Command::Audit(args) => audit_cmd::run(&ctx, args, cli.verbose),
         Command::Platforms
         | Command::Rules { .. }
         | Command::Advisories { .. }

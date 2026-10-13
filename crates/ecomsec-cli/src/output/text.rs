@@ -167,6 +167,18 @@ pub fn render(report: &Report, show_all: bool, color: bool) -> String {
         if let Some(r) = &f.accepted_reason {
             let _ = writeln!(out, "    Begründung: {r}");
         }
+        if let Some(rv) = &f.review {
+            let _ = writeln!(
+                out,
+                "    {} {}",
+                st.blue(&format!(
+                    "KI: {} ({:.0} %)",
+                    rv.verdict.label(),
+                    rv.confidence * 100.0
+                )),
+                st.dim(&ecomsec_core::util::excerpt(&rv.reasoning, 160))
+            );
+        }
     }
     let hidden = findings.len() - visible.len();
     if hidden > 0 {

@@ -255,6 +255,29 @@ impl StateStore {
         }
     }
 
+    // ------------------------------------------------------------ documents
+
+    /// Store an additional JSON document (e.g. `last-audit.json`) in the
+    /// state directory.  `name` must be a plain file name ending in `.json`.
+    pub fn save_document<T: Serialize>(&self, name: &str, value: &T) -> io::Result<PathBuf> {
+        if !valid_document_name(name) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("invalid state document name {name:?}"),
+            ));
+        }
+        self.write_json(name, value)?;
+        Ok(self.path(name))
+    }
+
+    /// Load a JSON document stored with [`StateStore::save_document`].
+    pub fn document<T: DeserializeOwned>(&self, name: &str) -> Option<T> {
+        if !valid_document_name(name) {
+            return None;
+        }
+        self.read_json_opt(name)
+    }
+
     // ------------------------------------------------------------ baseline
 
     pub fn baseline(&self) -> Option<crate::baseline::Baseline> {
@@ -273,10 +296,34 @@ fn archive_timestamp(path: &Path) -> Option<&str> {
     (ts.len() == 20 && ts.ends_with('Z') && ts.as_bytes()[8] == b'T').then_some(ts)
 }
 
+fn valid_document_name(name: &str) -> bool {
+    name.ends_with(".json")
+        && !name.starts_with('.')
+        && name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::finding::Category;
+
+    #[test]
+    fn documents_roundtrip_and_reject_bad_names() {
+        let tmp = tempfile::tempdir().unwrap();
+        let store = StateStore::new(tmp.path());
+        store
+            .save_document("last-audit.json", &vec![1, 2, 3])
+            .unwrap();
+        assert_eq!(
+            store.document::<Vec<i32>>("last-audit.json"),
+            Some(vec![1, 2, 3])
+        );
+        assert!(store.save_document("../x.json", &1).is_err());
+        assert!(store.save_document("x.txt", &1).is_err());
+        assert!(store.document::<i32>("../x.json").is_none());
+    }
 
     #[test]
     fn accept_roundtrip() {

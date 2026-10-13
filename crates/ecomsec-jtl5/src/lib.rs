@@ -256,6 +256,10 @@ impl Platform for Jtl5 {
         embedded_advisories()
     }
 
+    fn db_credentials(&self) -> Option<ecomsec_core::db::DbCredentials> {
+        self.config.db.clone()
+    }
+
     fn patch_evidence(&self, advisory: &Advisory, _ctx: &PlatformContext) -> Option<PatchEvidence> {
         if advisory.id != "CVE-2026-54390" {
             return None;

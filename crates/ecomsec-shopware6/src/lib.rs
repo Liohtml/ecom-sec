@@ -276,6 +276,10 @@ impl Platform for Shopware6 {
         advisories()
     }
 
+    fn db_credentials(&self) -> Option<DbCredentials> {
+        self.env.db.clone()
+    }
+
     fn integrity(&self, ctx: &PlatformContext) -> anyhow::Result<IntegrityReport> {
         let mut report = IntegrityReport::default();
         report.items.push(

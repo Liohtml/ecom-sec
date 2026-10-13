@@ -31,6 +31,9 @@ h3{margin:18px 0 8px;font-size:15px}.muted{color:var(--muted)}.rec{border-left:3
 .progress{height:8px;background:var(--code);border-radius:4px;overflow:hidden;margin-top:8px}.progress div{height:100%;background:var(--accent);width:0;transition:width .3s}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center}.modal.open{display:flex}.modal .box{background:var(--panel);padding:20px;border-radius:10px;max-width:560px;width:92%;max-height:80vh;overflow:auto}.modal textarea{width:100%;min-height:70px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:8px}
 .modal ul{max-height:180px;overflow:auto;font-size:12px;padding-left:18px}
+.badge.ai{background:var(--code);color:var(--text);border:1px solid var(--border);font-weight:600}.badge.ai.confirmed{background:var(--crit-bg);color:var(--crit);border-color:transparent}.badge.ai.likely_false_positive{background:var(--ok-bg);color:var(--ok);border-color:transparent}.badge.ai.needs_human{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+details.ai-panel>summary{cursor:pointer;font-weight:700;font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}details.ai-panel>summary::-webkit-details-marker{display:none}details.ai-panel>summary::before{content:"▸";color:var(--muted)}details.ai-panel[open]>summary::before{content:"▾"}
+.ai-panel .ai-sum{margin:10px 0;white-space:pre-wrap}.ai-panel ol{padding-left:22px;margin:6px 0}.ai-panel li{margin:4px 0}.ai-panel .stats{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-top:8px}.ai-note{font-size:12px;margin-top:4px}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:30px 0}
 .hidden{display:none}
 .diffhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.diffhead h3{margin:0}
@@ -62,11 +65,13 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:30px 0}
       <div class="diffcounts" id="diffCounts"></div>
       <div id="diffList"></div>
     </div>
+    <details class="panel ai-panel hidden" id="aiPanel"><summary><span>KI-Bewertung</span><span id="aiHead"></span></summary><div id="aiBody"></div></details>
     <div class="panel">
       <div class="toolbar">
         <input id="filterText" placeholder="Filter (Pfad, Regel, Text)…" style="flex:1;min-width:200px">
         <select id="filterSev"><option value="">alle Schweregrade</option><option value="critical">kritisch</option><option value="warning">Warnung</option><option value="info">Hinweis</option></select>
         <select id="filterCat"><option value="">alle Kategorien</option></select>
+        <select id="filterAi" class="hidden"><option value="">alle KI-Bewertungen</option><option value="confirmed">KI: bestätigt</option><option value="needs_human">KI: manuelle Prüfung</option><option value="likely_false_positive">KI: wahrscheinlich Fehlalarm</option><option value="none">ohne KI-Bewertung</option></select>
         <label><input type="checkbox" id="showAccepted"> unbedenkliche anzeigen</label>
         <label><input type="checkbox" id="groupDirs"> nach Verzeichnis gruppieren</label>
         <button class="secondary hidden" id="bulkAccept">Auswahl als unbedenklich markieren</button>
@@ -135,7 +140,8 @@ function render(){
   $("#verdictSub").textContent=r.summary.files_scanned+" Dateien geprüft · "+(r.summary.duration_ms/1000).toFixed(1)+" s"+(r.summary.complete?"":" · Scan unvollständig (Zeitbudget) – erneut starten");
   $("#cCrit").textContent=r.summary.critical;$("#cWarn").textContent=r.summary.warning;$("#cInfo").textContent=r.summary.info;$("#cAcc").textContent=r.summary.accepted;
   const cats=[...new Set(r.findings.map(f=>f.category))].sort();const sel=$("#filterCat");const cur=sel.value;sel.innerHTML='<option value="">alle Kategorien</option>'+cats.map(c=>`<option value="${c}">${esc(catLabel(c))}</option>`).join("");sel.value=cur;
-  renderFindings();renderIntegrity();renderRecs();renderHelp();
+  $("#filterAi").classList.toggle("hidden",!r.findings.some(f=>f.review));
+  renderFindings();renderIntegrity();renderRecs();renderHelp();renderAudit();
   if(MODE==="web")loadDiff();
 }
 async function loadDiff(){try{renderDiff(await api("/api/diff"))}catch(e){$("#diffPanel").classList.add("hidden")}}
@@ -161,20 +167,41 @@ function renderDiff(r){
   if(!html)html='<p class="muted" style="margin:0">Keine Änderungen seit dem letzten Scan.</p>';
   $("#diffList").innerHTML=html;
 }
+const aiLabel={confirmed:"bestätigt",likely_false_positive:"wahrscheinlich Fehlalarm",needs_human:"manuelle Prüfung"};
+function reviewBadge(rv){return `<span class="badge ai ${esc(rv.verdict)}" title="KI-Bewertung (${esc(rv.model)}) – Entscheidungshilfe, keine Garantie">KI: ${esc(aiLabel[rv.verdict]||rv.verdict)} (${Math.round((rv.confidence||0)*100)} %)</span>`}
+let AUDIT=null;
+const assessLabel={kompromittiert:["critical","Kompromittiert"],wahrscheinlich_kompromittiert:["critical","Wahrscheinlich kompromittiert"],unklar:["warning","Unklar"],wahrscheinlich_sauber:["ok","Wahrscheinlich sauber"],sauber:["ok","Sauber"]};
+function renderAudit(){
+  const a=AUDIT,p=$("#aiPanel");if(!a){p.classList.add("hidden");return}
+  p.classList.remove("hidden");
+  const as=assessLabel[a.overall_assessment]||["unknown",a.overall_assessment||"keine Gesamtbewertung"];
+  const counts={confirmed:0,needs_human:0,likely_false_positive:0};(a.verdicts||[]).forEach(v=>counts[v.verdict]=(counts[v.verdict]||0)+1);
+  $("#aiHead").innerHTML=`<span class="badge ${as[0]}">${esc(as[1])}${a.confidence!=null?` (${Math.round(a.confidence*100)} %)`:""}</span><span class="muted" style="font-weight:400;font-size:12px">${new Date(a.finished).toLocaleString("de-DE")} · ${esc(a.model)}${a.status!=="completed"?" · vorzeitig beendet":""}</span>`;
+  const stale=REPORT&&a.report_generated_at!==REPORT.generated_at;
+  const steps=(a.next_steps||[]).slice().sort((x,y)=>x.priority-y.priority);
+  $("#aiBody").innerHTML=`${stale?`<div class="ai-note status warning">Diese Bewertung bezieht sich auf den Scan vom ${new Date(a.report_generated_at).toLocaleString("de-DE")} – nach einem neuen Scan <code>ecomsec audit</code> erneut ausführen.</div>`:""}
+    ${a.abort_reason?`<div class="ai-note status warning">${esc(a.abort_reason)}</div>`:""}
+    <div class="ai-sum">${esc(a.summary||"")}</div>
+    ${steps.length?`<h3>Nächste Schritte</h3><ol>${steps.map(s=>`<li><b>P${s.priority}</b> ${esc(s.action)}${s.rationale?`<br><span class="muted">${esc(s.rationale)}</span>`:""}</li>`).join("")}</ol>`:""}
+    <div class="stats"><span>${counts.confirmed} bestätigt</span><span>${counts.needs_human} manuelle Prüfung</span><span>${counts.likely_false_positive} wahrscheinlich Fehlalarm</span><span>${(a.new_findings||[]).length} neue Befunde</span>${(a.unreviewed||[]).length?`<span>${a.unreviewed.length} ohne Bewertung</span>`:""}</div>
+    <div class="stats"><span>${a.turns} Runden</span><span>${(a.tokens_in||0).toLocaleString("de-DE")} Eingabe- / ${(a.tokens_out||0).toLocaleString("de-DE")} Ausgabe-Tokens</span>${a.estimated_cost_usd!=null?`<span>ca. ${a.estimated_cost_usd.toFixed(2)} USD</span>`:""}<span>übertragen: ${((a.data&&a.data.bytes_sent||0)/1024).toFixed(1)} KiB redigiert, ${a.data?a.data.redactions:0} Werte maskiert</span></div>
+    <p class="muted ai-note">Die KI-Bewertung ist eine Entscheidungshilfe und ersetzt keine forensische Analyse. Nichts löschen, bevor ein Befund verifiziert und gesichert ist.</p>`;
+}
 function catLabel(c){return ({known_webshell:"Bekannte Webshell",modified_since_reference:"Neue/geänderte Datei",code_in_upload_dir:"Code im Upload-Verzeichnis",webserver_config_manipulation:"Webserver-Konfiguration",suspicious_pattern:"Verdächtiges Code-Muster",exploit_payload:"Exploit-Payload",timestamp_anomaly:"Zeitstempel-Anomalie",attack_trace:"Angriffsspur",patch_status:"Patch-Status",admin_account:"Admin-Konto",payment_configuration:"Zahlungs-Konfiguration",config_permissions:"Dateirechte",exposed_file:"Öffentlich erreichbare Datei",integrity_deviation:"Integritätsabweichung",third_party_injection:"Fremdcode / Injection",scan_limitation:"Scan-Einschränkung",informational:"Information"})[c]||c}
 function sevRank(s){return {critical:0,warning:1,info:2}[s]}
 function renderFindings(){
-  const r=REPORT;const q=$("#filterText").value.toLowerCase();const sev=$("#filterSev").value;const cat=$("#filterCat").value;const showAcc=$("#showAccepted").checked;
-  let list=r.findings.filter(f=>(showAcc||!f.accepted)&&(!sev||f.severity===sev)&&(!cat||f.category===cat)&&(!q||(f.subject+" "+f.title+" "+f.rule+" "+(f.evidence||[]).join(" ")).toLowerCase().includes(q)));
+  const r=REPORT;const q=$("#filterText").value.toLowerCase();const sev=$("#filterSev").value;const cat=$("#filterCat").value;const showAcc=$("#showAccepted").checked;const ai=$("#filterAi").value;
+  let list=r.findings.filter(f=>(showAcc||!f.accepted)&&(!sev||f.severity===sev)&&(!cat||f.category===cat)&&(!ai||(ai==="none"?!f.review:(f.review&&f.review.verdict===ai)))&&(!q||(f.subject+" "+f.title+" "+f.rule+" "+(f.evidence||[]).join(" ")).toLowerCase().includes(q)));
   list.sort((a,b)=>(a.accepted-b.accepted)||(sevRank(a.severity)-sevRank(b.severity))||a.subject.localeCompare(b.subject));
   const el=$("#findings");if(!list.length){el.innerHTML='<p class="muted">Keine Befunde für diesen Filter.</p>';return}
   const card=f=>`<div class="finding ${f.accepted?"accepted":""}" data-id="${f.id}">
     <div>${MODE==="web"&&!f.accepted?`<input type="checkbox" class="sel" data-id="${f.id}" ${selected.has(f.id)?"checked":""}> `:""}<span class="badge ${f.severity}">${sevLabel[f.severity]}</span></div>
-    <div><h4>${esc(f.title)} <span class="muted" style="font-weight:400;font-size:11px">#${f.id}</span>${f.accepted?' <span class="badge ok">unbedenklich</span>':""}</h4>
+    <div><h4>${esc(f.title)} <span class="muted" style="font-weight:400;font-size:11px">#${f.id}</span>${f.accepted?' <span class="badge ok">unbedenklich</span>':""}${f.review?" "+reviewBadge(f.review):""}</h4>
       <div class="sub">${esc(catLabel(f.category))} · ${esc(f.subject)}</div>
       ${f.description?`<div class="desc">${esc(f.description)}</div>`:""}
       ${(f.evidence||[]).map(e=>`<span class="ev">${esc(e)}</span>`).join("")}
       ${f.accepted_reason?`<div class="desc muted">Begründung: ${esc(f.accepted_reason)}</div>`:""}
+      ${f.review&&f.review.reasoning?`<div class="desc muted">KI-Begründung: ${esc(f.review.reasoning)}</div>`:""}
     </div>
     ${MODE==="web"?`<div class="actions">${f.accepted?`<button class="secondary unaccept" data-id="${f.id}">Markierung aufheben</button>`:`<button class="secondary accept" data-id="${f.id}">unbedenklich</button>${f.group?`<button class="secondary accept-group" data-group="${esc(f.group)}" title="Alle Befunde in ${esc(f.group)}">Verzeichnis unbedenklich</button>`:""}`}</div>`:""}
   </div>`;
@@ -204,13 +231,14 @@ function openAccept(ids){pendingIds=ids;$("#acceptList").innerHTML=ids.map(id=>{
 $("#acceptCancel").onclick=()=>$("#acceptModal").classList.remove("open");
 $("#acceptConfirm").onclick=async()=>{try{REPORT=await api("/api/findings/accept",{method:"POST",body:JSON.stringify({ids:pendingIds,reason:$("#acceptReason").value||null})});selected.clear();$("#bulkAccept").classList.add("hidden");$("#acceptModal").classList.remove("open");render()}catch(e){alert(e.message)}};
 $("#bulkAccept").onclick=()=>openAccept([...selected]);
-["#filterText","#filterSev","#filterCat","#showAccepted","#groupDirs"].forEach(s=>$(s).addEventListener("input",renderFindings));
+["#filterText","#filterSev","#filterCat","#filterAi","#showAccepted","#groupDirs"].forEach(s=>$(s).addEventListener("input",renderFindings));
 if(MODE==="web"){
   $("#scanBtn").classList.remove("hidden");
   let polling=null;
   async function poll(){try{const s=await api("/api/status");$("#progressWrap").classList.toggle("hidden",!s.running);$("#scanBtn").disabled=s.running;if(s.running){const pct=s.total?Math.round(100*s.done/s.total):0;$("#progressText").textContent=`Scan läuft … ${s.done}/${s.total} Dateien (${pct}%)`;$("#progressBar").style.width=pct+"%"}else{if(polling){clearInterval(polling);polling=null;REPORT=await api("/api/report").catch(()=>REPORT);render();if(s.error)alert("Scan fehlgeschlagen: "+s.error)}}}catch(e){}}
   $("#scanBtn").onclick=async()=>{try{await api("/api/scan",{method:"POST"});$("#progressWrap").classList.remove("hidden");$("#scanBtn").disabled=true;polling=setInterval(poll,1000)}catch(e){alert(e.message)}};
   api("/api/report").then(r=>{REPORT=r;render()}).catch(()=>render());
+  api("/api/audit").then(a=>{AUDIT=a;renderAudit()}).catch(()=>{});
   api("/api/status").then(s=>{if(s.running){$("#scanBtn").disabled=true;polling=setInterval(poll,1000)}}).catch(()=>{});
 } else { render(); }
 </script>

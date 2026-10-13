@@ -21,6 +21,8 @@ pub struct FileConfig {
     pub notify: ecomsec_notify::NotifyConfig,
     #[serde(default)]
     pub watch: WatchSection,
+    #[serde(default)]
+    pub audit: AuditSection,
 }
 
 /// `[watch]` – defaults for `ecomsec watch`.
@@ -33,6 +35,23 @@ pub struct WatchSection {
     pub update_url: Option<String>,
     /// Loop interval for `watch` without `--interval` (e.g. `24h`).
     pub interval: Option<String>,
+}
+
+/// `[audit]` – optional AI audit.  The API key itself is never stored in the
+/// configuration, only the name of the environment variable holding it.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AuditSection {
+    pub api_key_env: Option<String>,
+    pub model: Option<String>,
+    pub mode: Option<String>,
+    pub max_turns: Option<u32>,
+    pub max_tokens_budget: Option<u64>,
+    pub effort: Option<String>,
+    pub api_base: Option<String>,
+    pub fallback: Option<bool>,
+    pub hunt_max_files: Option<usize>,
+    pub hunt_max_bytes: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
