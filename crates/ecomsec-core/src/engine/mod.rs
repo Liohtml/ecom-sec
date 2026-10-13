@@ -372,7 +372,11 @@ impl Engine {
             advisories,
             recommendations: Vec::new(),
             limitations,
+            score: None,
+            grade: None,
+            score_drivers: Vec::new(),
         };
+        report.apply_score();
         let extra = platform.recommendations(&report);
         report.recommendations = recommendations::build(&report, extra);
 

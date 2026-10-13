@@ -16,7 +16,8 @@
 //!   integrity checks,
 //! * persistent state for risk acceptance, baselines and scan history
 //!   ([`state`]),
-//! * prioritised recommendations ([`recommendations`]).
+//! * prioritised recommendations ([`recommendations`]),
+//! * a deterministic security posture score with grade ([`score`]).
 
 pub mod advisories;
 pub mod baseline;
@@ -27,6 +28,7 @@ pub mod platform;
 pub mod recommendations;
 pub mod report;
 pub mod rules;
+pub mod score;
 pub mod signatures;
 pub mod state;
 pub mod util;
@@ -42,5 +44,6 @@ pub use platform::{
 pub use recommendations::{Recommendation, RecommendationGroup};
 pub use report::{Report, Summary, Verdict};
 pub use rules::{Rule, RuleSet};
+pub use score::{Grade, PostureScore, ScoreDriver};
 pub use state::StateStore;
 pub use version::Version;

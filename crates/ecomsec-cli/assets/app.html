@@ -33,6 +33,10 @@ h3{margin:18px 0 8px;font-size:15px}.muted{color:var(--muted)}.rec{border-left:3
 .modal ul{max-height:180px;overflow:auto;font-size:12px;padding-left:18px}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:30px 0}
 .hidden{display:none}
+.score{display:flex;align-items:center;gap:10px;padding:6px 14px;border-left:1px solid var(--border)}.score .val{font-size:26px;font-weight:700;line-height:1}.score .val small{font-size:12px;font-weight:400;color:var(--muted)}
+.grade{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;font-weight:800;font-size:18px;background:var(--panel);border:2px solid var(--border)}.grade.g-A,.grade.g-B{color:var(--ok);border-color:var(--ok)}.grade.g-C,.grade.g-D{color:var(--warn);border-color:var(--warn)}.grade.g-F{color:var(--crit);border-color:var(--crit)}
+.drivers{font-size:12px;color:var(--muted);max-width:250px}
+.trend svg{display:block;width:100%;max-width:640px;height:auto;overflow:visible}.trend .line{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.trend .area{fill:var(--accent);opacity:.1}.trend .guide{stroke:var(--border);stroke-width:1;stroke-dasharray:3 3}.trend .glabel{fill:var(--muted);font-size:9px}.trend .dot{fill:var(--accent);stroke:var(--panel);stroke-width:2}.trend .hit{fill:transparent;cursor:default}.trend .hit:hover{fill:var(--accent);opacity:.25}
 </style>
 </head>
 <body>
@@ -45,6 +49,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:30px 0}
 <main>
   <div id="progressWrap" class="panel hidden"><div id="progressText">Scan läuft …</div><div class="progress"><div id="progressBar"></div></div></div>
   <div id="banner" class="banner clean"><div><h2 id="verdict">–</h2><div class="muted" id="verdictSub"></div></div>
+    <div class="score hidden" id="scoreBox" title="Sicherheitsniveau (0–100) mit Note A–F"><span class="grade" id="scoreGrade">–</span><div><div class="val" id="scoreVal">–</div><div class="drivers" id="scoreDrivers"></div></div></div>
     <div class="counts"><div><b id="cCrit">0</b>kritisch</div><div><b id="cWarn">0</b>Warnungen</div><div><b id="cInfo">0</b>Hinweise</div><div><b id="cAcc">0</b>unbedenklich</div></div></div>
   <div class="tabs">
     <button data-tab="scan" class="active">Security Scan</button>
@@ -77,6 +82,7 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:30px 0}
       <h3>Einschränkungen</h3>
       <ul id="limitations"></ul>
       <p class="muted">Der Scan ist eine Triage-Hilfe und ersetzt keine forensische Analyse. Ein sauberes Ergebnis ist keine Garantie für einen nicht kompromittierten Shop.</p>
+      <div id="trendWrap" class="hidden"><h3>Sicherheitsniveau – Verlauf</h3><div class="trend" id="trend"></div><div class="muted" id="trendText" style="font-size:12px"></div></div>
       <h3>Scan-Verlauf</h3>
       <div id="history" class="muted">–</div>
       <h3>Im Notfall</h3>
@@ -124,9 +130,35 @@ function render(){
   const b=$("#banner");b.className="banner "+r.verdict;
   $("#verdict").textContent={critical:"Kritische Befunde – sofort handeln",warning:"Warnungen – zeitnah prüfen",clean:"Keine kritischen Befunde"}[r.verdict];
   $("#verdictSub").textContent=r.summary.files_scanned+" Dateien geprüft · "+(r.summary.duration_ms/1000).toFixed(1)+" s"+(r.summary.complete?"":" · Scan unvollständig (Zeitbudget) – erneut starten");
+  renderScore(r);
   $("#cCrit").textContent=r.summary.critical;$("#cWarn").textContent=r.summary.warning;$("#cInfo").textContent=r.summary.info;$("#cAcc").textContent=r.summary.accepted;
   const cats=[...new Set(r.findings.map(f=>f.category))].sort();const sel=$("#filterCat");const cur=sel.value;sel.innerHTML='<option value="">alle Kategorien</option>'+cats.map(c=>`<option value="${c}">${esc(catLabel(c))}</option>`).join("");sel.value=cur;
   renderFindings();renderIntegrity();renderRecs();renderHelp();
+}
+const gradeLabel={A:"sehr gut",B:"gut",C:"befriedigend",D:"mangelhaft",F:"ungenügend"};
+function renderScore(r){
+  const box=$("#scoreBox");if(r.score==null||!r.grade){box.classList.add("hidden");return}
+  box.classList.remove("hidden");
+  const g=$("#scoreGrade");g.textContent=r.grade;g.className="grade g-"+r.grade;
+  $("#scoreVal").innerHTML=`${r.score}<small>/100 · ${esc(gradeLabel[r.grade]||"")}</small>`;
+  $("#scoreDrivers").textContent=(r.score_drivers||[]).slice(0,3).map(d=>`${d.label} (−${d.points})`).join(" · ");
+}
+// Inline SVG sparkline of the posture score over the last 30 scans (web mode only).
+function renderTrend(h){
+  const pts=h.filter(e=>e.score!=null).slice(-30);const wrap=$("#trendWrap");
+  if(MODE!=="web"||!pts.length){wrap.classList.add("hidden");return}
+  wrap.classList.remove("hidden");
+  const W=600,H=110,L=26,R=10,T=8,B=8,iw=W-L-R,ih=H-T-B;
+  const x=i=>L+(pts.length===1?iw/2:i*iw/(pts.length-1)),y=v=>T+ih-(v/100)*ih;
+  const guides=[[90,"A"],[75,"B"],[60,"C"],[40,"D"]].map(([v,g])=>`<line class="guide" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text class="glabel" x="${L-6}" y="${y(v)+3}" text-anchor="end">${g}</text>`).join("");
+  const line=pts.map((e,i)=>`${x(i).toFixed(1)},${y(e.score).toFixed(1)}`).join(" ");
+  const area=`M${x(0).toFixed(1)},${y(0)} L${line.split(" ").join(" L")} L${x(pts.length-1).toFixed(1)},${y(0)} Z`;
+  const fmt=e=>new Date(e.generated_at).toLocaleString("de-DE",{dateStyle:"short",timeStyle:"short"});
+  const hits=pts.map((e,i)=>`<g><circle class="hit" cx="${x(i)}" cy="${y(e.score)}" r="9"><title>${esc(fmt(e))}: ${e.score}/100 (Note ${esc(e.grade||"–")})</title></circle></g>`).join("");
+  const last=pts[pts.length-1];
+  $("#trend").innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sicherheitsniveau der letzten ${pts.length} Scans">${guides}${pts.length>1?`<path class="area" d="${area}"/><polyline class="line" points="${line}"/>`:""}<circle class="dot" cx="${x(pts.length-1)}" cy="${y(last.score)}" r="4.5"/>${hits}</svg>`;
+  const prev=pts.length>1?pts[pts.length-2]:null;const d=prev?last.score-prev.score:0;
+  $("#trendText").textContent=`Letzte ${pts.length} Scan${pts.length===1?"":"s"} · aktuell ${last.score}/100 (Note ${last.grade||"–"})`+(prev?` · ${d>0?"+":""}${d} Punkte seit dem vorherigen Scan`:"")+` · min ${Math.min(...pts.map(e=>e.score))} · max ${Math.max(...pts.map(e=>e.score))}`;
 }
 function catLabel(c){return ({known_webshell:"Bekannte Webshell",modified_since_reference:"Neue/geänderte Datei",code_in_upload_dir:"Code im Upload-Verzeichnis",webserver_config_manipulation:"Webserver-Konfiguration",suspicious_pattern:"Verdächtiges Code-Muster",exploit_payload:"Exploit-Payload",timestamp_anomaly:"Zeitstempel-Anomalie",attack_trace:"Angriffsspur",patch_status:"Patch-Status",admin_account:"Admin-Konto",payment_configuration:"Zahlungs-Konfiguration",config_permissions:"Dateirechte",exposed_file:"Öffentlich erreichbare Datei",integrity_deviation:"Integritätsabweichung",third_party_injection:"Fremdcode / Injection",scan_limitation:"Scan-Einschränkung",informational:"Information"})[c]||c}
 function sevRank(s){return {critical:0,warning:1,info:2}[s]}
@@ -164,7 +196,7 @@ function renderRecs(){
 }
 function renderHelp(){
   const r=REPORT;$("#limitations").innerHTML=r.limitations.length?r.limitations.map(l=>`<li>${esc(l)}</li>`).join(""):"<li>keine</li>";
-  if(MODE==="web"){api("/api/history").then(h=>{$("#history").innerHTML=h.length?"<table><tr><th>Zeitpunkt</th><th>Version</th><th>Ergebnis</th><th>kritisch</th><th>Warnungen</th><th>Dateien</th></tr>"+h.slice().reverse().slice(0,30).map(e=>`<tr><td>${new Date(e.generated_at).toLocaleString("de-DE")}</td><td>${esc(e.version||"")}</td><td class="status ${e.verdict==="clean"?"ok":e.verdict}">${esc(e.verdict)}${e.complete?"":" (unvollständig)"}</td><td>${e.critical}</td><td>${e.warning}</td><td>${e.files_scanned}</td></tr>`).join("")+"</table>":"noch kein Verlauf"}).catch(()=>{})}
+  if(MODE==="web"){api("/api/history").then(h=>{renderTrend(h);$("#history").innerHTML=h.length?"<table><tr><th>Zeitpunkt</th><th>Version</th><th>Ergebnis</th><th>Score</th><th>kritisch</th><th>Warnungen</th><th>Dateien</th></tr>"+h.slice().reverse().slice(0,30).map(e=>`<tr><td>${new Date(e.generated_at).toLocaleString("de-DE")}</td><td>${esc(e.version||"")}</td><td class="status ${e.verdict==="clean"?"ok":e.verdict}">${esc(e.verdict)}${e.complete?"":" (unvollständig)"}</td><td>${e.score!=null?`${e.score} (${esc(e.grade||"–")})`:"–"}</td><td>${e.critical}</td><td>${e.warning}</td><td>${e.files_scanned}</td></tr>`).join("")+"</table>":"noch kein Verlauf"}).catch(()=>{})}else{$("#trendWrap").classList.add("hidden")}
 }
 let pendingIds=[];
 function openAccept(ids){pendingIds=ids;$("#acceptList").innerHTML=ids.map(id=>{const f=REPORT.findings.find(x=>x.id===id);return `<li>${esc(f?f.subject:id)} – ${esc(f?f.title:"")}</li>`}).join("");$("#acceptReason").value="";$("#acceptModal").classList.add("open")}
