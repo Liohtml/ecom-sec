@@ -410,3 +410,174 @@ fn extra_advisory_dir_overrides_embedded_entries() {
         .unwrap();
     assert_eq!(dep["status"], "unknown");
 }
+
+fn scan_format(root: &Path, state: &Path, format: &str) -> String {
+    let out = bin()
+        .env("ECOMSEC_STATE_DIR", state)
+        .args(["scan", "--root"])
+        .arg(root)
+        .args(["--skip-remote", "--fail-on", "never", "--format", format])
+        .output()
+        .expect("run ecomsec");
+    assert!(
+        out.status.success(),
+        "stderr: {}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    String::from_utf8(out.stdout).expect("utf-8")
+}
+
+#[test]
+fn report_contains_posture_score_and_history_entry() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    let report = scan_json(&root, &state, &[]);
+    let score = report["score"].as_u64().expect("score");
+    assert!(score <= 49, "critical verdict caps the score: {score}");
+    assert!(["D", "F"].contains(&report["grade"].as_str().unwrap()));
+    let drivers = report["score_drivers"].as_array().unwrap();
+    assert!(!drivers.is_empty());
+    assert_eq!(drivers[0]["key"], "critical_findings");
+
+    let text = scan_format(&root, &state, "text");
+    assert!(text.contains("Sicherheitsniveau:"));
+    assert!(text.contains("Score-Treiber:"));
+
+    let target_dir = fs::read_dir(&state)
+        .unwrap()
+        .next()
+        .unwrap()
+        .unwrap()
+        .path();
+    let history: serde_json::Value =
+        serde_json::from_slice(&fs::read(target_dir.join("history.json")).unwrap()).unwrap();
+    let first = &history.as_array().unwrap()[0];
+    assert_eq!(first["score"].as_u64(), Some(score));
+    assert!(first["grade"].is_string());
+}
+
+#[test]
+fn sarif_export_is_well_formed() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    let sarif: serde_json::Value =
+        serde_json::from_str(&scan_format(&root, &state, "sarif")).expect("valid json");
+    assert_eq!(sarif["version"], "2.1.0");
+    let run = &sarif["runs"][0];
+    assert_eq!(run["tool"]["driver"]["name"], "ecomsec");
+    let rules = run["tool"]["driver"]["rules"].as_array().unwrap();
+    let results = run["results"].as_array().unwrap();
+    assert!(!results.is_empty());
+    for r in results {
+        let idx = r["ruleIndex"].as_u64().unwrap() as usize;
+        assert_eq!(rules[idx]["id"], r["ruleId"]);
+        assert!(r["message"]["text"].is_string());
+        assert!(r["partialFingerprints"]["ecomsecFindingId/v1"].is_string());
+    }
+    let shell = results
+        .iter()
+        .find(|r| {
+            r["ruleId"] == "ioc_filename"
+                && r["locations"][0]["physicalLocation"]["artifactLocation"]["uri"]
+                    == "mediafiles/Bilder/wso.php"
+        })
+        .expect("webshell result with relative location");
+    assert_eq!(shell["level"], "error");
+    assert_eq!(
+        shell["locations"][0]["physicalLocation"]["artifactLocation"]["uriBaseId"],
+        "SRCROOT"
+    );
+}
+
+#[test]
+fn junit_and_markdown_exports() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    let xml = scan_format(&root, &state, "junit");
+    assert!(xml.starts_with("<?xml version=\"1.0\""));
+    assert!(xml.contains("<testsuite name=\"ecomsec.jtl5\""));
+    assert!(xml.contains("<failure type=\"critical\""));
+    assert_eq!(
+        xml.matches("<testcase ").count(),
+        xml.matches("</testcase>").count()
+    );
+    let md = scan_format(&root, &state, "markdown");
+    assert!(md.starts_with("## 🔴 ecomsec:"));
+    assert!(md.contains("| kritisch | Warnungen |"));
+    assert!(md.contains("`mediafiles/Bilder/wso.php`"));
+}
+
+#[test]
+fn sbom_from_composer_inventory() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("sw");
+    let state = tmp.path().join("state");
+    write(
+        &root,
+        "composer.json",
+        br#"{"require":{"shopware/core":"6.5.7.3"}}"#,
+    );
+    write(
+        &root,
+        "composer.lock",
+        br#"{"packages":[{"name":"shopware/core","version":"v6.5.7.3","license":["MIT"]},{"name":"symfony/http-kernel","version":"v6.4.1"}]}"#,
+    );
+    write(&root, ".env", b"APP_ENV=prod\n");
+    write(&root, "public/index.php", b"<?php");
+    for (format, check) in [("cyclonedx", "CycloneDX"), ("spdx-json", "SPDX-2.3")] {
+        let out = bin()
+            .env("ECOMSEC_STATE_DIR", &state)
+            .args(["sbom", "--root"])
+            .arg(&root)
+            .args(["--format", format])
+            .output()
+            .unwrap();
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+        let text = v.to_string();
+        assert!(text.contains(check));
+        assert!(text.contains("pkg:composer/shopware/core@6.5.7.3"));
+        assert!(text.contains("pkg:composer/symfony/http-kernel@6.4.1"));
+    }
+
+    // Without an inventory the command fails with a clear German message.
+    fs::remove_file(root.join("composer.lock")).unwrap();
+    let out = bin()
+        .env("ECOMSEC_STATE_DIR", &state)
+        .args(["sbom", "--root"])
+        .arg(&root)
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(10));
+    assert!(String::from_utf8_lossy(&out.stderr).contains("Kein Composer-Inventar"));
+}
+
+#[test]
+fn sbom_is_refused_for_shopify() {
+    let tmp = tempfile::tempdir().unwrap();
+    let out = bin()
+        .env("ECOMSEC_STATE_DIR", tmp.path())
+        .args([
+            "sbom",
+            "--platform",
+            "shopify",
+            "--shop",
+            "demo.myshopify.com",
+            "--token",
+            "x",
+        ])
+        .output()
+        .unwrap();
+    assert_eq!(out.status.code(), Some(10));
+    assert!(String::from_utf8_lossy(&out.stderr).contains("kein Composer-Inventar"));
+}

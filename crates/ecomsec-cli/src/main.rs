@@ -4,6 +4,7 @@ mod advisories_cmd;
 mod config;
 mod output;
 mod platforms;
+mod self_update;
 mod web;
 
 use anyhow::Context;
@@ -108,6 +109,23 @@ enum Command {
         #[command(subcommand)]
         command: advisories_cmd::AdvisoriesCommand,
     },
+    /// Software-Stückliste (SBOM) der Composer-Pakete erzeugen (CycloneDX / SPDX)
+    Sbom(SbomArgs),
+    /// ecomsec auf die neueste Version aktualisieren (GitHub Releases)
+    SelfUpdate(self_update::SelfUpdateArgs),
+}
+
+#[derive(Args)]
+struct SbomArgs {
+    /// SBOM-Format
+    #[arg(short, long, value_enum, default_value_t = output::sbom::SbomFormat::Cyclonedx)]
+    format: output::sbom::SbomFormat,
+    /// Ausgabedatei (Standard: stdout)
+    #[arg(short, long, value_name = "DATEI")]
+    output: Option<PathBuf>,
+    /// Entwicklungsabhängigkeiten (require-dev) weglassen
+    #[arg(long)]
+    no_dev: bool,
 }
 
 #[derive(Args, Clone)]
@@ -477,6 +495,9 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
         }
         _ => {}
     }
+    if let Command::SelfUpdate(args) = &cli.command {
+        return self_update::run(args);
+    }
     if matches!(cli.command, Command::Advisories { .. }) {
         let cfg = FileConfig::load(cli.config.as_deref())?;
         let base = state_base(&cli, &cfg);
@@ -584,8 +605,59 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
             web::serve(bind, token, ctx.spec, options, ctx.store)?;
             Ok(0)
         }
-        Command::Platforms | Command::Rules { .. } | Command::Advisories { .. } => unreachable!(),
+        Command::Sbom(args) => sbom(&ctx, args),
+        Command::Platforms
+        | Command::Rules { .. }
+        | Command::Advisories { .. }
+        | Command::SelfUpdate(_) => unreachable!(),
     }
+}
+
+fn sbom(ctx: &Context_, args: SbomArgs) -> anyhow::Result<u8> {
+    let candidates: &[&str] = match ctx.spec.platform.as_str() {
+        ecomsec_jtl5::PLATFORM_ID => ecomsec_jtl5::COMPOSER_INVENTORY,
+        ecomsec_shopware6::PLATFORM_ID => ecomsec_shopware6::COMPOSER_INVENTORY,
+        other => anyhow::bail!(
+            "Für die Plattform {other:?} gibt es kein Composer-Inventar – eine SBOM ist nur für selbst gehostete Shops (JTL-Shop 5, Shopware 6) möglich."
+        ),
+    };
+    let root = ctx.spec.root.clone().unwrap_or_else(|| PathBuf::from("."));
+    let (mut packages, source) =
+        ecomsec_osv::load_inventory(&root, candidates).with_context(|| {
+            format!(
+                "Kein Composer-Inventar in {} gefunden (gesucht: {}) – SBOM nicht möglich.",
+                root.display(),
+                candidates.join(", ")
+            )
+        })?;
+    if args.no_dev {
+        packages.retain(|p| !p.dev);
+    }
+    let info = ctx.spec.open().ok().map(|p| p.info());
+    let fallback_name = platforms::PLATFORMS
+        .iter()
+        .find(|p| p.id == ctx.spec.platform)
+        .map(|p| p.name)
+        .unwrap_or("Shop");
+    let licenses = output::sbom::read_licenses(&root.join(&source));
+    let input = output::sbom::SbomInput {
+        platform_id: &ctx.spec.platform,
+        platform_name: info
+            .as_ref()
+            .map(|i| i.name.as_str())
+            .unwrap_or(fallback_name),
+        platform_version: info
+            .as_ref()
+            .and_then(|i| i.version.as_ref().map(|v| v.to_string())),
+        packages: &packages,
+        licenses: &licenses,
+        source: &source,
+        timestamp: chrono::Utc::now(),
+    };
+    let text = output::sbom::render(args.format, &input)?;
+    emit(&text, args.output.as_ref())?;
+    eprintln!("SBOM: {} Pakete aus {source}.", packages.len());
+    Ok(0)
 }
 
 fn findings(ctx: &Context_, command: FindingsCommand) -> anyhow::Result<u8> {
