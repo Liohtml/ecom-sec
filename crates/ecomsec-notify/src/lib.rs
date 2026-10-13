@@ -28,7 +28,7 @@ use std::path::Path;
 
 const USER_AGENT: &str = concat!("ecomsec/", env!("CARGO_PKG_VERSION"));
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum NotifyError {
     #[error("Konfiguration: {0}")]
     Config(String),
@@ -252,7 +252,7 @@ impl Notifier {
             .map(|(name, e)| Delivery {
                 channel: name.clone(),
                 kind: None,
-                result: Err(NotifyError::Config(e.to_string())),
+                result: Err(e.clone()),
             })
             .collect()
     }
@@ -261,7 +261,7 @@ impl Notifier {
 fn deliver(channel: &Channel, n: &Notification) -> Delivery {
     let result = send(channel, n);
     if let Err(e) = &result {
-        log::warn!("notification via {} failed: {e}", channel.name);
+        log::info!("notification via {} failed: {e}", channel.name);
     }
     Delivery {
         channel: channel.name.clone(),

@@ -315,13 +315,13 @@ fn lookup_secret(
     env_key: Option<&String>,
     field: &str,
     env: EnvLookup<'_>,
-) -> Result<Option<String>, NotifyError> {
+) -> Result<Option<String>, String> {
     if let Some(var) = env_key {
         return match env(var).filter(|v| !v.trim().is_empty()) {
             Some(v) => Ok(Some(v.trim().to_string())),
-            None => Err(NotifyError::Config(format!(
+            None => Err(format!(
                 "Umgebungsvariable {var} (für {field}) ist nicht gesetzt"
-            ))),
+            )),
         };
     }
     Ok(direct.map(|s| s.0.trim().to_string()))
@@ -332,7 +332,7 @@ fn lookup_plain(
     env_key: Option<&String>,
     field: &str,
     env: EnvLookup<'_>,
-) -> Result<Option<String>, NotifyError> {
+) -> Result<Option<String>, String> {
     lookup_secret(
         direct.map(|s| Secret(s.clone())).as_ref(),
         env_key,
@@ -358,12 +358,12 @@ impl ChannelConfig {
         let err = |msg: &str| NotifyError::Config(format!("Kanal {name}: {msg}"));
         let mut secrets = Vec::new();
         let url = lookup_secret(self.url.as_ref(), self.url_env.as_ref(), "url", env)
-            .map_err(|e| err(&e.to_string()))?;
+            .map_err(|e| err(&e))?;
         if let Some(u) = &url {
             secrets.push(u.clone());
         }
         let token = lookup_secret(self.token.as_ref(), self.token_env.as_ref(), "token", env)
-            .map_err(|e| err(&e.to_string()))?;
+            .map_err(|e| err(&e))?;
         if let Some(t) = &token {
             secrets.push(t.clone());
         }
@@ -384,14 +384,14 @@ impl ChannelConfig {
                     "smtp_user",
                     env,
                 )
-                .map_err(|e| err(&e.to_string()))?;
+                .map_err(|e| err(&e))?;
                 let password = lookup_secret(
                     self.smtp_password.as_ref(),
                     self.smtp_password_env.as_ref(),
                     "smtp_password",
                     env,
                 )
-                .map_err(|e| err(&e.to_string()))?;
+                .map_err(|e| err(&e))?;
                 if user.is_some() != password.is_some() {
                     return Err(err(
                         "smtp_user und smtp_password müssen gemeinsam gesetzt sein",
