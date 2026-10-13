@@ -4,6 +4,7 @@
 use crate::finding::{Finding, Severity};
 use crate::platform::{AdvisoryStatus, IntegrityItem, PlatformInfo};
 use crate::recommendations::RecommendationGroup;
+use crate::score::{Grade, PostureScore, ScoreDriver};
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -56,6 +57,15 @@ pub struct Report {
     pub recommendations: Vec<RecommendationGroup>,
     /// Checks that were skipped or incomplete.
     pub limitations: Vec<String>,
+    /// Security posture score 0–100 (see [`crate::score`]).  Missing in
+    /// reports written by older versions.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grade: Option<Grade>,
+    /// Factors that lowered the score, largest first.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub score_drivers: Vec<ScoreDriver>,
 }
 
 impl Report {
@@ -92,6 +102,27 @@ impl Report {
                 .then(a.subject.cmp(&b.subject))
         });
         v
+    }
+
+    /// (Re-)compute the posture score and store it in the report.
+    pub fn apply_score(&mut self) {
+        let s = crate::score::compute(self);
+        self.score = Some(s.score);
+        self.grade = Some(s.grade);
+        self.score_drivers = s.drivers;
+    }
+
+    /// Stored posture score, or a freshly computed one for reports written
+    /// by older versions.
+    pub fn posture(&self) -> PostureScore {
+        match (self.score, self.grade) {
+            (Some(score), Some(grade)) => PostureScore {
+                score,
+                grade,
+                drivers: self.score_drivers.clone(),
+            },
+            _ => crate::score::compute(self),
+        }
     }
 
     pub fn find(&self, id: &str) -> Option<&Finding> {
@@ -134,6 +165,7 @@ impl Report {
                 r.related.retain(|id| active.contains(id));
             }
         }
+        self.apply_score();
     }
 }
 
@@ -150,6 +182,11 @@ pub struct HistoryEntry {
     pub accepted: usize,
     pub files_scanned: u64,
     pub complete: bool,
+    /// Posture score (missing in entries written by older versions).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub score: Option<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub grade: Option<Grade>,
 }
 
 impl From<&Report> for HistoryEntry {
@@ -165,6 +202,8 @@ impl From<&Report> for HistoryEntry {
             accepted: r.summary.accepted,
             files_scanned: r.summary.files_scanned,
             complete: r.summary.complete,
+            score: r.score,
+            grade: r.grade,
         }
     }
 }

@@ -639,6 +639,9 @@ mod tests {
             advisories: vec![],
             recommendations: vec![],
             limitations: vec![],
+            score: None,
+            grade: None,
+            score_drivers: Vec::new(),
         }
     }
 

@@ -53,6 +53,10 @@ env_logger = "0.11"
 lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "builder", "hostname", "rustls-tls"] }
 ctrlc = "3"
 base64 = "0.22"
+# self-update: release archives (.tar.gz for Unix, .zip for Windows)
+flate2 = "1"
+tar = { version = "0.4", default-features = false }
+zip = { version = "2", default-features = false, features = ["deflate"] }
 
 [profile.release]
 lto = "thin"

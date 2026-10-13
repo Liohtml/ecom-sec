@@ -70,6 +70,19 @@ pub fn render(report: &Report, show_all: bool, color: bool) -> String {
     );
     let _ = writeln!(out, "{line}");
     let _ = writeln!(out, "{banner}");
+    let posture = report.posture();
+    let grade_text = format!(
+        "{}/100 – Note {} ({})",
+        posture.score,
+        posture.grade,
+        posture.grade.label()
+    );
+    let grade_text = match posture.grade {
+        ecomsec_core::Grade::A | ecomsec_core::Grade::B => st.green(&grade_text),
+        ecomsec_core::Grade::C | ecomsec_core::Grade::D => st.yellow(&grade_text),
+        ecomsec_core::Grade::F => st.red(&grade_text),
+    };
+    let _ = writeln!(out, "  Sicherheitsniveau: {grade_text}");
     if !report.summary.complete {
         let _ = writeln!(
             out,
@@ -127,6 +140,14 @@ pub fn render(report: &Report, show_all: bool, color: bool) -> String {
         report.summary.info,
         report.summary.accepted
     );
+    if !posture.drivers.is_empty() {
+        let drivers: Vec<String> = posture
+            .top_drivers()
+            .iter()
+            .map(|d| format!("{} (−{})", d.label, d.points))
+            .collect();
+        let _ = writeln!(out, "Score-Treiber:   {}", drivers.join(" · "));
+    }
 
     // ---------------------------------------------------------------- findings
     let _ = writeln!(

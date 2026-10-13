@@ -1,0 +1,7 @@
+target
+.git
+.github
+.claude
+docs/img
+**/*.rs.bk
+.ecomsec-state

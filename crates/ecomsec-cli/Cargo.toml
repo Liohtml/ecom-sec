@@ -34,6 +34,9 @@ env_logger.workspace = true
 axum.workspace = true
 tokio.workspace = true
 ctrlc.workspace = true
+flate2.workspace = true
+tar.workspace = true
+zip.workspace = true
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
