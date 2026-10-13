@@ -6,7 +6,11 @@ use std::fmt;
 use std::str::FromStr;
 
 /// A numeric version such as `5.3.0`, `6.5.7.4` or `5.8`.  Non-numeric
-/// suffixes (`-rc1`, `+build`) are ignored for comparison purposes.
+/// suffixes (`-rc1`, `+build`) are ignored for comparison purposes, with one
+/// exception: a patch-level suffix `-pN` / `-patchN` (Magento / Adobe
+/// Commerce `2.4.6-p6`, Composer's `patch` stability) is appended as an
+/// additional component after padding to three parts, so that
+/// `2.4.6 < 2.4.6-p1 < 2.4.6-p13 < 2.4.7`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct Version {
@@ -32,6 +36,12 @@ impl Version {
         if parts.is_empty() {
             return None;
         }
+        if let Some(level) = patch_level(raw) {
+            while parts.len() < 3 {
+                parts.push(0);
+            }
+            parts.push(level);
+        }
         Some(Version {
             parts,
             raw: raw.to_string(),
@@ -50,6 +60,19 @@ impl Version {
     pub fn same_branch(&self, other: &Version) -> bool {
         self.major() == other.major() && self.minor() == other.minor()
     }
+}
+
+/// Patch level of a `-pN` / `-patchN` suffix (`2.4.6-p6` → 6).
+fn patch_level(raw: &str) -> Option<u64> {
+    let (_, suffix) = raw.split_once('-')?;
+    let suffix = suffix.split(['+', ' ', '-']).next()?.to_ascii_lowercase();
+    let digits = suffix
+        .strip_prefix("patch")
+        .or_else(|| suffix.strip_prefix('p'))?;
+    if digits.is_empty() || !digits.chars().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    digits.parse().ok()
 }
 
 impl PartialEq for Version {
@@ -177,6 +200,21 @@ mod tests {
         );
         assert!(Version::parse("v6.5.7.4-rc1").unwrap() < Version::parse("6.5.8").unwrap());
         assert!(Version::parse("garbage").is_none());
+    }
+
+    #[test]
+    fn magento_patch_levels() {
+        let v = |s: &str| Version::parse(s).unwrap();
+        assert!(v("2.4.6") < v("2.4.6-p1"));
+        assert!(v("2.4.6-p5") < v("2.4.6-p6"));
+        assert!(v("2.4.6-p13") < v("2.4.7"));
+        assert_eq!(v("2.4.6-p6"), v("2.4.6.6"));
+        assert_eq!(v("2.4.6-p6").to_string(), "2.4.6-p6");
+        assert_eq!(v("2.4-p2").parts, vec![2, 4, 0, 2]);
+        // Other suffixes stay ignored.
+        assert_eq!(v("2.4.7-beta1"), v("2.4.7"));
+        assert_eq!(v("1.0.0-pre"), v("1.0.0"));
+        assert!(VersionRange::new(Some("2.4.6"), Some("2.4.6-p6")).contains(&v("2.4.6-p5")));
     }
 
     #[test]

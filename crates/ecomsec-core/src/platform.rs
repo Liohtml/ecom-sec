@@ -149,6 +149,11 @@ pub struct Advisory {
     pub published: NaiveDate,
     #[serde(default)]
     pub tags: Vec<String>,
+    /// Component the version ranges refer to when it is not the shop core
+    /// itself (e.g. `WooCommerce` on top of WordPress).  The adapter
+    /// resolves its version through [`Platform::component_version`].
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component: Option<String>,
 }
 
 impl Advisory {
@@ -261,6 +266,16 @@ impl IntegrityReport {
     }
 }
 
+/// What an adapter knows about a component referenced by an advisory.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ComponentVersion {
+    /// The component is not part of the installation.
+    NotInstalled,
+    /// Installed (or possibly installed), version not determinable.
+    Unknown,
+    Installed(Version),
+}
+
 /// Runtime context handed to adapters.
 #[derive(Debug, Clone)]
 pub struct PlatformContext {
@@ -292,6 +307,13 @@ pub trait Platform: Send + Sync {
         Vec::new()
     }
 
+    /// Installed version of a component other than the shop core (for
+    /// advisories with `component = "…"`).  Adapters compare the name
+    /// case-insensitively.
+    fn component_version(&self, _component: &str) -> ComponentVersion {
+        ComponentVersion::Unknown
+    }
+
     /// Additional evidence for an advisory beyond the version number.
     fn patch_evidence(
         &self,
@@ -318,8 +340,42 @@ pub trait Platform: Send + Sync {
     }
 }
 
+/// Version an advisory is evaluated against: the shop version, or the
+/// version of the advisory's `component` as reported by the adapter.
+/// `Err` carries the status for a component that is not installed.
+fn subject_version(
+    platform: &dyn Platform,
+    version: Option<&Version>,
+    adv: &Advisory,
+) -> Result<(Option<Version>, String), String> {
+    match &adv.component {
+        None => Ok((version.cloned(), "Shop-Version".to_string())),
+        Some(c) => match platform.component_version(c) {
+            ComponentVersion::NotInstalled => Err(format!(
+                "{c} ist nicht installiert – {} betrifft diese Installation nicht.",
+                adv.id
+            )),
+            ComponentVersion::Unknown => Ok((None, format!("{c}-Version"))),
+            ComponentVersion::Installed(v) => Ok((Some(v), format!("{c}-Version"))),
+        },
+    }
+}
+
+/// Version actually evaluated for an advisory (shop or component version).
+pub fn evaluated_version(
+    platform: &dyn Platform,
+    version: Option<&Version>,
+    adv: &Advisory,
+) -> Option<Version> {
+    subject_version(platform, version, adv)
+        .ok()
+        .and_then(|(v, _)| v)
+}
+
 /// Evaluate advisories against a version.  Adapters may refine the result via
-/// [`Platform::patch_evidence`]; the engine calls this helper.
+/// [`Platform::patch_evidence`]; the engine calls this helper.  Advisories
+/// with a `component` are evaluated against
+/// [`Platform::component_version`] instead of the shop version.
 pub fn evaluate_advisories(
     platform: &dyn Platform,
     ctx: &PlatformContext,
@@ -329,19 +385,29 @@ pub fn evaluate_advisories(
     advisories
         .into_iter()
         .map(|adv| {
-            let (state, basis) = match version {
+            let (version, label) = match subject_version(platform, version, &adv) {
+                Ok(pair) => pair,
+                Err(basis) => {
+                    return AdvisoryStatus {
+                        advisory: adv,
+                        state: PatchState::NotAffected,
+                        basis,
+                    }
+                }
+            };
+            let (state, basis) = match version.as_ref() {
                 Some(v) if !adv.affects(v) => {
                     let fixed = adv.fixed_in.iter().any(|f| f <= v && f.same_branch(v))
                         || adv.fixed_in.iter().all(|f| f <= v);
                     if fixed {
                         (
                             PatchState::Patched,
-                            format!("Shop-Version {v} enthält den Fix (Bewertung anhand der Versionsnummer)."),
+                            format!("{label} {v} enthält den Fix (Bewertung anhand der Versionsnummer)."),
                         )
                     } else {
                         (
                             PatchState::NotAffected,
-                            format!("Shop-Version {v} ist von {} nicht betroffen.", adv.id),
+                            format!("{label} {v} ist von {} nicht betroffen.", adv.id),
                         )
                     }
                 }
@@ -365,7 +431,7 @@ pub fn evaluate_advisories(
                             Some(v) => (
                                 PatchState::Vulnerable,
                                 format!(
-                                    "Shop-Version {v} liegt im betroffenen Bereich ({}); kein Patch-Nachweis gefunden.",
+                                    "{label} {v} liegt im betroffenen Bereich ({}); kein Patch-Nachweis gefunden.",
                                     adv.affected
                                         .iter()
                                         .map(|r| r.to_string())
@@ -375,7 +441,7 @@ pub fn evaluate_advisories(
                             ),
                             None => (
                                 PatchState::Unknown,
-                                "Shop-Version konnte nicht ermittelt werden und kein Patch-Nachweis gefunden.".into(),
+                                format!("{label} konnte nicht ermittelt werden und kein Patch-Nachweis gefunden."),
                             ),
                         },
                     }

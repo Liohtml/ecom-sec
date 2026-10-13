@@ -67,6 +67,10 @@ pub struct AdvisorySpec {
     /// Draft entries (auto-generated, not yet reviewed) are not evaluated.
     #[serde(default)]
     pub draft: bool,
+    /// Component the ranges refer to when it is not the shop core
+    /// (e.g. `WooCommerce` for the WordPress based `woocommerce` platform).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component: Option<String>,
 }
 
 /// Accept both TOML native dates (`2026-06-17`) and strings (`"2026-06-17"`).
@@ -163,6 +167,7 @@ impl AdvisorySpec {
             reference: self.reference.clone().or_else(|| self.source.clone()),
             published: self.published,
             tags: self.tags.clone(),
+            component: self.component.clone().filter(|c| !c.trim().is_empty()),
         })
     }
 }
