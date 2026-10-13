@@ -1,7 +1,7 @@
 # Beispielkonfiguration für ecomsec. Kopieren nach ./ecomsec.toml oder per --config angeben.
 
 [target]
-# auto | jtl5 | shopware6 | shopify
+# auto | jtl5 | shopware6 | woocommerce | magento2 | shopify
 platform = "auto"
 root = "/var/www/shop"
 

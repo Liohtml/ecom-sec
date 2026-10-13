@@ -2,8 +2,9 @@
 """Find new vulnerability candidates for the shop platforms ecomsec supports.
 
 Sources
-  * NVD CVE API 2.0 – keyword and CPE searches (JTL-Shop, Shopware, Shopify apps)
-  * OSV.dev        – all advisories for the Shopware Composer packages
+  * NVD CVE API 2.0 – keyword and CPE searches (JTL-Shop, Shopware, Shopify apps,
+                      WordPress/WooCommerce, Magento/Adobe Commerce)
+  * OSV.dev        – all advisories for the Shopware and Magento Composer packages
 
 Compares the hits with the curated files in advisories/*.toml and
 advisories/ignored.toml and writes
@@ -54,7 +55,40 @@ PLATFORMS = {
         "must_match": re.compile(r"shopify", re.I),
         "osv_packages": [],
     },
+    # WordPress core and the WooCommerce plugin. Keyword searches would return
+    # thousands of third-party plugin CVEs, so only the CPEs are queried.
+    # Entries matching the WooCommerce CPE refer to the plugin version and
+    # get `component = "WooCommerce"` in the draft.
+    "woocommerce": {
+        "nvd_keywords": [],
+        "nvd_cpe": ["cpe:2.3:a:wordpress:wordpress", "cpe:2.3:a:woocommerce:woocommerce"],
+        "cpe_components": {"cpe:2.3:a:woocommerce:woocommerce": "WooCommerce"},
+        "must_match": re.compile(r"wordpress|woocommerce", re.I),
+        "osv_packages": [],
+    },
+    # Magento Open Source / Adobe Commerce. Patch releases are written as
+    # 2.4.x-pN; magento/framework versions (103.0.N) are mapped to 2.4.N.
+    "magento2": {
+        "nvd_keywords": ["Adobe Commerce"],
+        "nvd_cpe": ["cpe:2.3:a:adobe:magento", "cpe:2.3:a:magento:magento", "cpe:2.3:a:adobe:commerce"],
+        "must_match": re.compile(r"magento|adobe commerce", re.I),
+        "osv_packages": ["magento/product-community-edition", "magento/magento2-base", "magento/framework"],
+        "osv_version_map": {"magento/framework": "magento_framework"},
+        "min_fixed_major": 2,
+    },
 }
+
+
+def magento_framework(v: str) -> str:
+    """magento/framework 103.0.N[-pK] → Magento 2.4.N[-pK] (102 → 2.3, 101 → 2.2)."""
+    m = re.match(r"^(10[123])\.0\.(\d+)(-p\d+)?$", v.strip())
+    if not m:
+        return v
+    minor = {"103": 4, "102": 3, "101": 2}[m.group(1)]
+    return f"2.{minor}.{m.group(2)}{m.group(3) or ''}"
+
+
+VERSION_MAPS = {"magento_framework": magento_framework}
 
 NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 OSV_URL = "https://api.osv.dev/v1/query"
@@ -149,7 +183,7 @@ def ranges_from_cpe(cve: dict, cpe_prefixes: list[str]) -> tuple[list[str], list
         for node in conf.get("nodes", []):
             for m in node.get("cpeMatch", []):
                 crit = m.get("criteria", "")
-                if cpe_prefixes and not any(crit.startswith(p) for p in cpe_prefixes):
+                if cpe_prefixes and not any(crit.startswith(p + ":") for p in cpe_prefixes):
                     continue
                 if not m.get("vulnerable", True):
                     continue
@@ -166,7 +200,12 @@ def ranges_from_cpe(cve: dict, cpe_prefixes: list[str]) -> tuple[list[str], list
                     parts.append(f"<={hi_inc}")  # lint will flag; agent must resolve
                 if not parts:
                     # exact version in the CPE string
-                    ver = crit.split(":")[5] if crit.count(":") >= 5 else "*"
+                    fields = crit.split(":")
+                    ver = fields[5] if len(fields) > 5 else "*"
+                    # Magento lists patch releases in the update field (2.4.6 + p5).
+                    update = fields[6] if len(fields) > 6 else "*"
+                    if ver not in ("*", "-", "") and re.fullmatch(r"p\d+", update):
+                        ver = f"{ver}-{update}"
                     if ver not in ("*", "-", ""):
                         parts.append(ver)
                 if parts:
@@ -200,7 +239,16 @@ def nvd_candidates(platform: str, cfg: dict, since: dt.datetime, api_key: str | 
         if not cfg["must_match"].search(desc + " " + json.dumps(cve.get("configurations", []))):
             continue
         score, vector = cvss(cve)
-        affected, fixed = ranges_from_cpe(cve, cfg["nvd_cpe"])
+        conf_text = json.dumps(cve.get("configurations", []))
+        component = next(
+            ((prefix, name) for prefix, name in cfg.get("cpe_components", {}).items() if prefix + ":" in conf_text),
+            None,
+        )
+        if component:
+            # Ranges of a component (WooCommerce) must not mix with core ranges.
+            affected, fixed = ranges_from_cpe(cve, [component[0]])
+        else:
+            affected, fixed = ranges_from_cpe(cve, cfg["nvd_cpe"])
         out.append({
             "id": cve["id"],
             "platform": platform,
@@ -216,6 +264,7 @@ def nvd_candidates(platform: str, cfg: dict, since: dt.datetime, api_key: str | 
             "fixed_in": fixed,
             "references": [r["url"] for r in cve.get("references", [])][:8],
             "aliases": [],
+            "component": component[1] if component else None,
         })
     return out
 
@@ -241,14 +290,19 @@ def osv_candidates(platform: str, cfg: dict, since: dt.datetime) -> list[dict]:
             key = cve or vid
             affected, fixed = [], []
             for a in v.get("affected", []):
-                if a.get("package", {}).get("name") not in cfg["osv_packages"]:
+                pkg_name = a.get("package", {}).get("name")
+                if pkg_name not in cfg["osv_packages"]:
                     continue
+                vmap = VERSION_MAPS.get(cfg.get("osv_version_map", {}).get(pkg_name, ""), lambda x: x)
                 for r in a.get("ranges", []):
+                    if r.get("type") == "GIT":
+                        continue
                     intro, fix = None, None
                     for ev in r.get("events", []):
-                        intro = ev.get("introduced", intro)
+                        if "introduced" in ev:
+                            intro = vmap(ev["introduced"]) if ev["introduced"] != "0" else "0"
                         if "fixed" in ev:
-                            fix = ev["fixed"]
+                            fix = vmap(ev["fixed"])
                             parts = []
                             if intro and intro != "0":
                                 parts.append(f">={intro}")
@@ -307,7 +361,11 @@ def osv_candidates(platform: str, cfg: dict, since: dt.datetime) -> list[dict]:
 
 
 def version_key(v: str) -> tuple:
-    return tuple(int(p) if p.isdigit() else 0 for p in re.split(r"[.-]", v))
+    # `-pN` is a Magento/Composer patch level and sorts after the release.
+    return tuple(
+        int(p) if p.isdigit() else (int(p[1:]) if re.fullmatch(r"p\d+", p) else 0)
+        for p in re.split(r"[.-]", v)
+    )
 
 
 def toml_str(s: str) -> str:
@@ -336,6 +394,8 @@ def write_drafts(cands: list[dict], today: str) -> list[Path]:
                 f"title = {toml_str(c['title'] or c['id'])}",
                 f"severity = {toml_str(c['severity'])}",
             ]
+            if c.get("component"):
+                lines.append(f"component = {toml_str(c['component'])}")
             if c.get("score") is not None:
                 lines.append(f"score = {c['score']}")
             lines.append("affected = [" + ", ".join(toml_str(a) for a in c["affected"]) + "]")

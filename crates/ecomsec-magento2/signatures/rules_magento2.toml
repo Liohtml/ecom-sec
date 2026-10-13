@@ -1,0 +1,145 @@
+# Magento 2 / Adobe Commerce specific content rules: Magecart skimmers in
+# JS/phtml/Knockout templates and stored content, RequireJS injections,
+# admin backdoors and traces of the big Magento exploitation waves
+# (CVE-2022-24086 template injection, CVE-2024-34102 CosmicSting XXE,
+# CVE-2025-54236 SessionReaper).
+#
+# Path-specific checks (PHP in pub/media and pub/static, modified entry
+# points, env.php code, admin route hijacks) are implemented in the adapter.
+
+[[rule]]
+name = "magento_payment_skimmer"
+description = "Magecart-Skimmer: Magento-Zahlungsformular (payment[cc_number], #co-payment-form …) abgegriffen und kodiert versendet"
+severity = "critical"
+category = "third_party_injection"
+condition = "3"
+tags = ["magento", "skimmer", "magecart"]
+reference = "https://sansec.io/research"
+applies_to = ["js", "template", "php"]
+strings = [
+  { regex = '(payment\[cc_(number|cid|exp_month|exp_year)\]|#co-payment-form|co-payment-form|checkout-payment-method-load|\bcc_number\b|braintree_cc_number|payment-form|onestepcheckout|firecheckout)', nocase = true },
+  { regex = '(new\s+Image\s*\(\s*\)\s*\.src|navigator\.sendBeacon|new\s+WebSocket|XMLHttpRequest|fetch\s*\()', nocase = true },
+  { regex = '(btoa\s*\(|atob\s*\(|encodeURIComponent\s*\(\s*JSON\.stringify|String\.fromCharCode|charCodeAt\s*\()', nocase = true },
+  { regex = '(https?:)?//[a-z0-9.-]+\.(ru|cn|su|top|xyz|icu|buzz|club|pw|cc|ws|biz|info|online|site|website|space|store|shop|live|pro)\b|wss?://', nocase = true },
+]
+
+[[rule]]
+name = "magento_websocket_skimmer"
+description = "WebSocket-Skimmer: Verbindung zu externem wss://-Host aus Checkout-/Zahlungskontext"
+severity = "critical"
+category = "third_party_injection"
+condition = "all"
+tags = ["magento", "skimmer", "websocket"]
+applies_to = ["js", "template", "php"]
+strings = [
+  { regex = 'new\s+WebSocket\s*\(\s*(atob\s*\(\s*)?[\x27"`](wss?:)?//', nocase = true },
+  { regex = '(checkout|payment|billing|cc_?number|cvv|onepage)', nocase = true },
+]
+
+[[rule]]
+name = "magento_requirejs_remote_dep"
+description = "RequireJS-Konfiguration bindet Module von externen URLs ein (map/paths/deps)"
+severity = "warning"
+category = "third_party_injection"
+condition = "all"
+tags = ["magento", "requirejs", "skimmer"]
+applies_to = ["js"]
+strings = [
+  { regex = '(require(js)?\.config\s*\(|var\s+config\s*=\s*\{)', nocase = true },
+  { regex = '\b(map|paths|deps)\s*["\x27]?\s*:\s*[\[{][^\]}]{0,600}[\x27"](https?:)?//[a-z0-9.-]+\.[a-z]{2,}', nocase = true },
+]
+
+[[rule]]
+name = "magento_backdoor_admin_creation"
+description = "Backdoor legt über ObjectManager/User-Model ein Admin-Konto an, gesteuert per Request-Parameter"
+severity = "critical"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["magento", "backdoor", "admin"]
+applies_to = ["php"]
+strings = [
+  { regex = '(Magento\\User\\Model\\User|UserFactory|admin_user)', nocase = true },
+  { regex = '(setRoleId\s*\(|->save\s*\(|INSERT\s+INTO\s+[`\w]*admin_user)', nocase = true },
+  { regex = '\$_(GET|POST|REQUEST|COOKIE)\s*\[', nocase = true },
+]
+
+[[rule]]
+name = "magento_fake_admin_login"
+description = "Gefälschtes Magento-Admin-Login: Formular sendet Zugangsdaten an eine externe URL"
+severity = "critical"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["magento", "phishing", "admin"]
+applies_to = ["php", "template", "js"]
+strings = [
+  { regex = 'login\[(username|password)\]', nocase = true },
+  { regex = '<form[^>]{0,300}action\s*=\s*["\x27]https?://', nocase = true },
+]
+
+[[rule]]
+name = "magento_template_injection_payload"
+description = "Template-Injection-Payload (CVE-2022-24086/-24087): {{var this.…}}, getTemplateFilter, Filter-Callbacks"
+severity = "critical"
+category = "exploit_payload"
+tags = ["magento", "cve-2022-24086", "ssti"]
+reference = "https://helpx.adobe.com/security/products/magento/apsb22-12.html"
+applies_to = ["log", "template", "php", "js"]
+strings = [
+  { regex = '\{\{\s*var\s+this\.(getTemplateFilter|templateFilter|filter|addAfterFilterCallback)', nocase = true },
+  { regex = '\{\{\s*(var|block|template|config|depend|if)\b[^}]{0,200}(addAfterFilterCallback|getTemplateFilter|setVariables|system|exec|passthru|shell_exec|base64_decode)', nocase = true },
+  { regex = '(%7B%7B|\{\{)\s*(var|block)\s*[^}]{0,120}(getTemplateFilter|addAfterFilterCallback)', nocase = true },
+]
+
+[[rule]]
+name = "magento_cosmicsting_xxe"
+description = "CosmicSting-Angriffsspur (CVE-2024-34102): XML-Entity-Payload im REST-/GraphQL-Request"
+severity = "critical"
+category = "attack_trace"
+condition = "2"
+tags = ["magento", "cve-2024-34102", "xxe"]
+reference = "https://sansec.io/research/cosmicsting"
+applies_to = ["log"]
+strings = [
+  { regex = '(estimate-shipping-methods|/rest/[^\s"]{0,60}V1/|graphql)', nocase = true },
+  { regex = '(sourceData|dataIsURL|totalsCollector|collectorList)', nocase = true },
+  { regex = '<!(DOCTYPE|ENTITY)[^>]{0,200}(SYSTEM|PUBLIC)', nocase = true },
+]
+
+[[rule]]
+name = "magento_sessionreaper_trace"
+description = "SessionReaper-Angriffsspur (CVE-2025-54236): Session-Datei-Upload über customer/address_file/upload"
+severity = "warning"
+category = "attack_trace"
+condition = "2"
+tags = ["magento", "cve-2025-54236", "sessionreaper"]
+reference = "https://sansec.io/research/sessionreaper"
+applies_to = ["log"]
+strings = [
+  { regex = 'customer/address_file/upload', nocase = true },
+  { regex = '(sess_[a-z0-9]{8,}|PHPSESSID=\.\./|\.\./\.\./|O:\d+:"[A-Za-z\\]+")', nocase = true },
+]
+
+[[rule]]
+name = "magento_crontab_persistence"
+description = "PHP-Code schreibt Einträge in die System-Crontab (Persistenz)"
+severity = "critical"
+category = "suspicious_pattern"
+tags = ["magento", "persistence", "cron"]
+applies_to = ["php"]
+strings = [
+  { regex = '\b(exec|shell_exec|system|passthru|popen|proc_open)\s*\([^;]{0,160}crontab\b', nocase = true },
+  { regex = '`[^`]{0,160}crontab\s+-[l-]', nocase = true },
+]
+
+[[rule]]
+name = "magento_media_loader_include"
+description = "Include/require auf pub/media, pub/static, var/ oder Bild-/Textdateien (versteckter Loader)"
+severity = "critical"
+category = "suspicious_pattern"
+tags = ["magento", "loader"]
+applies_to = ["php"]
+strings = [
+  { regex = '\b(include|require)(_once)?\s*\(?\s*[^;]{0,120}(pub/media|pub/static|/var/tmp|media/(catalog|wysiwyg|tmp))/[^;]{0,120}', nocase = true },
+  { regex = '\b(include|require)(_once)?\s*\(?\s*[\x27"][^\x27"\n]{1,200}\.(ico|png|jpe?g|gif|txt|css|tmp|svg|webp|log)[\x27"]', nocase = true },
+  { regex = '@\s*(include|require)(_once)?\s*\(?\s*"\\x[0-9a-f]{2}', nocase = true },
+]

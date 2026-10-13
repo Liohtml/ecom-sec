@@ -25,6 +25,7 @@ pub mod db;
 pub mod diff;
 pub mod engine;
 pub mod finding;
+pub mod hosts;
 pub mod platform;
 pub mod recommendations;
 pub mod report;
@@ -39,8 +40,8 @@ pub use diff::ReportDiff;
 pub use engine::{Engine, ScanOptions, ScanOutcome};
 pub use finding::{Category, Finding, FindingId, Review, ReviewVerdict, Severity};
 pub use platform::{
-    Advisory, FileScanProfile, IntegrityItem, IntegrityStatus, Platform, PlatformContext,
-    PlatformInfo, PlatformKind,
+    Advisory, ComponentVersion, FileScanProfile, IntegrityItem, IntegrityStatus, Platform,
+    PlatformContext, PlatformInfo, PlatformKind,
 };
 pub use recommendations::{Recommendation, RecommendationGroup};
 pub use report::{Report, Summary, Verdict};

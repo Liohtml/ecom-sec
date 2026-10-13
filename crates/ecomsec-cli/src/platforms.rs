@@ -46,6 +46,18 @@ pub const PLATFORMS: &[PlatformDescriptor] = &[
         description: "CVE-Status (Twig-SSTI, SQLi), Webshell-Scan, Admin-User, API-Integrationen, Apps/Plugins, Zahlungsanbieter-Konfiguration, Mail-Templates/Flows, Snippet-/CMS-Injection",
     },
     PlatformDescriptor {
+        id: ecomsec_woocommerce::PLATFORM_ID,
+        name: ecomsec_woocommerce::PLATFORM_NAME,
+        kind: "self-hosted (Webroot + MySQL)",
+        description: "WordPress-Core- und WooCommerce-CVE-Status, Backdoor-/Skimmer-Scan (mu-plugins, Schein-Plugins, wp-config/index.php), Admins & Sitzungen, siteurl/home, aktive Plugins, Options-/Beitrags-Injection, WP-Cron, Zahlungs-Einstellungen, REST-API-Schlüssel, Webhooks, WordPress.org-Versionsabgleich",
+    },
+    PlatformDescriptor {
+        id: ecomsec_magento2::PLATFORM_ID,
+        name: ecomsec_magento2::PLATFORM_NAME,
+        kind: "self-hosted (Projekt-Root + MySQL)",
+        description: "CVE-Status (CosmicSting, SessionReaper …), Magecart-/Webshell-Scan, env.php/MAGE_MODE, Admin-Benutzer & Sitzungen, Integrationen/OAuth, core_config_data (Head-/Footer-Scripts, Basis-URLs, Zahlung), CMS-Blöcke/-Seiten, Cron-Jobs, Composer-Pakete gegen OSV",
+    },
+    PlatformDescriptor {
         id: ecomsec_shopify::PLATFORM_ID,
         name: "Shopify",
         kind: "hosted (Admin API)",
@@ -59,6 +71,10 @@ pub fn detect(root: &Path) -> Option<&'static str> {
         Some(ecomsec_jtl5::PLATFORM_ID)
     } else if ecomsec_shopware6::Shopware6::detect(root) {
         Some(ecomsec_shopware6::PLATFORM_ID)
+    } else if ecomsec_magento2::Magento2::detect(root) {
+        Some(ecomsec_magento2::PLATFORM_ID)
+    } else if ecomsec_woocommerce::WooCommerce::detect(root) {
+        Some(ecomsec_woocommerce::PLATFORM_ID)
     } else {
         None
     }
@@ -107,7 +123,7 @@ impl TargetSpec {
                 detect(&dir)
                     .with_context(|| {
                         format!(
-                            "Kein unterstütztes Shopsystem in {} erkannt (JTL-Shop 5: includes/config.JTL-Shop.ini.php, Shopware 6: composer.json mit shopware/core). Plattform mit --platform angeben.",
+                            "Kein unterstütztes Shopsystem in {} erkannt (JTL-Shop 5: includes/config.JTL-Shop.ini.php, Shopware 6: composer.json mit shopware/core, Magento 2: app/etc/env.php + bin/magento, WooCommerce/WordPress: wp-config.php + wp-includes/version.php). Plattform mit --platform angeben.",
                             dir.display()
                         )
                     })?
@@ -186,6 +202,26 @@ impl TargetSpec {
                     bail!("Verzeichnis {} existiert nicht", root.display());
                 }
                 Ok(Box::new(ecomsec_shopware6::Shopware6::open(root)?))
+            }
+            ecomsec_woocommerce::PLATFORM_ID => {
+                let root = self.root.clone().unwrap_or_else(|| PathBuf::from("."));
+                if !root.is_dir() {
+                    bail!("Verzeichnis {} existiert nicht", root.display());
+                }
+                Ok(Box::new(
+                    ecomsec_woocommerce::WooCommerce::open(root)?
+                        .with_allow_hosts(self.allow_hosts.clone()),
+                ))
+            }
+            ecomsec_magento2::PLATFORM_ID => {
+                let root = self.root.clone().unwrap_or_else(|| PathBuf::from("."));
+                if !root.is_dir() {
+                    bail!("Verzeichnis {} existiert nicht", root.display());
+                }
+                Ok(Box::new(
+                    ecomsec_magento2::Magento2::open(root)?
+                        .with_allow_hosts(self.allow_hosts.clone()),
+                ))
             }
             ecomsec_shopify::PLATFORM_ID => {
                 let shop = self

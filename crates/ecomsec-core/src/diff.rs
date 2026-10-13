@@ -820,6 +820,7 @@ mod tests {
                 reference: Some("https://example.org".into()),
                 published: NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(),
                 tags: vec![],
+                component: None,
             },
             state,
             basis: "Version 5.3.1".into(),

@@ -7,7 +7,8 @@ use crate::advisories::{merge_by_id, AdvisoryDb};
 use crate::baseline::Baseline;
 use crate::finding::{Category, Finding, Severity, Source};
 use crate::platform::{
-    evaluate_advisories, IntegrityItem, IntegrityStatus, PatchState, Platform, PlatformContext,
+    evaluate_advisories, evaluated_version, IntegrityItem, IntegrityStatus, PatchState, Platform,
+    PlatformContext,
 };
 use crate::recommendations;
 use crate::report::{HistoryEntry, Report, SCHEMA_VERSION};
@@ -278,9 +279,11 @@ impl Engine {
                         Category::PatchStatus,
                         Source::Configuration,
                         format!("advisory_{}", adv.id.to_ascii_lowercase()),
-                        info.version
-                            .as_ref()
-                            .map(|v| v.to_string())
+                        evaluated_version(platform, info.version.as_ref(), adv)
+                            .map(|v| match &adv.component {
+                                Some(c) => format!("{c} {v}"),
+                                None => v.to_string(),
+                            })
                             .unwrap_or_else(|| "unbekannte Version".into()),
                         format!("Shop ist verwundbar: {} ({})", adv.id, adv.title),
                     )

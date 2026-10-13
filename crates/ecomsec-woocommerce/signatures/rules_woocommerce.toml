@@ -1,0 +1,205 @@
+# WordPress / WooCommerce specific content rules.
+#
+# Path-specific checks (must-use plugins, plugin folders without header,
+# PHP in wp-content/uploads, modified index.php, extra includes in
+# wp-config.php) are implemented in the adapter; these rules match file and
+# database content.  Typical persistence patterns are described by Sucuri,
+# Wordfence and Sansec research on WordPress/WooCommerce compromises.
+
+[[rule]]
+name = "wp_backdoor_admin_creation"
+description = "Backdoor legt per Request-Parameter ein (verstecktes) Administrator-Konto an"
+severity = "critical"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["wordpress", "backdoor", "admin"]
+reference = "https://blog.sucuri.net/2023/03/hidden-administrator-users-in-wordpress.html"
+applies_to = ["php"]
+strings = [
+  { regex = '\b(wp_create_user|wp_insert_user|wp_update_user|update_user_meta|add_user_meta)\s*\(', nocase = true },
+  { regex = '(set_role\s*\(\s*[\x27"]administrator|[\x27"]role[\x27"]\s*=>\s*[\x27"]administrator|capabilities[^;]{0,80}administrator|add_role\s*\([^;]{0,80}administrator)', nocase = true },
+  { regex = '\$_(GET|POST|REQUEST|COOKIE)\s*\[', nocase = true },
+]
+
+[[rule]]
+name = "wp_hidden_admin_filter"
+description = "Administrator-Konto wird per pre_user_query/views_users aus der Benutzerliste ausgeblendet"
+severity = "critical"
+category = "suspicious_pattern"
+condition = "2"
+tags = ["wordpress", "backdoor", "admin"]
+applies_to = ["php"]
+strings = [
+  { regex = 'add_action\s*\(\s*[\x27"]pre_user_query[\x27"]', nocase = true },
+  { regex = 'query_where\s*=\s*str_replace|query_where\s*\.=\s*[\x27"][^\x27"]{0,40}(user_login|ID)\s*(!=|<>|NOT\s+IN)', nocase = true },
+  { regex = 'add_filter\s*\(\s*[\x27"]views_users[\x27"]', nocase = true },
+]
+
+[[rule]]
+name = "wp_auth_cookie_backdoor"
+description = "Login-Bypass: wp_set_auth_cookie für einen Administrator, gesteuert über Request-Daten"
+severity = "critical"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["wordpress", "backdoor", "auth-bypass"]
+applies_to = ["php"]
+strings = [
+  # Request parameter checked shortly before the cookie is set (no login form in between).
+  { regex = '(?s)\$_(GET|POST|REQUEST|COOKIE|SERVER\s*\[\s*[\x27"]HTTP_)[^\n]{0,120}.{0,300}?\bwp_set_auth_cookie\s*\(', nocase = true },
+  { regex = '(administrator|get_super_admins|user_level|get_users\s*\(|get_user_by\s*\(\s*[\x27"](id|login)[\x27"]\s*,\s*1\s*\))', nocase = true },
+]
+
+[[rule]]
+name = "wp_hook_eval_payload"
+description = "WordPress-Hook (init/wp_head/wp_footer …) führt dekodierten oder übergebenen Code aus"
+severity = "critical"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["wordpress", "backdoor", "functions.php"]
+applies_to = ["php"]
+strings = [
+  { regex = 'add_(action|filter)\s*\(\s*[\x27"](init|wp_head|wp_footer|admin_init|plugins_loaded|template_redirect|wp_loaded|after_setup_theme|wp_enqueue_scripts|shutdown|muplugins_loaded)[\x27"]', nocase = true },
+  { regex = '\b(eval|assert|create_function)\s*\(', nocase = true },
+  { regex = '\b(base64_decode|gzinflate|gzuncompress|str_rot13|strrev|hex2bin|get_option|get_transient|get_site_option)\s*\(|\$_(GET|POST|REQUEST|COOKIE)\s*\[', nocase = true },
+]
+
+[[rule]]
+name = "wp_ajax_nopriv_exec"
+description = "Öffentlicher AJAX-Endpunkt (wp_ajax_nopriv_) mit Code-/Befehlsausführung"
+severity = "critical"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["wordpress", "backdoor"]
+applies_to = ["php"]
+strings = [
+  { regex = 'add_action\s*\(\s*[\x27"]wp_ajax_nopriv_', nocase = true },
+  { regex = '\b(eval|assert|system|shell_exec|passthru|exec|popen|proc_open)\s*\(\s*(stripslashes\s*\(\s*)?\$_(POST|GET|REQUEST|COOKIE)', nocase = true },
+]
+
+[[rule]]
+name = "wp_remote_payload_exec"
+description = "Code wird von einem fremden Server geladen und ausgeführt bzw. als PHP-Datei abgelegt"
+severity = "critical"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["wordpress", "dropper"]
+applies_to = ["php"]
+strings = [
+  { regex = '\b(wp_remote_get|wp_remote_post|wp_safe_remote_get|wp_remote_retrieve_body|download_url)\s*\(|file_get_contents\s*\(\s*[\x27"]https?://|curl_exec\s*\(', nocase = true },
+  { regex = '\b(eval|create_function)\s*\(\s*(\$|wp_remote_retrieve_body|base64_decode|gzinflate)|file_put_contents\s*\([^;]{0,160}\.php[\x27"]', nocase = true },
+]
+
+[[rule]]
+name = "wp_cron_remote_payload"
+description = "WP-Cron-Ereignis lädt regelmäßig Code von einem fremden Server nach (Re-Infektion)"
+severity = "critical"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["wordpress", "cron", "persistence"]
+applies_to = ["php"]
+strings = [
+  { regex = '\bwp_schedule_(single_)?event\s*\(', nocase = true },
+  { regex = '\b(wp_remote_get|wp_remote_post|wp_remote_retrieve_body|download_url|file_get_contents\s*\(\s*[\x27"]https?://|curl_exec)', nocase = true },
+  { regex = '\b(eval|create_function)\s*\(|file_put_contents\s*\([^;]{0,160}\.php[\x27"]', nocase = true },
+]
+
+[[rule]]
+name = "wp_include_non_php_file"
+description = "include/require einer Bild-, Text- oder versteckten Datei bzw. eines hex-kodierten Pfads"
+severity = "critical"
+category = "suspicious_pattern"
+tags = ["wordpress", "backdoor", "loader"]
+reference = "https://blog.sucuri.net/2021/02/malware-hiding-in-fake-ico-files.html"
+applies_to = ["php"]
+strings = [
+  { regex = '\b(include|require)(_once)?\s*\(?\s*[\x27"][^\x27"\n]{1,200}\.(ico|png|jpe?g|gif|txt|css|tmp|bak|svg|webp|log)[\x27"]', nocase = true },
+  { regex = '@\s*(include|require)(_once)?\s*\(?\s*"\\x[0-9a-f]{2}', nocase = true },
+  { regex = '\b(include|require)(_once)?\s*\(?\s*[\x27"][^\x27"\n]{0,160}/\.[a-z0-9]{6,}\.(php|ico|inc)[\x27"]', nocase = true },
+]
+
+[[rule]]
+name = "wp_php_in_image_file"
+description = "Datei mit Bild-Endung (.ico/.png/.jpg …) enthält ausführbaren PHP-Code"
+severity = "critical"
+category = "code_in_upload_dir"
+condition = "all"
+tags = ["wordpress", "polyglot", "loader"]
+applies_to = ["image"]
+strings = [
+  { regex = '<\?(php|=)', nocase = true },
+  { regex = '\b(eval|assert|base64_decode|gzinflate|str_rot13|create_function|system|shell_exec)\s*\(|\$GLOBALS\s*\[|\$_(GET|POST|REQUEST|COOKIE)\s*\[', nocase = true },
+]
+
+[[rule]]
+name = "wp_siteurl_hijack_code"
+description = "Code setzt siteurl/home auf einen festen oder übergebenen Wert (Umleitung der Website)"
+severity = "critical"
+category = "suspicious_pattern"
+tags = ["wordpress", "redirect"]
+applies_to = ["php"]
+strings = [
+  { regex = 'update_option\s*\(\s*[\x27"](siteurl|home)[\x27"]\s*,\s*(\$_(GET|POST|REQUEST|COOKIE)|base64_decode|[\x27"]https?://)', nocase = true },
+  { regex = 'UPDATE\s+[`\w]*options\s+SET\s+option_value\s*=\s*[\x27"]https?://[^\x27"]+[\x27"]\s+WHERE\s+option_name\s*(=|IN)\s*\(?\s*[\x27"](siteurl|home)', nocase = true },
+]
+
+[[rule]]
+name = "wc_checkout_skimmer"
+description = "WooCommerce-Checkout-Skimmer: Checkout-/Zahlungsformular abgegriffen, kodiert und an fremden Host gesendet"
+severity = "critical"
+category = "third_party_injection"
+condition = "all"
+tags = ["woocommerce", "skimmer", "magecart"]
+reference = "https://sansec.io/research"
+applies_to = ["js", "template", "php"]
+strings = [
+  # Checkout or card field context …
+  { regex = '(form\.checkout|form\[name=[\x27"]?checkout|#place_order|checkout_place_order|#billing_(email|phone|first_name|address_1)|card[-_]?number|cc[-_]?(number|num|exp)|#stripe-card|wc-stripe-elements)', nocase = true },
+  # … read, encoded …
+  { regex = '(btoa\s*\(|encodeURIComponent\s*\(\s*JSON\.stringify|String\.fromCharCode\s*\(\s*\d)', nocase = true },
+  # … and beaconed to a host on an abuse-prone TLD or a websocket.
+  { regex = '(new\s+Image\s*\(\s*\)|navigator\.sendBeacon|fetch\s*\(|XMLHttpRequest|new\s+WebSocket|\.src\s*=)', nocase = true },
+  { regex = '[\x27"`](https?:)?//[a-z0-9.-]+\.(ru|cn|su|top|xyz|icu|buzz|club|pw|ws|cc)[/:\x27"`?]|[\x27"`]wss?://', nocase = true },
+]
+
+[[rule]]
+name = "wc_fake_payment_form"
+description = "Eingeschleustes Kartenformular im Checkout (gefälschtes Zahlungsformular vor dem echten Gateway)"
+severity = "critical"
+category = "third_party_injection"
+condition = "all"
+tags = ["woocommerce", "skimmer"]
+applies_to = ["js", "template", "php"]
+strings = [
+  { regex = '(insertAdjacentHTML|innerHTML\s*[+]?=|\.append\s*\(|\.prepend\s*\(|\.before\s*\()', nocase = true },
+  { regex = '(name|id)\s*=\s*\\?[\x27"](cc_?number|card_?number|cardnum|ccnum|cc_cvv|cvv2?|cc_exp)', nocase = true },
+  { regex = '(localStorage\.setItem|document\.cookie\s*=|btoa\s*\(|sendBeacon|new\s+Image\s*\(\s*\))', nocase = true },
+]
+
+[[rule]]
+name = "wp_seo_spam_doorway"
+description = "SEO-Spam/Doorway: versteckte Spam-Begriffe oder Links, oft mit Bot-Weiche"
+severity = "warning"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["wordpress", "seo-spam"]
+applies_to = ["php", "template", "js"]
+strings = [
+  # Spam vocabulary is mandatory …
+  { regex = '\b(viagra|cialis|levitra|slot\s*gacor|judi\s+online|togel|bokep|replica\s+(watches|rolex)|payday\s+loans?|kamagra)\b', nocase = true },
+  # … combined with hiding, bot cloaking or spam links.
+  { regex = '(display\s*:\s*none|visibility\s*:\s*hidden|position\s*:\s*absolute\s*;\s*(left|top)\s*:\s*-\d{3,}|font-size\s*:\s*[01]px|Googlebot|bingbot|HTTP_USER_AGENT|HTTP_REFERER|<a\s[^>]{0,200}href\s*=\s*[\x27"]https?://)', nocase = true },
+]
+
+[[rule]]
+name = "wp_db_credentials_exfil"
+description = "Code liest DB-Zugangsdaten bzw. wp-config.php und sendet sie nach außen"
+severity = "warning"
+category = "suspicious_pattern"
+condition = "all"
+tags = ["wordpress", "exfiltration"]
+applies_to = ["php"]
+strings = [
+  { regex = '(DB_PASSWORD|file_get_contents\s*\([^)]{0,80}wp-config\.php)', nocase = false },
+  { regex = '\b(wp_mail|mail|wp_remote_post|curl_exec|fsockopen|file_get_contents\s*\(\s*[\x27"]https?://)', nocase = true },
+  { regex = '\b(base64_encode|json_encode|serialize|http_build_query)\s*\(', nocase = true },
+]

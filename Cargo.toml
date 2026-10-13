@@ -8,6 +8,8 @@ members = [
     "crates/ecomsec-osv",
     "crates/ecomsec-notify",
     "crates/ecomsec-audit",
+    "crates/ecomsec-woocommerce",
+    "crates/ecomsec-magento2",
     "crates/ecomsec-cli",
 ]
 
@@ -26,6 +28,8 @@ ecomsec-shopify = { path = "crates/ecomsec-shopify" }
 ecomsec-osv = { path = "crates/ecomsec-osv" }
 ecomsec-notify = { path = "crates/ecomsec-notify" }
 ecomsec-audit = { path = "crates/ecomsec-audit" }
+ecomsec-woocommerce = { path = "crates/ecomsec-woocommerce" }
+ecomsec-magento2 = { path = "crates/ecomsec-magento2" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

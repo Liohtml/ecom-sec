@@ -528,10 +528,12 @@ dependencies = [
  "ecomsec-audit",
  "ecomsec-core",
  "ecomsec-jtl5",
+ "ecomsec-magento2",
  "ecomsec-notify",
  "ecomsec-osv",
  "ecomsec-shopify",
  "ecomsec-shopware6",
+ "ecomsec-woocommerce",
  "env_logger",
  "filetime",
  "libc",
@@ -601,6 +603,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ecomsec-magento2"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "ecomsec-core",
+ "ecomsec-osv",
+ "log",
+ "mysql",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "walkdir",
+]
+
+[[package]]
 name = "ecomsec-notify"
 version = "0.1.0"
 dependencies = [
@@ -659,6 +678,23 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+]
+
+[[package]]
+name = "ecomsec-woocommerce"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "ecomsec-core",
+ "log",
+ "mysql",
+ "regex",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "ureq",
+ "walkdir",
 ]
 
 [[package]]
