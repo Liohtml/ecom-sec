@@ -1,0 +1,195 @@
+name: Release
+
+# Builds static/release binaries for all supported platforms when a version
+# tag (v*) is pushed, attaches them with SHA256SUMS to a GitHub Release and
+# publishes the container image to GHCR.  No secrets beyond GITHUB_TOKEN.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            builder: musl
+          - target: aarch64-unknown-linux-musl
+            os: ubuntu-latest
+            builder: zigbuild
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            builder: cargo
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            builder: cargo
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            builder: cargo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install musl-tools
+        if: matrix.builder == 'musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install cargo-zigbuild
+        if: matrix.builder == 'zigbuild'
+        run: pip3 install cargo-zigbuild
+
+      - name: Build
+        shell: bash
+        run: |
+          if [ "${{ matrix.builder }}" = "zigbuild" ]; then
+            cargo zigbuild --release --locked -p ecomsec --target "${{ matrix.target }}"
+          else
+            cargo build --release --locked -p ecomsec --target "${{ matrix.target }}"
+          fi
+
+      - name: Package
+        id: package
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          name="ecomsec-${TAG}-${TARGET}"
+          exe="ecomsec"
+          case "$TARGET" in *windows*) exe="ecomsec.exe" ;; esac
+          bin="target/${TARGET}/release/${exe}"
+          # The release profile already strips symbols; strip again with the
+          # host tool where it can handle the target format.
+          case "$TARGET" in
+            x86_64-unknown-linux-musl) strip "$bin" ;;
+            *apple-darwin) strip -x "$bin" ;;
+          esac
+          mkdir -p "dist/${name}"
+          cp "$bin" README.md LICENSE "dist/${name}/"
+          cd dist
+          case "$TARGET" in
+            *windows*) 7z a -tzip "${name}.zip" "${name}" > /dev/null; echo "asset=${name}.zip" >> "$GITHUB_OUTPUT" ;;
+            *) tar czf "${name}.tar.gz" "${name}"; echo "asset=${name}.tar.gz" >> "$GITHUB_OUTPUT" ;;
+          esac
+          rm -rf "${name}"
+          ls -l
+
+      - name: Smoke test
+        # Only where the binary runs natively on the runner.
+        if: matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-pc-windows-msvc'
+        shell: bash
+        run: |
+          exe="target/${{ matrix.target }}/release/ecomsec"
+          [ -f "${exe}.exe" ] && exe="${exe}.exe"
+          "$exe" --version
+          "$exe" platforms
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.target }}
+          path: dist/${{ steps.package.outputs.asset }}
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum ecomsec-* > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > notes.md <<'EOF'
+          **ecomsec** ist ein read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6 und Shopify.
+          Dieses Release enthält fertige Programme für Linux (statisch, x86_64/ARM64), macOS (Intel/Apple Silicon)
+          und Windows sowie ein Container-Image unter `ghcr.io/${{ github.repository }}`. Installation:
+          `curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | sh` –
+          bestehende Installationen aktualisieren sich mit `ecomsec self-update`. Alle Pakete lassen sich über
+          `SHA256SUMS` prüfen.
+
+          EOF
+          prerelease=""
+          case "$TAG" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$TAG" dist/* \
+            --repo "${{ github.repository }}" \
+            --title "ecomsec $TAG" \
+            --notes-file notes.md \
+            --generate-notes \
+            --verify-tag \
+            $prerelease
+
+  docker:
+    name: Container image (GHCR)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          # GHCR requires lower-case image names.
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+          labels: |
+            org.opencontainers.image.title=ecomsec
+            org.opencontainers.image.description=Read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6 und Shopify
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
