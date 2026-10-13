@@ -2,6 +2,7 @@
 
 mod advisories_cmd;
 mod config;
+mod monitor;
 mod output;
 mod platforms;
 mod web;
@@ -107,6 +108,15 @@ enum Command {
     Advisories {
         #[command(subcommand)]
         command: advisories_cmd::AdvisoriesCommand,
+    },
+    /// Änderungen zwischen den letzten beiden Scans (oder zwei JSON-Reports) anzeigen
+    Diff(monitor::DiffArgs),
+    /// Überwachungslauf für cron/systemd: Advisories aktualisieren, scannen, vergleichen, benachrichtigen
+    Watch(monitor::WatchArgs),
+    /// Benachrichtigungskanäle testen oder anzeigen
+    Notify {
+        #[command(subcommand)]
+        command: monitor::NotifyCommand,
     },
 }
 
@@ -485,8 +495,19 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
         };
         return advisories_cmd::run(command, &base, &cfg.scan.advisory_dirs);
     }
+    if let Command::Notify { command } = &cli.command {
+        return monitor::notify(&cli, command);
+    }
+    if let Command::Diff(args) = &cli.command {
+        if args.uses_files() {
+            return monitor::diff_files(args);
+        }
+    }
 
     let ctx = build_context(&cli)?;
+    if let Command::Watch(args) = &cli.command {
+        return monitor::watch(&cli, &ctx, args);
+    }
     match cli.command {
         Command::Scan(args) => {
             let options = scan_options(&args.opts, &ctx.cfg, args.dry_run, &ctx.state_base)?;
@@ -584,7 +605,12 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
             web::serve(bind, token, ctx.spec, options, ctx.store)?;
             Ok(0)
         }
-        Command::Platforms | Command::Rules { .. } | Command::Advisories { .. } => unreachable!(),
+        Command::Diff(args) => monitor::diff_latest(&ctx, &args),
+        Command::Platforms
+        | Command::Rules { .. }
+        | Command::Advisories { .. }
+        | Command::Notify { .. }
+        | Command::Watch(_) => unreachable!(),
     }
 }
 

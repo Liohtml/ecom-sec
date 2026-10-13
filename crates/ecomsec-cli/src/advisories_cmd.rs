@@ -146,31 +146,9 @@ pub fn run(cmd: AdvisoriesCommand, state_base: &Path, cfg_dirs: &[PathBuf]) -> a
             }
         }
         AdvisoriesCommand::Update { url } => {
-            let base = url.unwrap_or_else(|| DEFAULT_UPDATE_URL.to_string());
-            let base = base.trim_end_matches('/');
-            let dir = download_dir(state_base);
-            std::fs::create_dir_all(&dir)?;
-            let agent: ureq::Agent = ureq::Agent::config_builder()
-                .timeout_global(Some(std::time::Duration::from_secs(30)))
-                .build()
-                .into();
+            let files = update(state_base, url.as_deref())?;
             let mut total = 0;
-            for file in FILES {
-                let u = format!("{base}/{file}");
-                let text = agent
-                    .get(&u)
-                    .call()
-                    .and_then(|mut r| r.body_mut().read_to_string())
-                    .with_context(|| format!("Download fehlgeschlagen: {u}"))?;
-                // Validate before replacing the previous file.
-                let mut check = AdvisoryDb::new();
-                let n = check
-                    .merge_toml(file, &text)
-                    .with_context(|| format!("{u} ist keine gültige Advisory-Datei"))?;
-                let target = dir.join(file);
-                let tmp = target.with_extension("toml.tmp");
-                std::fs::write(&tmp, &text)?;
-                std::fs::rename(&tmp, &target)?;
+            for (file, n, target) in &files {
                 println!("{file}: {n} Advisories → {}", target.display());
                 total += n;
             }
@@ -180,6 +158,41 @@ pub fn run(cmd: AdvisoriesCommand, state_base: &Path, cfg_dirs: &[PathBuf]) -> a
             Ok(0)
         }
     }
+}
+
+/// Download and validate the advisory files into the state directory.
+/// Returns `(file, number of advisories, path)` per file.
+pub fn update(
+    state_base: &Path,
+    url: Option<&str>,
+) -> anyhow::Result<Vec<(&'static str, usize, PathBuf)>> {
+    let base = url.unwrap_or(DEFAULT_UPDATE_URL).trim_end_matches('/');
+    let dir = download_dir(state_base);
+    std::fs::create_dir_all(&dir)?;
+    let agent: ureq::Agent = ureq::Agent::config_builder()
+        .timeout_global(Some(std::time::Duration::from_secs(30)))
+        .build()
+        .into();
+    let mut out = Vec::new();
+    for file in FILES {
+        let u = format!("{base}/{file}");
+        let text = agent
+            .get(&u)
+            .call()
+            .and_then(|mut r| r.body_mut().read_to_string())
+            .with_context(|| format!("Download fehlgeschlagen: {u}"))?;
+        // Validate before replacing the previous file.
+        let mut check = AdvisoryDb::new();
+        let n = check
+            .merge_toml(file, &text)
+            .with_context(|| format!("{u} ist keine gültige Advisory-Datei"))?;
+        let target = dir.join(file);
+        let tmp = target.with_extension("toml.tmp");
+        std::fs::write(&tmp, &text)?;
+        std::fs::rename(&tmp, &target)?;
+        out.push((*file, n, target));
+    }
+    Ok(out)
 }
 
 fn truncate(s: &str, n: usize) -> String {

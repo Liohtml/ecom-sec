@@ -39,3 +39,62 @@ max_assets = 150
 [serve]
 bind = "127.0.0.1:8787"
 # token = "geheim"
+
+# ---------------------------------------------------------------------------
+# Tägliche Überwachung (`ecomsec watch`) – siehe docs/MONITORING.md
+# ---------------------------------------------------------------------------
+
+[watch]
+# Vor jedem Lauf die Advisory-Datenbank aktualisieren (Netzwerkfehler werden toleriert)
+update_advisories = true
+# update_url = "https://raw.githubusercontent.com/liohtml/ecom-sec/main/advisories"
+# Dauerbetrieb ohne cron/systemd: `ecomsec watch` prüft dann in diesem Abstand
+# interval = "24h"
+
+[notify]
+# Wann benachrichtigt wird: critical | warning | any | always
+on = "warning"
+# Präfix für Betreff und Titel
+subject_prefix = "[ecomsec]"
+# Link zum Dashboard in den Nachrichten (optional)
+# dashboard_url = "https://shop.example.de/ecomsec/"
+
+# Pro Kanal ein [[notify.channel]]-Block. Geheimnisse bitte per *_env aus
+# Umgebungsvariablen lesen statt sie hier einzutragen.
+
+# [[notify.channel]]
+# kind = "email"
+# name = "Inhaber"
+# smtp_host = "smtp.example.de"
+# smtp_port = 587                 # Standard: 587 (starttls), 465 (tls), 25 (none)
+# smtp_security = "starttls"      # starttls | tls | none
+# smtp_user = "shop@example.de"   # oder smtp_user_env = "ECOMSEC_SMTP_USER"
+# smtp_password_env = "ECOMSEC_SMTP_PASSWORD"
+# from = "ecomsec <shop@example.de>"
+# to = ["inhaber@example.de"]
+
+# [[notify.channel]]
+# kind = "slack"                  # slack | teams | teams-legacy | discord | mattermost | webhook
+# url_env = "ECOMSEC_SLACK_WEBHOOK"
+# on = "critical"                 # optional: eigene Schwelle für diesen Kanal
+
+# [[notify.channel]]
+# kind = "ntfy"
+# url = "https://ntfy.sh"         # oder eigener Server
+# topic = "shop-7f3a9c2e"         # schwer zu erratender Name
+# token_env = "ECOMSEC_NTFY_TOKEN" # optional
+
+# [[notify.channel]]
+# kind = "telegram"
+# token_env = "ECOMSEC_TELEGRAM_TOKEN"
+# chat_id = "123456789"
+
+# [[notify.channel]]
+# kind = "webhook"
+# url_env = "ECOMSEC_WEBHOOK_URL"
+# header_env = { "Authorization" = "ECOMSEC_WEBHOOK_AUTH" }
+
+# [[notify.channel]]
+# kind = "file"                   # oder "stdout"
+# path = "/var/log/ecomsec/aenderungen.log"
+# format = "text"                 # text | json (eine Zeile pro Meldung)

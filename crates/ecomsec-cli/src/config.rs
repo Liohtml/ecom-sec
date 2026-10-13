@@ -16,6 +16,23 @@ pub struct FileConfig {
     pub state: StateSection,
     #[serde(default)]
     pub serve: ServeSection,
+    /// `[notify]` with `[[notify.channel]]` entries (see docs/MONITORING.md).
+    #[serde(default)]
+    pub notify: ecomsec_notify::NotifyConfig,
+    #[serde(default)]
+    pub watch: WatchSection,
+}
+
+/// `[watch]` – defaults for `ecomsec watch`.
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WatchSection {
+    /// Run `advisories update` before each scan (default `true`).
+    pub update_advisories: Option<bool>,
+    /// Base URL for the advisory download.
+    pub update_url: Option<String>,
+    /// Loop interval for `watch` without `--interval` (e.g. `24h`).
+    pub interval: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -93,5 +110,57 @@ impl FileConfig {
             }
         }
         Ok(FileConfig::default())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ecomsec_notify::{ChannelKind, NotifyOn};
+
+    #[test]
+    fn example_config_parses() {
+        let text = include_str!("../../../ecomsec.example.toml");
+        let cfg: FileConfig = toml::from_str(text).expect("example config is valid");
+        assert!(cfg.watch.update_advisories.unwrap_or(true));
+        assert_eq!(cfg.notify.on, Some(NotifyOn::Warning));
+    }
+
+    #[test]
+    fn notify_and_watch_sections() {
+        let cfg: FileConfig = toml::from_str(
+            r#"
+[watch]
+update_advisories = false
+interval = "12h"
+
+[notify]
+on = "critical"
+dashboard_url = "https://shop.example/ecomsec"
+
+[[notify.channel]]
+kind = "slack"
+url_env = "ECOMSEC_SLACK_WEBHOOK"
+
+[[notify.channel]]
+kind = "email"
+smtp_host = "smtp.example.de"
+smtp_security = "tls"
+from = "shop@example.de"
+to = ["admin@example.de"]
+"#,
+        )
+        .unwrap();
+        assert_eq!(cfg.watch.update_advisories, Some(false));
+        assert_eq!(cfg.watch.interval.as_deref(), Some("12h"));
+        assert_eq!(cfg.notify.on, Some(NotifyOn::Critical));
+        assert_eq!(cfg.notify.channels.len(), 2);
+        assert_eq!(cfg.notify.channels[1].kind, ChannelKind::Email);
+    }
+
+    #[test]
+    fn unknown_notify_keys_are_rejected() {
+        assert!(toml::from_str::<FileConfig>("[notify]\nfoo = 1\n").is_err());
+        assert!(toml::from_str::<FileConfig>("[watch]\nevery = \"1h\"\n").is_err());
     }
 }
