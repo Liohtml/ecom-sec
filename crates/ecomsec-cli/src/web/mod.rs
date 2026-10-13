@@ -68,6 +68,7 @@ pub fn serve(
             .route("/findings/accept", post(accept))
             .route("/findings/unaccept", post(unaccept))
             .route("/history", get(history))
+            .route("/diff", get(get_diff))
             .route("/baseline", post(create_baseline))
             .route_layer(middleware::from_fn_with_state(state.clone(), auth));
         let app = Router::new()
@@ -244,6 +245,24 @@ async fn unaccept(State(state): State<AppState>, Json(body): Json<AcceptBody>) -
 async fn history(State(state): State<AppState>) -> Json<Value> {
     let inner = state.inner.lock().expect("lock");
     Json(serde_json::to_value(inner.store.history()).unwrap_or(Value::Array(vec![])))
+}
+
+/// Changes of the latest scan against the one before ("Änderungen seit
+/// letztem Scan").
+async fn get_diff(State(state): State<AppState>) -> Json<Value> {
+    let store = state.inner.lock().expect("lock").store.clone();
+    let diff = tokio::task::spawn_blocking(move || ecomsec_core::diff::latest_from_store(&store))
+        .await
+        .ok()
+        .flatten();
+    Json(match diff {
+        Some(d) if !d.first_run => json!({"available": true, "diff": d}),
+        Some(_) => json!({
+            "available": false,
+            "reason": "Erst ein vollständiger Scan vorhanden – der Vergleich erscheint ab dem zweiten Scan."
+        }),
+        None => json!({"available": false, "reason": "Noch kein Scan vorhanden."}),
+    })
 }
 
 async fn create_baseline(State(state): State<AppState>) -> Response {
