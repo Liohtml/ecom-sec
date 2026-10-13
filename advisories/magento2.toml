@@ -1,0 +1,88 @@
+# Bekannte Schwachstellen in Magento 2 / Adobe Commerce (Plattform `magento2`).
+#
+# Versionsangaben mit Patch-Level (`2.4.6-p6`) werden korrekt verglichen:
+# 2.4.6 < 2.4.6-p1 < … < 2.4.7. Adobe veröffentlicht Fixes je Release-Linie
+# als neues Patch-Release (APSB-Bulletins) und zusätzlich als isolierten
+# Hotfix. Ein eingespielter Hotfix ändert die Versionsnummer nicht – solche
+# Installationen werden weiterhin als verwundbar gemeldet und müssen nach
+# Prüfung als akzeptiert markiert werden.
+#
+# `component = "Adobe Commerce"` kennzeichnet Lücken, die laut Adobe/NVD nur
+# die kommerzielle Edition betreffen; Magento Open Source gilt dann als
+# nicht betroffen.
+#
+# Mit `ecomsec scan --online` werden zusätzlich alle Composer-Pakete
+# (magento/*, Extensions, Bibliotheken) gegen OSV.dev geprüft.
+
+[[advisory]]
+id = "CVE-2022-24086"
+platform = "magento2"
+title = "Template Injection im Checkout (unzureichende Eingabevalidierung) – unauthentifizierte Codeausführung"
+severity = "critical"
+score = 9.8
+affected = ["<2.3.7-p3", ">=2.4.0 <2.4.3-p2"]
+fixed_in = ["2.4.3-p2", "2.3.7-p3"]
+backpatch_note = "Für 2.3.3–2.4.3-p1 stellte Adobe die isolierten Patches MDVA-43395 und MDVA-43443 bereit; diese ändern die Versionsnummer nicht."
+reference = "https://helpx.adobe.com/security/products/magento/apsb22-12.html"
+published = 2022-02-16
+tags = ["rce", "template-injection", "kev"]
+aliases = ["GHSA-f8fv-f786-9933"]
+source = "https://nvd.nist.gov/vuln/detail/CVE-2022-24086"
+
+[[advisory]]
+id = "CVE-2024-20720"
+platform = "magento2"
+component = "Adobe Commerce"
+title = "OS Command Injection über Layout-Template (unvollständiger Fix von CVE-2023-38208)"
+severity = "critical"
+score = 9.1
+affected = ["<2.4.4-p7", ">=2.4.5 <2.4.5-p6", ">=2.4.6 <2.4.6-p4"]
+fixed_in = ["2.4.6-p4", "2.4.5-p6", "2.4.4-p7"]
+reference = "https://helpx.adobe.com/security/products/magento/apsb24-03.html"
+published = 2024-02-15
+tags = ["rce", "command-injection"]
+aliases = ["GHSA-525f-pvj5-vqmq"]
+source = "https://nvd.nist.gov/vuln/detail/CVE-2024-20720"
+
+[[advisory]]
+id = "CVE-2024-34102"
+platform = "magento2"
+title = "CosmicSting: unauthentifizierte XXE über die REST-API – Auslesen von env.php/Crypt-Key, mit CVE-2024-2961 RCE"
+severity = "critical"
+score = 9.8
+affected = ["<2.4.4-p9", ">=2.4.5 <2.4.5-p8", ">=2.4.6 <2.4.6-p6", ">=2.4.7 <2.4.7-p1"]
+fixed_in = ["2.4.7-p1", "2.4.6-p6", "2.4.5-p8", "2.4.4-p9"]
+backpatch_note = "Isolierter Hotfix VULN-27015 verfügbar. Nach dem Patch zwingend den Crypt-Key rotieren – vor dem Patch ausgelesene Schlüssel bleiben sonst gültig."
+reference = "https://helpx.adobe.com/security/products/magento/apsb24-40.html"
+published = 2024-06-13
+tags = ["xxe", "rce", "kev", "cosmicsting"]
+aliases = ["GHSA-m8cj-3v68-3cxj"]
+source = "https://nvd.nist.gov/vuln/detail/CVE-2024-34102"
+
+[[advisory]]
+id = "CVE-2024-39397"
+platform = "magento2"
+title = "Unbeschränkter Upload gefährlicher Dateitypen – Codeausführung"
+severity = "critical"
+score = 9.0
+affected = ["<2.4.4-p10", ">=2.4.5 <2.4.5-p9", ">=2.4.6 <2.4.6-p7", ">=2.4.7 <2.4.7-p2"]
+fixed_in = ["2.4.7-p2", "2.4.6-p7", "2.4.5-p9", "2.4.4-p10"]
+reference = "https://helpx.adobe.com/security/products/magento/apsb24-61.html"
+published = 2024-08-14
+tags = ["rce", "file-upload"]
+source = "https://nvd.nist.gov/vuln/detail/CVE-2024-39397"
+
+[[advisory]]
+id = "CVE-2025-54236"
+platform = "magento2"
+title = "SessionReaper: unzureichende Eingabevalidierung in der REST-API – Session-Übernahme, mit Datei-Session-Speicher RCE"
+severity = "critical"
+score = 9.1
+affected = ["<2.4.4-p16", ">=2.4.5 <2.4.5-p15", ">=2.4.6 <2.4.6-p13", ">=2.4.7 <2.4.7-p8", ">=2.4.8 <2.4.8-p3"]
+fixed_in = ["2.4.8-p3", "2.4.7-p8", "2.4.6-p13", "2.4.5-p15", "2.4.4-p16"]
+backpatch_note = "Adobe veröffentlichte am 09.09.2025 einen Hotfix (VULN-32437) für 2.4.4–2.4.7; die Patch-Releases vom Oktober 2025 enthalten den Fix."
+reference = "https://helpx.adobe.com/security/products/magento/apsb25-88.html"
+published = 2025-09-09
+tags = ["session-takeover", "rce", "kev", "sessionreaper"]
+aliases = ["GHSA-wh92-6q6g-px7j"]
+source = "https://nvd.nist.gov/vuln/detail/CVE-2025-54236"
