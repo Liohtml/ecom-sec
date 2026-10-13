@@ -84,6 +84,16 @@ Pro Ziel (`<platform>-<hash(root|shop)>`) im State-Verzeichnis:
 | `checkpoint.json` | Fortsetzungspunkt des Dateiscans (max. 24 h gültig) |
 | `history.json` | Scan-Verlauf (max. 200 Einträge) |
 | `last-report.json` | letzter vollständiger Report |
+| `reports/<Zeitstempel>.json` | die letzten 10 vollständigen Reports für `ecomsec diff` / `watch` |
+
+## Änderungserkennung
+
+`ecomsec_core::diff::ReportDiff::compute(before, after)` vergleicht zwei Reports: neue und
+nicht mehr gefundene Befunde (über die stabile Befund-ID), geänderte Schweregrade, neu
+verwundbare bzw. behobene Advisories und geänderte Zeilen der Shop-Integrität (über `key`).
+`relevance` ist der höchste Schweregrad der relevanten Änderungen und steuert Exit-Codes und
+Benachrichtigungen (`ecomsec diff`, `ecomsec watch`, Crate `ecomsec-notify`,
+`GET /api/diff`). Details für Betreiber: [MONITORING.md](MONITORING.md).
 
 ## Report-Schema
 

@@ -383,6 +383,13 @@ impl Engine {
             if let Err(e) = state.save_last_report(&report) {
                 log::warn!("cannot write last report: {e}");
             }
+            // Only complete reports are archived for change detection – a
+            // partial file scan would show findings as "resolved".
+            if report.summary.complete {
+                if let Err(e) = state.archive_report(&report) {
+                    log::warn!("cannot archive report: {e}");
+                }
+            }
         }
 
         Ok(ScanOutcome {

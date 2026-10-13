@@ -410,3 +410,230 @@ fn extra_advisory_dir_overrides_embedded_entries() {
         .unwrap();
     assert_eq!(dep["status"], "unknown");
 }
+
+// ------------------------------------------------------------------ monitoring
+
+fn run(state: &Path, args: &[&str]) -> std::process::Output {
+    bin()
+        .env("ECOMSEC_STATE_DIR", state)
+        .env_remove("ECOMSEC_CONFIG")
+        .args(args)
+        .output()
+        .expect("run ecomsec")
+}
+
+fn subjects(list: &serde_json::Value) -> Vec<String> {
+    list.as_array()
+        .unwrap()
+        .iter()
+        .map(|f| f["subject"].as_str().unwrap().to_string())
+        .collect()
+}
+
+#[test]
+fn diff_compares_last_two_scans_and_files() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    let root_s = root.to_str().unwrap();
+
+    let first = scan_json(&root, &state, &[]);
+    // Only one scan: every active finding is listed, first_run is set.
+    let out = run(&state, &["diff", "--root", root_s, "--format", "json"]);
+    let d: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(d["first_run"], true);
+    assert_eq!(out.status.code(), Some(2));
+
+    // New webshell → new critical finding, exit code 2.
+    write(
+        &root,
+        "mediafiles/Bilder/neu.php",
+        b"<?php @eval($_POST['x']);",
+    );
+    backdate(&root);
+    let second = scan_json(&root, &state, &[]);
+    let out = run(&state, &["diff", "--root", root_s, "--format", "json"]);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let d: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(d["first_run"], false);
+    assert_eq!(d["relevance"], "critical");
+    assert!(subjects(&d["new_findings"]).contains(&"mediafiles/Bilder/neu.php".to_string()));
+    assert!(d["resolved_findings"].as_array().unwrap().is_empty());
+
+    // Text output.
+    let out = run(&state, &["diff", "--root", root_s]);
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(text.contains("Neue Befunde"), "{text}");
+    assert!(text.contains("mediafiles/Bilder/neu.php"));
+
+    // Removing the dump → resolved only, exit code 0.
+    fs::remove_file(root.join("backup.sql")).unwrap();
+    scan_json(&root, &state, &[]);
+    let out = run(&state, &["diff", "--root", root_s, "--format", "json"]);
+    let d: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(subjects(&d["resolved_findings"]).contains(&"backup.sql".to_string()));
+    assert!(d["new_findings"].as_array().unwrap().is_empty());
+    assert_eq!(out.status.code(), Some(0));
+
+    // Three complete scans are archived.
+    let reports = walkdir::WalkDir::new(&state)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.path().parent().is_some_and(|p| p.ends_with("reports")))
+        .count();
+    assert_eq!(reports, 3);
+
+    // Two exported JSON files.
+    let a = tmp.path().join("a.json");
+    let b = tmp.path().join("b.json");
+    fs::write(&a, serde_json::to_vec(&first).unwrap()).unwrap();
+    fs::write(&b, serde_json::to_vec(&second).unwrap()).unwrap();
+    let out = run(
+        &state,
+        &[
+            "diff",
+            a.to_str().unwrap(),
+            b.to_str().unwrap(),
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(out.status.code(), Some(2));
+    let d: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert!(subjects(&d["new_findings"]).contains(&"mediafiles/Bilder/neu.php".to_string()));
+    // Reverse direction: the webshell is resolved, nothing new.
+    let out = run(&state, &["diff", b.to_str().unwrap(), a.to_str().unwrap()]);
+    assert_eq!(out.status.code(), Some(0));
+    assert!(String::from_utf8_lossy(&out.stdout).contains("Nicht mehr gefunden"));
+    // A single file is an error.
+    let out = run(&state, &["diff", a.to_str().unwrap()]);
+    assert_eq!(out.status.code(), Some(10));
+}
+
+#[test]
+fn watch_dry_run_and_file_notifications() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    // Start from a patched shop without the planted artifacts.
+    fs::remove_dir_all(root.join("mediafiles")).unwrap();
+    fs::remove_dir_all(root.join("jtllogs")).unwrap();
+    fs::remove_file(root.join("backup.sql")).unwrap();
+    write(
+        &root,
+        "includes/defines.php",
+        b"<?php\nconst APPLICATION_VERSION = '5.7.2';\n",
+    );
+    backdate(&root);
+    let log = tmp.path().join("notify").join("changes.jsonl");
+    let cfg = tmp.path().join("ecomsec.toml");
+    fs::write(
+        &cfg,
+        format!(
+            "[watch]\nupdate_advisories = false\n\n[notify]\non = \"warning\"\n\n[[notify.channel]]\nkind = \"file\"\nname = \"Protokoll\"\npath = {:?}\nformat = \"json\"\n",
+            log.to_str().unwrap()
+        ),
+    )
+    .unwrap();
+    let base = [
+        "--config",
+        cfg.to_str().unwrap(),
+        "--root",
+        root.to_str().unwrap(),
+        "watch",
+        "--skip-remote",
+    ];
+    let watch = |extra: &[&str]| {
+        let mut args: Vec<&str> = base.to_vec();
+        args.extend_from_slice(extra);
+        run(&state, &args)
+    };
+
+    // First run (dry): reports what would be sent, writes nothing.
+    let out = watch(&["--no-notify", "--format", "json"]);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    let d: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(d["first_run"], true);
+    assert!(
+        stderr.contains("--no-notify") && stderr.contains("Protokoll (file)"),
+        "{stderr}"
+    );
+    assert!(!log.exists());
+
+    // Unchanged second run: nothing to notify, exit 0.
+    let out = watch(&[]);
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(String::from_utf8_lossy(&out.stdout).contains("Keine Änderungen"));
+    assert!(!log.exists());
+
+    // New webshell: notification written to the file channel, exit 2.
+    write(
+        &root,
+        "mediafiles/Bilder/wso.php",
+        b"<?php eval(base64_decode('x'));",
+    );
+    backdate(&root);
+    let out = watch(&["--quiet"]);
+    assert_eq!(
+        out.status.code(),
+        Some(2),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(out.stdout.is_empty(), "--quiet prints nothing");
+    let lines: Vec<serde_json::Value> = fs::read_to_string(&log)
+        .unwrap()
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
+    assert_eq!(lines.len(), 1);
+    assert_eq!(lines[0]["event"], "ecomsec.changes");
+    assert_eq!(lines[0]["level"], "critical");
+    assert!(subjects(&lines[0]["diff"]["new_findings"])
+        .contains(&"mediafiles/Bilder/wso.php".to_string()));
+
+    // `--notify-on always` forces a message even without changes.
+    let out = watch(&["--notify-on", "always", "-q"]);
+    assert_eq!(out.status.code(), Some(0));
+    assert_eq!(fs::read_to_string(&log).unwrap().lines().count(), 2);
+
+    // Test message and channel listing.
+    let out = run(
+        &state,
+        &["--config", cfg.to_str().unwrap(), "notify", "test"],
+    );
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(fs::read_to_string(&log).unwrap().contains("ecomsec.test"));
+    let out = run(
+        &state,
+        &["--config", cfg.to_str().unwrap(), "notify", "list"],
+    );
+    assert!(String::from_utf8_lossy(&out.stdout).contains("Protokoll"));
+
+    // Scheduling helpers only print.
+    let out = watch(&["--install-systemd", "--at", "03:05"]);
+    let units = String::from_utf8_lossy(&out.stdout);
+    assert!(units.contains("OnCalendar=*-*-* 03:05:00"), "{units}");
+    assert!(units.contains(" watch "));
+    assert!(units.contains("--skip-remote"));
+    let out = watch(&["--install-cron"]);
+    let cron = String::from_utf8_lossy(&out.stdout);
+    assert!(cron.contains("17 4 * * * "), "{cron}");
+    assert!(cron.contains("--quiet"));
+}

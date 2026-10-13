@@ -33,6 +33,10 @@ h3{margin:18px 0 8px;font-size:15px}.muted{color:var(--muted)}.rec{border-left:3
 .modal ul{max-height:180px;overflow:auto;font-size:12px;padding-left:18px}
 footer{color:var(--muted);font-size:12px;text-align:center;padding:30px 0}
 .hidden{display:none}
+.diffhead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.diffhead h3{margin:0}
+.diffcounts{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.diffcounts div{flex:1 1 120px;border:1px solid var(--border);border-radius:8px;padding:6px 12px;min-width:120px;color:var(--muted);font-size:12px}.diffcounts b{display:block;font-size:20px;color:var(--text)}
+.diffcounts .crit{border-color:var(--crit);background:var(--crit-bg)}.diffcounts .crit b{color:var(--crit)}.diffcounts .warn{border-color:var(--warn);background:var(--warn-bg)}.diffcounts .warn b{color:var(--warn)}.diffcounts .good{border-color:var(--ok);background:var(--ok-bg)}.diffcounts .good b{color:var(--ok)}
+.diffrow{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-top:1px solid var(--border);font-size:13px;word-break:break-word}.diffrow .badge{flex:none}
 </style>
 </head>
 <body>
@@ -53,6 +57,11 @@ footer{color:var(--muted);font-size:12px;text-align:center;padding:30px 0}
     <button data-tab="help">Hilfe &amp; Service</button>
   </div>
   <section id="tab-scan">
+    <div class="panel hidden" id="diffPanel">
+      <div class="diffhead"><h3>Änderungen seit letztem Scan</h3><span class="muted" id="diffMeta"></span></div>
+      <div class="diffcounts" id="diffCounts"></div>
+      <div id="diffList"></div>
+    </div>
     <div class="panel">
       <div class="toolbar">
         <input id="filterText" placeholder="Filter (Pfad, Regel, Text)…" style="flex:1;min-width:200px">
@@ -127,6 +136,30 @@ function render(){
   $("#cCrit").textContent=r.summary.critical;$("#cWarn").textContent=r.summary.warning;$("#cInfo").textContent=r.summary.info;$("#cAcc").textContent=r.summary.accepted;
   const cats=[...new Set(r.findings.map(f=>f.category))].sort();const sel=$("#filterCat");const cur=sel.value;sel.innerHTML='<option value="">alle Kategorien</option>'+cats.map(c=>`<option value="${c}">${esc(catLabel(c))}</option>`).join("");sel.value=cur;
   renderFindings();renderIntegrity();renderRecs();renderHelp();
+  if(MODE==="web")loadDiff();
+}
+async function loadDiff(){try{renderDiff(await api("/api/diff"))}catch(e){$("#diffPanel").classList.add("hidden")}}
+function renderDiff(r){
+  $("#diffPanel").classList.remove("hidden");
+  if(!r.available){$("#diffMeta").textContent="";$("#diffCounts").innerHTML="";$("#diffList").innerHTML=`<p class="muted" style="margin:8px 0 0">${esc(r.reason)}</p>`;return}
+  const d=r.diff;const ts=t=>new Date(t).toLocaleString("de-DE",{dateStyle:"short",timeStyle:"short"});
+  $("#diffMeta").textContent=ts(d.before_generated_at)+" → "+ts(d.after_generated_at);
+  const integ=d.integrity_changes.filter(c=>c.significant);
+  const sevCls=s=>s==="critical"?"crit":s==="warning"?"warn":"";
+  const newSev=d.new_findings.reduce((m,f)=>sevRank(f.severity)<sevRank(m)?f.severity:m,"info");
+  const box=(n,label,cls)=>`<div class="${n?cls:""}"><b>${n}</b>${label}</div>`;
+  $("#diffCounts").innerHTML=box(d.new_findings.length,"neue Befunde",sevCls(newSev))+box(d.resolved_findings.length,"nicht mehr gefunden","good")+box(d.changed_severity.length,"Schweregrad geändert","warn")+box(d.new_advisories.length,"neu verwundbar","crit")+box(integ.length,"Integrität geändert",integ.some(c=>c.status_after==="critical")?"crit":"warn");
+  const row=(sev,text,extra)=>`<div class="diffrow">${sev?`<span class="badge ${sev}">${sevLabel[sev]}</span>`:'<span class="badge unknown">INFO</span>'}<span>${esc(text)}${extra?` <span class="muted">${esc(extra)}</span>`:""}</span></div>`;
+  const stLab={ok:"OK",warning:"Prüfen",critical:"Kritisch",unknown:"unbekannt"};
+  let html=d.new_advisories.map(a=>row(a.severity,a.id+" – "+a.title,a.fixed_in&&a.fixed_in.length?"behoben in "+a.fixed_in.join(", "):"")).join("");
+  html+=d.new_findings.slice(0,15).map(f=>row(f.severity,f.title+": "+f.subject,"#"+f.id)).join("");
+  if(d.new_findings.length>15)html+=`<div class="diffrow muted">… und ${d.new_findings.length-15} weitere neue Befunde</div>`;
+  html+=d.changed_severity.slice(0,10).map(c=>row(c.after,c.finding.title+": "+c.finding.subject,sevLabel[c.before]+" → "+sevLabel[c.after])).join("");
+  html+=integ.slice(0,10).map(c=>row(c.status_after==="critical"?"critical":c.status_after==="warning"?"warning":null,c.section+" · "+c.label+(c.change==="added"?" (neu)":c.change==="removed"?" (entfernt)":""),c.change==="changed"?(c.value_before!==c.value_after?(c.value_before||"")+" → "+(c.value_after||"")+" · ":"")+stLab[c.status_before]+" → "+stLab[c.status_after]:(c.value_after||c.value_before||""))).join("");
+  html+=d.resolved_findings.slice(0,5).map(f=>`<div class="diffrow"><span class="badge ok">BEHOBEN</span><span class="muted">${esc(f.title+": "+f.subject)}</span></div>`).join("");
+  if(d.resolved_findings.length>5)html+=`<div class="diffrow muted">… und ${d.resolved_findings.length-5} weitere nicht mehr gefundene Befunde</div>`;
+  if(!html)html='<p class="muted" style="margin:0">Keine Änderungen seit dem letzten Scan.</p>';
+  $("#diffList").innerHTML=html;
 }
 function catLabel(c){return ({known_webshell:"Bekannte Webshell",modified_since_reference:"Neue/geänderte Datei",code_in_upload_dir:"Code im Upload-Verzeichnis",webserver_config_manipulation:"Webserver-Konfiguration",suspicious_pattern:"Verdächtiges Code-Muster",exploit_payload:"Exploit-Payload",timestamp_anomaly:"Zeitstempel-Anomalie",attack_trace:"Angriffsspur",patch_status:"Patch-Status",admin_account:"Admin-Konto",payment_configuration:"Zahlungs-Konfiguration",config_permissions:"Dateirechte",exposed_file:"Öffentlich erreichbare Datei",integrity_deviation:"Integritätsabweichung",third_party_injection:"Fremdcode / Injection",scan_limitation:"Scan-Einschränkung",informational:"Information"})[c]||c}
 function sevRank(s){return {critical:0,warning:1,info:2}[s]}
