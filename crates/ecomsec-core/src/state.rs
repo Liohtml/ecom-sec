@@ -34,6 +34,10 @@ pub struct StateStore {
 }
 
 const MAX_HISTORY: usize = 200;
+/// Number of complete reports kept in `reports/` for change detection.
+pub const MAX_ARCHIVED_REPORTS: usize = 10;
+const REPORTS_DIR: &str = "reports";
+const ARCHIVE_TS_FORMAT: &str = "%Y%m%dT%H%M%S%.3fZ";
 
 impl StateStore {
     /// Use `dir` directly.
@@ -173,6 +177,66 @@ impl StateStore {
         self.read_json_opt("last-report.json")
     }
 
+    // ------------------------------------------------------------ report archive
+
+    /// Keep a copy of a complete report as `reports/<timestamp>.json` (used
+    /// by `ecomsec diff` / `watch`).  Only the newest
+    /// [`MAX_ARCHIVED_REPORTS`] files are kept.
+    pub fn archive_report(&self, report: &crate::report::Report) -> io::Result<PathBuf> {
+        let dir = self.dir.join(REPORTS_DIR);
+        fs::create_dir_all(&dir)?;
+        let name = format!("{}.json", report.generated_at.format(ARCHIVE_TS_FORMAT));
+        let path = dir.join(&name);
+        let tmp = dir.join(format!("{name}.tmp"));
+        fs::write(&tmp, serde_json::to_vec_pretty(report)?)?;
+        fs::rename(&tmp, &path)?;
+        let files = self.archived_reports();
+        if files.len() > MAX_ARCHIVED_REPORTS {
+            for old in &files[..files.len() - MAX_ARCHIVED_REPORTS] {
+                if let Err(e) = fs::remove_file(old) {
+                    log::warn!("cannot prune {}: {e}", old.display());
+                }
+            }
+        }
+        Ok(path)
+    }
+
+    /// Archived report files, oldest first.
+    pub fn archived_reports(&self) -> Vec<PathBuf> {
+        let mut files: Vec<PathBuf> = match fs::read_dir(self.dir.join(REPORTS_DIR)) {
+            Ok(rd) => rd
+                .filter_map(|e| e.ok())
+                .map(|e| e.path())
+                .filter(|p| archive_timestamp(p).is_some())
+                .collect(),
+            Err(_) => Vec::new(),
+        };
+        files.sort();
+        files
+    }
+
+    /// Read a report JSON file (archived or exported with `--format json`).
+    pub fn load_report(path: &Path) -> io::Result<crate::report::Report> {
+        let bytes = fs::read(path)?;
+        serde_json::from_slice(&bytes).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+    }
+
+    /// The newest archived report.
+    pub fn latest_archived_report(&self) -> Option<crate::report::Report> {
+        let files = self.archived_reports();
+        files.iter().rev().find_map(|p| Self::load_report(p).ok())
+    }
+
+    /// The newest archived report generated strictly before `before`.
+    pub fn previous_report(&self, before: DateTime<Utc>) -> Option<crate::report::Report> {
+        let cutoff = before.format(ARCHIVE_TS_FORMAT).to_string();
+        self.archived_reports()
+            .iter()
+            .rev()
+            .filter(|p| archive_timestamp(p).is_some_and(|ts| ts < cutoff.as_str()))
+            .find_map(|p| Self::load_report(p).ok())
+    }
+
     // ------------------------------------------------------------ checkpoint
 
     pub fn checkpoint<T: DeserializeOwned>(&self) -> Option<T> {
@@ -202,6 +266,13 @@ impl StateStore {
     }
 }
 
+/// Timestamp part of an archived report file name (`20261013T041700.123Z`).
+fn archive_timestamp(path: &Path) -> Option<&str> {
+    let name = path.file_name()?.to_str()?;
+    let ts = name.strip_suffix(".json")?;
+    (ts.len() == 20 && ts.ends_with('Z') && ts.as_bytes()[8] == b'T').then_some(ts)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -229,5 +300,57 @@ mod tests {
         store.save_snapshot("x", &"hello".to_string()).unwrap();
         assert_eq!(store.snapshot::<String>("x").as_deref(), Some("hello"));
         assert!(store.history().is_empty());
+    }
+
+    fn dummy_report(at: DateTime<Utc>) -> crate::report::Report {
+        use crate::platform::{PlatformInfo, PlatformKind};
+        crate::report::Report {
+            schema_version: 1,
+            generated_at: at,
+            platform: PlatformInfo {
+                id: "jtl5".into(),
+                name: "JTL-Shop 5".into(),
+                kind: PlatformKind::SelfHosted,
+                version: None,
+                root: None,
+                target: None,
+                details: vec![],
+            },
+            reference_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
+            verdict: crate::report::Verdict::Clean,
+            summary: Default::default(),
+            findings: vec![],
+            integrity: vec![],
+            advisories: vec![],
+            recommendations: vec![],
+            limitations: vec![],
+        }
+    }
+
+    #[test]
+    fn report_archive_is_pruned_and_ordered() {
+        let tmp = tempfile::tempdir().unwrap();
+        let store = StateStore::new(tmp.path());
+        assert!(store.latest_archived_report().is_none());
+        let start = Utc::now() - chrono::Duration::days(30);
+        for i in 0..(MAX_ARCHIVED_REPORTS + 3) {
+            store
+                .archive_report(&dummy_report(start + chrono::Duration::days(i as i64)))
+                .unwrap();
+        }
+        // Unrelated files are ignored.
+        fs::write(tmp.path().join("reports").join("notes.txt"), "x").unwrap();
+        let files = store.archived_reports();
+        assert_eq!(files.len(), MAX_ARCHIVED_REPORTS);
+        let latest = store.latest_archived_report().unwrap();
+        let expected_latest = start + chrono::Duration::days(MAX_ARCHIVED_REPORTS as i64 + 2);
+        assert_eq!(latest.generated_at, expected_latest);
+        let prev = store.previous_report(latest.generated_at).unwrap();
+        assert_eq!(
+            prev.generated_at,
+            expected_latest - chrono::Duration::days(1)
+        );
+        let oldest_kept = start + chrono::Duration::days(3);
+        assert!(store.previous_report(oldest_kept).is_none());
     }
 }
