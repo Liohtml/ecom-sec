@@ -6,6 +6,7 @@ members = [
     "crates/ecomsec-shopware6",
     "crates/ecomsec-shopify",
     "crates/ecomsec-osv",
+    "crates/ecomsec-notify",
     "crates/ecomsec-cli",
 ]
 
@@ -22,6 +23,7 @@ ecomsec-jtl5 = { path = "crates/ecomsec-jtl5" }
 ecomsec-shopware6 = { path = "crates/ecomsec-shopware6" }
 ecomsec-shopify = { path = "crates/ecomsec-shopify" }
 ecomsec-osv = { path = "crates/ecomsec-osv" }
+ecomsec-notify = { path = "crates/ecomsec-notify" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -42,6 +44,8 @@ tempfile = "3"
 filetime = "0.2"
 log = "0.4"
 env_logger = "0.11"
+lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "builder", "hostname", "rustls-tls"] }
+ctrlc = "3"
 
 [profile.release]
 lto = "thin"
