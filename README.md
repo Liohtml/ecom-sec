@@ -11,6 +11,7 @@
 <p align="center">
   <a href="#-in-2-minuten-loslegen">Loslegen</a> ·
   <a href="#-das-bekommst-du">Funktionen</a> ·
+  <a href="#-täglich-automatisch-prüfen">Überwachung</a> ·
   <a href="#-screenshots">Screenshots</a> ·
   <a href="#-häufige-fragen">FAQ</a> ·
   <a href="#-unterstützte-shopsysteme">Shopsysteme</a> ·
@@ -79,7 +80,7 @@ Befunde: 3 kritisch · 2 Warnungen · 0 Hinweise · 0 als unbedenklich markiert
 |---|---|---|
 | 🔴 **Kritisch** | Webshell, Exploit-Spur, ungepatchte Lücke, neues Admin-Konto, geänderter Zahlungsempfänger | Befund prüfen (Tab *Handlungsempfehlungen* › *Zuerst prüfen*), dann Sofortmaßnahmen |
 | 🟡 **Warnung** | Geänderte Dateien, offene Dateirechte, Backups im Webroot, Konten ohne 2FA | Zeitnah prüfen, bekannte Fälle als unbedenklich markieren |
-| 🟢 **Keine kritischen Befunde** | Alles im grünen Bereich | Wöchentlich wiederholen, Baseline anlegen |
+| 🟢 **Keine kritischen Befunde** | Alles im grünen Bereich | Baseline anlegen, [täglich automatisch prüfen](#-täglich-automatisch-prüfen) |
 
 **Mehr Komfort?** Das Dashboard im Browser starten:
 
@@ -124,7 +125,8 @@ der Shop abgeschaltet wird), **Sofortmaßnahmen**, **Kompromittierungs-Prüfung*
 - **Berichte:** Terminal, JSON (für Monitoring) oder eine einzelne HTML-Datei zum Weitergeben.
 - **Shared-Hosting-tauglich:** Mit `--time-budget 45s` scannt `ecomsec` in Etappen und setzt beim nächsten Aufruf fort – kein Timeout, keine Last.
 - **Hell und dunkel:** Dashboard und HTML-Bericht folgen deinem System oder per Klick.
-- **Scan-Verlauf:** Jeder Lauf wird mit Ergebnis gespeichert, damit du Veränderungen siehst.
+- **Scan-Verlauf:** Jeder Lauf wird mit Ergebnis gespeichert, damit du Veränderungen siehst – `ecomsec diff` zeigt, was seit dem letzten Scan neu oder verschwunden ist.
+- **Überwachung mit Benachrichtigung:** `ecomsec watch` per cron oder systemd meldet sich nur bei Änderungen – per E-Mail, Slack, Teams, Discord, Mattermost, ntfy, Telegram oder Webhook.
 - **Aktuelle Schwachstellen:** Die Advisory-Datenbank liegt als Datei im Repository, wird wöchentlich von einem Agenten nachgepflegt und lässt sich ohne neues Release per `ecomsec advisories update` holen. Mit `--online` prüft der Scan zusätzlich alle Composer-Pakete (Shopware-Core, Plugins, Symfony, Smarty …) tagesaktuell gegen OSV.dev.
 
 ---
@@ -169,22 +171,68 @@ Weitere Shopsysteme lassen sich als Adapter ergänzen – siehe [docs/ARCHITECTU
 
 ---
 
-## 🔁 Regelmäßig prüfen
+## 🔔 Täglich automatisch prüfen
 
-Einmal pro Woche sowie nach jedem Update – so empfiehlt es auch das Original. Als Cronjob:
+Einmal einrichten – danach meldet sich `ecomsec` **nur, wenn sich etwas ändert**: ein neuer
+kritischer Befund, eine neu veröffentlichte Schwachstelle für deine Version, eine verwundbare
+Bibliothek, ein neues Admin-Konto, ein geänderter Zahlungsempfänger. Ruhige Tage bleiben ruhig.
 
-```cron
-# jeden Montag 04:30 Uhr, Bericht als HTML, E-Mail nur bei kritischem Befund
-30 4 * * 1  /usr/local/bin/ecomsec scan --root /var/www/shop --format html --output /var/backups/ecomsec-$(date +\%F).html || mail -s "ecomsec: kritischer Befund" admin@example.de < /dev/null
+**1. Kanal eintragen** in `ecomsec.toml` – E-Mail, Slack, Microsoft Teams, Discord, Mattermost,
+ntfy, Telegram, eigener Webhook oder Datei:
+
+```toml
+[target]
+root = "/var/www/shop"
+
+[notify]
+on = "warning"                                 # critical | warning | any | always
+
+[[notify.channel]]
+kind = "email"
+smtp_host = "smtp.example.de"
+smtp_user = "shop@example.de"
+smtp_password_env = "ECOMSEC_SMTP_PASSWORD"    # Geheimnisse immer aus der Umgebung
+from = "ecomsec <shop@example.de>"
+to = ["inhaber@example.de"]
+
+[[notify.channel]]
+kind = "slack"                                 # oder teams, discord, mattermost, ntfy, telegram, webhook
+url_env = "ECOMSEC_SLACK_WEBHOOK"
+on = "critical"
 ```
 
-Exit-Codes: `0` sauber · `1` Warnungen (mit `--fail-on warning`) · `2` kritisch · `10` Fehler.
-
-Auf Shared Hosting mit knappen Laufzeiten:
+**2. Testen und Zeitplan holen** – `ecomsec` gibt die fertige systemd-Unit bzw. Crontab-Zeile aus
+und schreibt selbst nichts:
 
 ```bash
-ecomsec scan --root /var/www/shop --time-budget 45s   # beim nächsten Aufruf geht es weiter
+ecomsec notify test                        # Testnachricht an alle Kanäle
+ecomsec watch --install-systemd            # Service + Timer, täglich 04:17
+ecomsec watch --install-cron               # oder: Zeile für crontab -e
 ```
+
+```cron
+17 4 * * * /usr/local/bin/ecomsec --state-dir /var/lib/ecomsec --root /var/www/shop watch --quiet
+```
+
+Jeder Lauf von `ecomsec watch` aktualisiert die Schwachstellen-Datenbank (ohne Netz geht es mit dem
+vorhandenen Stand weiter), scannt mit allen Optionen von `scan` (auch `--online`), vergleicht mit
+dem vorherigen Lauf und benachrichtigt nur bei Änderungen. Was sich geändert hat, zeigen auch
+`ecomsec diff` und das Dashboard-Panel „Änderungen seit letztem Scan“. Ohne cron/systemd:
+`ecomsec watch --interval 24h`.
+
+Exit-Codes: `0` keine neuen Befunde · `1` neue Warnung · `2` neuer kritischer Befund · `10` Fehler.
+Für `scan` gilt: `0` sauber · `1` Warnungen (mit `--fail-on warning`) · `2` kritisch · `10` Fehler.
+
+Auf Shared Hosting mit knappen Laufzeiten scannt `ecomsec` in Etappen – verglichen und
+benachrichtigt wird nach dem ersten vollständigen Durchlauf, den Cronjob also z. B. stündlich
+einplanen:
+
+```bash
+ecomsec watch --root /var/www/shop --time-budget 45s --quiet   # beim nächsten Aufruf geht es weiter
+```
+
+Benachrichtigungen gehen ausschließlich an Kanäle, die du selbst einträgst. Alle Kanäle, Formate
+und Beispiele: [docs/MONITORING.md](docs/MONITORING.md).
 
 ---
 
@@ -214,7 +262,7 @@ ecomsec baseline create --root /var/www/shop
 
 <details>
 <summary><b>Verändert der Scan etwas an meinem Shop?</b></summary>
-Nein. <code>ecomsec</code> liest ausschließlich – Dateien, Datenbank (nur SELECT) bzw. Shopify-API (nur GET). Es werden keine Dateien gelöscht, keine Einstellungen geändert und keine Daten an Dritte übertragen. Der einzige Schreibzugriff ist das eigene Zustandsverzeichnis (Akzeptanzen, Verlauf, Baseline), standardmäßig unter <code>~/.local/state/ecomsec</code>.
+Nein. <code>ecomsec</code> liest ausschließlich – Dateien, Datenbank (nur SELECT) bzw. Shopify-API (nur GET). Es werden keine Dateien gelöscht, keine Einstellungen geändert und keine Daten an Dritte übertragen – außer an Benachrichtigungskanäle, die du selbst einträgst. Der einzige Schreibzugriff ist das eigene Zustandsverzeichnis (Akzeptanzen, Verlauf, Reports, Baseline), standardmäßig unter <code>~/.local/state/ecomsec</code>.
 </details>
 
 <details>
@@ -276,6 +324,10 @@ ecomsec scan      [--root PFAD | --platform shopify --shop … --token …]
                   [--reference-date YYYY-MM-DD] [--skip-remote] [--fail-on never|warning|critical]
                   [--online] [--advisories DIR]
 ecomsec advisories list | lint [PFAD…] | update [--url BASIS-URL]
+ecomsec watch     [Scan-Optionen] [--notify-on critical|warning|any|always] [--no-notify]
+                  [--no-update] [--interval 24h] [--quiet] [--install-systemd | --install-cron [--at HH:MM]]
+ecomsec diff      [VORHER.json NACHHER.json] [--format text|json]
+ecomsec notify    test | list
 ecomsec serve     [--bind 127.0.0.1:8787] [--auth-token GEHEIM]
 ecomsec findings  list | accept <ID…> [--group DIR] [--rule REGEL] [--reason TEXT] | unaccept <ID…> [--all]
 ecomsec baseline  create [--core-only] | diff | show
@@ -294,7 +346,8 @@ Optional per Konfigurationsdatei: [`ecomsec.example.toml`](ecomsec.example.toml)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) – Aufbau, `Platform`-Trait, neue Shopsysteme anbinden
 - [docs/RULES.md](docs/RULES.md) – Regelformat, Dateiklassen, Kategorien
 - [docs/ADVISORIES.md](docs/ADVISORIES.md) – Schwachstellen-Datenbank, OSV-Abgleich, automatische Pflege per Agent
-- Workspace: `ecomsec-core` (Engine), `ecomsec-jtl5`, `ecomsec-shopware6`, `ecomsec-shopify`, `ecomsec-cli`
+- [docs/MONITORING.md](docs/MONITORING.md) – tägliche Überwachung, Benachrichtigungskanäle, systemd/cron
+- Workspace: `ecomsec-core` (Engine), `ecomsec-jtl5`, `ecomsec-shopware6`, `ecomsec-shopify`, `ecomsec-osv`, `ecomsec-notify` (Benachrichtigungen), `ecomsec-cli`
 - `cargo test --workspace` · `cargo clippy --workspace --all-targets` · `cargo fmt --all`
 
 ## 📜 Lizenz und Hinweise
