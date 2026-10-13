@@ -2,3 +2,6 @@
 **/*.rs.bk
 *.html.tmp
 .ecomsec-state/
+
+# Claude Code agent worktrees
+.claude/worktrees/
