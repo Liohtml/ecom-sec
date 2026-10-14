@@ -595,21 +595,27 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
                 return Ok(0);
             }
             println!(
-                "{:<22} {:<12} {:<10} {:>8} {:>9} {:>8} {:>8}",
+                "{:<22} {:<12} {:<10} {:>8} {:>8} {:>9} {:>8} {:>8}",
                 "Zeitpunkt (UTC)",
                 "Version",
                 "Ergebnis",
+                "Niveau",
                 "kritisch",
                 "Warnungen",
                 "Hinweise",
                 "Dateien"
             );
             for e in h.iter().rev().take(50) {
+                let level = match (e.score, e.grade) {
+                    (Some(s), Some(g)) => format!("{s:>3} {g}"),
+                    _ => "–".to_string(),
+                };
                 println!(
-                    "{:<22} {:<12} {:<10} {:>8} {:>9} {:>8} {:>8}{}",
+                    "{:<22} {:<12} {:<10} {:>8} {:>8} {:>9} {:>8} {:>8}{}",
                     e.generated_at.format("%Y-%m-%d %H:%M:%S"),
                     e.version.clone().unwrap_or_default(),
                     format!("{:?}", e.verdict).to_lowercase(),
+                    level,
                     e.critical,
                     e.warning,
                     e.info,
@@ -706,6 +712,10 @@ fn findings(ctx: &Context_, command: FindingsCommand) -> anyhow::Result<u8> {
                 SeverityArg::Info => Severity::Info,
             });
             let mut n = 0;
+            println!(
+                "{:<16}  {:<9} {:<30} {:<40} Titel",
+                "ID", "Schwere", "Regel", "Objekt"
+            );
             for f in report.sorted_findings() {
                 if !all && (f.accepted || f.severity == Severity::Info) {
                     continue;
@@ -717,7 +727,7 @@ fn findings(ctx: &Context_, command: FindingsCommand) -> anyhow::Result<u8> {
                 }
                 n += 1;
                 println!(
-                    "{:<16} {:<8} {:<30} {:<40} {}{}",
+                    "{:<16}  {:<9} {:<30} {:<40} {}{}",
                     f.id,
                     f.severity.label_en(),
                     truncate(&f.rule, 30),
