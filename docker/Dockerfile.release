@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+#
+# Release image built from the static musl binaries the release workflow has
+# already compiled (no compilation, no CPU emulation).  Expects
+#
+#   docker-bin/amd64/ecomsec
+#   docker-bin/arm64/ecomsec
+#
+# in the build context.  For local builds use the Dockerfile in the
+# repository root, which compiles from source.
+
+# Mount points owned by the non-root runtime user (distroless has no shell).
+# The debug variant of the same base ships a busybox shell.
+FROM --platform=$BUILDPLATFORM gcr.io/distroless/static-debian12:debug AS dirs
+RUN ["/busybox/sh", "-c", "mkdir -p /out/shop /out/state && chown -R 65532:65532 /out/state"]
+
+FROM gcr.io/distroless/static-debian12:nonroot
+ARG TARGETARCH
+
+LABEL org.opencontainers.image.title="ecomsec" \
+      org.opencontainers.image.description="Read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6, WooCommerce, Magento 2 und Shopify" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.source="https://github.com/liohtml/ecom-sec"
+
+COPY --chmod=0755 docker-bin/${TARGETARCH}/ecomsec /usr/local/bin/ecomsec
+COPY --from=dirs /out/shop /shop
+COPY --from=dirs --chown=65532:65532 /out/state /state
+
+ENV ECOMSEC_STATE_DIR=/state
+VOLUME ["/shop", "/state"]
+WORKDIR /shop
+USER 65532:65532
+EXPOSE 8787
+
+ENTRYPOINT ["ecomsec"]
+CMD ["--help"]

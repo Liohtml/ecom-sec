@@ -5,3 +5,4 @@
 
 # Claude Code agent worktrees
 .claude/worktrees/
+docker-bin/
