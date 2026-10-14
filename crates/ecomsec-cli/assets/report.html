@@ -732,7 +732,7 @@ footer.foot{max-width:1160px;margin:0 auto;padding:20px 20px 40px;color:var(--mu
     var CH = 6.9; // approximate width of one label character at 12.5px
     var longest = Math.max.apply(null, rows.map(function (r) { return r.label.length; }));
     var labelW = Math.round(Math.min(W * 0.46, longest * CH + 14)), valW = 40, rowH = 30, bar = 14;
-    var maxChars = Math.max(6, Math.floor((labelW - 14) / CH));
+    var maxChars = W * 0.46 >= longest * CH + 14 ? longest : Math.max(6, Math.floor((labelW - 14) / CH));
     rows.forEach(function (r) { r.short = r.label.length > maxChars ? r.label.slice(0, maxChars - 1) + '…' : r.label; });
     var plotW = W - labelW - valW - 8;
     var max = Math.max(1, Math.max.apply(null, rows.map(function (r) { return r.value; })));
@@ -775,12 +775,12 @@ footer.foot{max-width:1160px;margin:0 auto;padding:20px 20px 40px;color:var(--mu
       catEl.innerHTML = '<div class="empty">' + icon('ok') + 'Keine offenen Befunde.</div>';
       return;
     }
-    var rows = cats.slice(0, cats.length > 6 ? 5 : 6).map(function (c) {
+    var rows = cats.slice(0, cats.length > 8 ? 7 : 8).map(function (c) {
       return { label: catLabel(c), value: byCat[c], color: 'var(--series-1)', action: 'cat:' + c, tipText: catLabel(c) + ': ' + byCat[c] + ' offene Befunde' };
     });
-    if (cats.length > 6) {
-      var rest = cats.slice(5).reduce(function (n, c) { return n + byCat[c]; }, 0);
-      rows.push({ label: 'Weitere (' + (cats.length - 5) + ')', value: rest, color: 'var(--neutral)', action: '', tipText: 'Weitere Kategorien: ' + rest + ' offene Befunde' });
+    if (cats.length > 8) {
+      var rest = cats.slice(7).reduce(function (n, c) { return n + byCat[c]; }, 0);
+      rows.push({ label: 'Weitere (' + (cats.length - 7) + ')', value: rest, color: 'var(--neutral)', action: '', tipText: 'Weitere Kategorien: ' + rest + ' offene Befunde' });
     }
     barChart(catEl, rows, 'Offene Befunde nach Kategorie: ' + rows.map(function (r) { return r.label + ' ' + r.value; }).join(', '));
   }
