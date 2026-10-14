@@ -25,8 +25,8 @@ jobs:
       count: ${{ steps.sync.outputs.count }}
       drafts: ${{ steps.sync.outputs.drafts }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Kandidaten suchen (NVD, OSV)
@@ -37,7 +37,7 @@ jobs:
           python3 scripts/advisory_sync.py --days "${{ github.event.inputs.days || '30' }}" | tee sync.md
           echo "### Advisory-Sync" >> "$GITHUB_STEP_SUMMARY"
           cat sync.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: advisory-candidates
           path: |
@@ -53,10 +53,10 @@ jobs:
     env:
       HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           name: advisory-candidates
           path: .
@@ -104,7 +104,7 @@ jobs:
 
       - name: Fallback-PR nur mit Entwürfen (kein API-Key oder Agent nicht gelaufen)
         if: env.HAS_KEY != 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           branch: advisories/drafts-${{ github.run_id }}
           title: "Advisories: ${{ needs.sync.outputs.count }} neue Kandidaten (Entwürfe)"

@@ -16,9 +16,9 @@ on:
         type: boolean
         default: true
       environment:
-        description: "GitHub-Environment mit dem Secret CARGO_REGISTRY_TOKEN"
+        description: "GitHub-Environment mit dem Secret CARGO_REGISTRY_TOKEN (leer = Variable CRATES_ENVIRONMENT bzw. crates.io)"
         type: string
-        default: "crates.io"
+        default: ""
 
 permissions:
   contents: read
@@ -29,7 +29,7 @@ jobs:
     # Environment secrets are only visible to jobs that name the environment.
     environment: ${{ inputs.environment || vars.CRATES_ENVIRONMENT || 'crates.io' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.release.tag_name || github.ref }}
       - uses: dtolnay/rust-toolchain@stable

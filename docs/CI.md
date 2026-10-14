@@ -97,7 +97,7 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: ecomsec installieren
         run: curl -fsSL https://raw.githubusercontent.com/liohtml/ecom-sec/main/install.sh | sh
@@ -113,7 +113,7 @@ jobs:
 
       - name: SARIF hochladen
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ecomsec.sarif
           category: ecomsec
