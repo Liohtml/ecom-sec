@@ -538,7 +538,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "axum",
@@ -573,7 +573,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec-audit"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -592,7 +592,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -613,7 +613,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec-jtl5"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -629,7 +629,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec-magento2"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -646,7 +646,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec-notify"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "chrono",
  "ecomsec-core",
@@ -662,7 +662,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec-osv"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "ecomsec-core",
@@ -676,7 +676,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec-shopify"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -691,7 +691,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec-shopware6"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -707,7 +707,7 @@ dependencies = [
 
 [[package]]
 name = "ecomsec-woocommerce"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "chrono",

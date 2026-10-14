@@ -1,14 +1,26 @@
 name: crates.io
 
-# Publishes all workspace crates to crates.io in dependency order after a
-# GitHub Release was published (or on demand).  Needs the secret
+# Publishes all workspace crates to crates.io in dependency order.  Called by
+# the Release workflow for every version tag (a release created with the
+# workflow token does not trigger other workflows) or started by hand.
+# Needs the secret
 # CARGO_REGISTRY_TOKEN (crates.io API token with "publish-new" / "publish-update"),
 # either as a repository secret or in a deployment environment (picked by the
 # "environment" job below).
 
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      ref:
+        description: "Tag oder Commit, der veröffentlicht wird"
+        type: string
+        default: ""
+      dry_run:
+        type: boolean
+        default: false
+      environment:
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       dry_run:
@@ -68,14 +80,19 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.release.tag_name || github.ref }}
+          ref: ${{ inputs.ref || github.ref }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
 
       - name: Versionen müssen zum Tag passen
-        if: github.event_name == 'release'
+        env:
+          REF: ${{ inputs.ref || github.ref }}
         run: |
-          tag="${{ github.event.release.tag_name }}"
+          tag="${REF#refs/tags/}"
+          case "$tag" in
+            v[0-9]*) ;;
+            *) echo "Kein Versions-Tag ($REF) – Prüfung entfällt"; exit 0 ;;
+          esac
           version="$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json,sys; print(next(p["version"] for p in json.load(sys.stdin)["packages"] if p["name"]=="ecomsec"))')"
           echo "Tag $tag · Cargo $version"
           [ "$tag" = "v$version" ] || { echo "Tag und Cargo-Version stimmen nicht überein"; exit 1; }
@@ -84,7 +101,7 @@ jobs:
         run: cargo package --workspace --locked
 
       - name: Veröffentlichen
-        if: github.event_name == 'release' || inputs.dry_run == false
+        if: inputs.dry_run == false
         env:
           # Accept the usual names for the crates.io token.
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN || secrets.CRATES_IO_TOKEN || secrets.CRATES_TOKEN || secrets.CARGO_TOKEN }}
