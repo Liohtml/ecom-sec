@@ -133,3 +133,22 @@ Benachrichtigungen (`ecomsec diff`, `ecomsec watch`, Crate `ecomsec-notify`,
 [CI.md](CI.md#sicherheitsniveau-score); fehlt in älteren Reports und wird dann beim Lesen berechnet). Der HTML-Report und das
 Web-Dashboard rendern dasselbe JSON; `--format json` ist daher die stabile Schnittstelle für
 Monitoring und Weiterverarbeitung.
+
+## Web-Dashboard
+
+`ecomsec serve` (Modul `crates/ecomsec-cli/src/web`) liefert eine statische App aus
+`crates/ecomsec-cli/assets/app/` – `index.html`, `app.css`, `app.js` (ES2020 ohne Framework,
+ohne Build-Schritt, ohne externe Ressourcen; per `include_str!` im Binary). Design-Tokens
+(Abstände, Radien, Schriftgrößen, Status- und Schweregradfarben) stehen als CSS-Variablen am
+Anfang von `app.css`, helles und dunkles Design inklusive. Alle Daten kommen aus der lokalen API
+(bei `--auth-token` mit Header `X-Auth-Token` oder `?token=`):
+
+| Endpunkt | Inhalt |
+|---|---|
+| `GET /api/report`, `GET /api/report/export?format=json\|html\|markdown\|sarif\|junit\|text` | aktueller Report bzw. Download in einem CLI-Format |
+| `GET /api/status`, `POST /api/scan` | Scan-Fortschritt, Version, Scan-Optionen; Scan starten (optional `{online, skip_remote, reference_date, time_budget}`) |
+| `GET /api/findings/{id}`, `POST /api/findings/accept`, `POST /api/findings/unaccept` | Befund mit verknüpften Empfehlungen und Akzeptanz; Risikoakzeptanz |
+| `GET /api/diff`, `GET /api/history`, `GET /api/archive`, `GET /api/archive/{stamp}` | Änderungen seit dem letzten Scan, Verlauf, archivierte Reports |
+| `GET /api/audit`, `POST /api/baseline` | letztes KI-Audit; Baseline erzeugen |
+
+Der statische HTML-Export (`--format html`) ist davon unabhängig.
