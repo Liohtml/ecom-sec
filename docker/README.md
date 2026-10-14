@@ -37,6 +37,25 @@ docker run --rm -p 127.0.0.1:8787:8787 \
   ghcr.io/liohtml/ecom-sec:latest serve --bind 0.0.0.0:8787 --auth-token "$TOKEN"
 ```
 
+## Docker Compose
+
+Die Datei [`docker-compose.yml`](../docker-compose.yml) im Repository enthält drei fertige Dienste:
+
+| Dienst | Aufruf | Zweck |
+|---|---|---|
+| `scan` | `docker compose run --rm scan` | einmaliger Scan, HTML-Bericht nach `./reports/ecomsec.html` |
+| `dashboard` | `docker compose up -d dashboard` | Web-Dashboard auf `http://127.0.0.1:8787/?token=…` |
+| `watch` | `docker compose up -d watch` | tägliche Überwachung mit Benachrichtigung (Kanäle in `ecomsec.toml`) |
+
+```bash
+printf 'SHOP_DIR=/var/www/shop\nECOMSEC_TOKEN=%s\n' "$(openssl rand -hex 16)" > .env
+docker compose run --rm scan
+docker compose up -d dashboard
+```
+
+Image-Tags: `latest` (letztes stabiles Release), `0.1` (Minor-Linie), `0.1.0` (exakte Version).
+Das Image gibt es für `linux/amd64` und `linux/arm64`; `docker pull` wählt automatisch die passende Variante.
+
 Hinweise:
 
 * Arbeitsverzeichnis ist `/shop`, `--root` kann daher entfallen.

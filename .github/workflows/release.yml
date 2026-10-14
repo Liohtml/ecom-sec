@@ -7,6 +7,15 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Vorhandener Tag (z. B. v0.1.0), für den das Release (erneut) gebaut wird"
+        required: true
+
+env:
+  # The tag being released: from the push or from the manual input.
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 permissions:
   contents: read
@@ -39,6 +48,8 @@ jobs:
             builder: cargo
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -70,7 +81,7 @@ jobs:
         shell: bash
         env:
           TARGET: ${{ matrix.target }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
           name="ecomsec-${TAG}-${TARGET}"
@@ -131,10 +142,10 @@ jobs:
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           cat > notes.md <<'EOF'
-          **ecomsec** ist ein read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6 und Shopify.
+          **ecomsec** ist ein read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6, WooCommerce, Magento 2 und Shopify.
           Dieses Release enthält fertige Programme für Linux (statisch, x86_64/ARM64), macOS (Intel/Apple Silicon)
           und Windows sowie ein Container-Image unter `ghcr.io/${{ github.repository }}`. Installation:
           `curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | sh` –
@@ -144,13 +155,24 @@ jobs:
           EOF
           prerelease=""
           case "$TAG" in *-*) prerelease="--prerelease" ;; esac
-          gh release create "$TAG" dist/* \
-            --repo "${{ github.repository }}" \
-            --title "ecomsec $TAG" \
-            --notes-file notes.md \
-            --generate-notes \
-            --verify-tag \
-            $prerelease
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            # Release already exists (created by hand or by a previous run):
+            # replace the assets and keep the existing notes if they are not empty.
+            echo "Release $TAG exists – uploading assets"
+            gh release upload "$TAG" dist/* --repo "${{ github.repository }}" --clobber
+            body="$(gh release view "$TAG" --repo "${{ github.repository }}" --json body -q .body)"
+            if [ -z "$(printf '%s' "$body" | tr -d '[:space:]')" ]; then
+              gh release edit "$TAG" --repo "${{ github.repository }}" --title "ecomsec $TAG" --notes-file notes.md
+            fi
+          else
+            gh release create "$TAG" dist/* \
+              --repo "${{ github.repository }}" \
+              --title "ecomsec $TAG" \
+              --notes-file notes.md \
+              --generate-notes \
+              --verify-tag \
+              $prerelease
+          fi
 
   docker:
     name: Container image (GHCR)
@@ -160,6 +182,8 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - uses: docker/setup-qemu-action@v3
 
@@ -176,13 +200,15 @@ jobs:
         with:
           # GHCR requires lower-case image names.
           images: ghcr.io/${{ github.repository }}
+          # semver patterns read the tag from the ref; pass it explicitly on manual runs
+          context: git
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
+            type=semver,pattern={{version}},value=${{ inputs.tag || github.ref_name }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.tag || github.ref_name }}
+            type=raw,value=latest,enable=${{ !contains(inputs.tag || github.ref_name, '-') }}
           labels: |
             org.opencontainers.image.title=ecomsec
-            org.opencontainers.image.description=Read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6 und Shopify
+            org.opencontainers.image.description=Read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6, WooCommerce, Magento 2 und Shopify
 
       - uses: docker/build-push-action@v6
         with:

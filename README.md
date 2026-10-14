@@ -106,10 +106,16 @@ curl -fsSL https://raw.githubusercontent.com/liohtml/ecom-sec/main/install.sh | 
 **Windows:** ZIP-Paket `ecomsec-<version>-x86_64-pc-windows-msvc.zip` aus den [Releases](../../releases)
 laden und `ecomsec.exe` entpacken. Jedes Release enthält `SHA256SUMS` zum Prüfen.
 
-**Docker** (Shop read-only eingehängt, Zustand im Volume – Details in [docker/README.md](docker/README.md)):
+**Docker** (Image `ghcr.io/liohtml/ecom-sec`, 19 MB, für amd64 und arm64; Shop read-only eingehängt,
+Zustand im Volume – Details und Compose-Beispiele in [docker/README.md](docker/README.md)):
 
 ```bash
+# einmaliger Scan
 docker run --rm -v /var/www/shop:/shop:ro -v ecomsec-state:/state ghcr.io/liohtml/ecom-sec scan --skip-remote
+
+# oder mit Docker Compose (Scan, Dashboard, tägliche Überwachung) – docker-compose.yml liegt im Repository
+docker compose run --rm scan
+docker compose up -d dashboard
 ```
 
 **Aktualisieren:**

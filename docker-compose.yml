@@ -1,0 +1,54 @@
+# ecomsec im Container – Beispiel-Compose-Datei.
+#
+#   docker compose run --rm scan                 # einmaliger Scan (Dateisystem, read-only)
+#   docker compose up -d dashboard               # Web-Dashboard auf http://127.0.0.1:8787/?token=…
+#   docker compose up -d watch                   # tägliche Überwachung mit Benachrichtigung
+#
+# Pfad des Shops und Token über eine .env-Datei neben dieser Datei setzen:
+#   SHOP_DIR=/var/www/shop
+#   ECOMSEC_TOKEN=bitte-ein-langes-zufaelliges-geheimnis
+#
+# Der Shop wird IMMER read-only eingehängt; ecomsec verändert nichts.
+
+x-ecomsec: &ecomsec
+  image: ghcr.io/liohtml/ecom-sec:latest
+  # Bei Dateien, die nur der Webserver-Benutzer lesen darf (z. B. config.JTL-Shop.ini.php 0600):
+  # user: "33:33"
+  volumes:
+    - ${SHOP_DIR:-/var/www/shop}:/shop:ro
+    - ecomsec-state:/state
+    # Optional: eigene Konfiguration (Benachrichtigungen, Scan-Optionen)
+    # - ./ecomsec.toml:/state/ecomsec.toml:ro
+  environment:
+    ECOMSEC_CONFIG: /state/ecomsec.toml
+    # Nur nötig, wenn der Container die Shop-Datenbank erreichen soll (sonst --skip-remote nutzen):
+    # DATABASE_URL: mysql://user:pass@db:3306/shop
+
+services:
+  # Einmaliger Scan, Ergebnis im Terminal; Bericht zusätzlich als HTML nach ./reports
+  scan:
+    <<: *ecomsec
+    profiles: ["cli"]
+    volumes:
+      - ${SHOP_DIR:-/var/www/shop}:/shop:ro
+      - ecomsec-state:/state
+      - ./reports:/out
+    command: ["scan", "--skip-remote", "--format", "html", "--output", "/out/ecomsec.html"]
+
+  # Web-Dashboard (nur lokal erreichbar; Token Pflicht, da im Container auf 0.0.0.0 gebunden)
+  dashboard:
+    <<: *ecomsec
+    ports:
+      - "127.0.0.1:8787:8787"
+    command: ["serve", "--bind", "0.0.0.0:8787", "--auth-token", "${ECOMSEC_TOKEN:?ECOMSEC_TOKEN in .env setzen}", "--skip-remote"]
+    restart: unless-stopped
+
+  # Tägliche Überwachung: Advisories aktualisieren, scannen, vergleichen, benachrichtigen
+  # (Kanäle in ecomsec.toml unter [[notify.channel]], siehe docs/MONITORING.md)
+  watch:
+    <<: *ecomsec
+    command: ["watch", "--interval", "24h", "--skip-remote", "--quiet"]
+    restart: unless-stopped
+
+volumes:
+  ecomsec-state:

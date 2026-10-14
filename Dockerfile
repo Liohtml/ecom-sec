@@ -25,7 +25,7 @@ RUN mkdir -p /out/shop /out/state && chown -R 65532:65532 /out/state
 FROM gcr.io/distroless/static-debian12:nonroot
 
 LABEL org.opencontainers.image.title="ecomsec" \
-      org.opencontainers.image.description="Read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6 und Shopify" \
+      org.opencontainers.image.description="Read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6, WooCommerce, Magento 2 und Shopify" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.source="https://github.com/liohtml/ecom-sec"
 
