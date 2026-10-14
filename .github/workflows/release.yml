@@ -13,15 +13,13 @@ on:
         description: "Vorhandener Tag (z. B. v0.1.0), für den das Release (erneut) gebaut wird"
         required: true
 
-env:
-  # The tag being released: from the push or from the manual input.
-  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
-
 permissions:
   contents: read
 
 env:
   CARGO_TERM_COLOR: always
+  # The tag being released: from the push or from the manual input.
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   build:
