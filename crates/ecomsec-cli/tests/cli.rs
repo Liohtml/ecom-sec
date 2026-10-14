@@ -257,8 +257,45 @@ fn time_budget_resumes_and_html_export_works() {
         .unwrap();
     assert!(out.status.success());
     let text = fs::read_to_string(&html).unwrap();
-    assert!(text.contains("\"static\""));
+    assert!(text.starts_with("<!doctype html>"));
     assert!(text.contains("jtl_ssti_capture_eval"));
+    assert!(
+        !text.contains("__REPORT_JSON__"),
+        "placeholder must be replaced"
+    );
+    // Score, verdict and a finding title are embedded in the report data.
+    let score = second["score"].as_u64().unwrap();
+    assert!(
+        text.contains(&format!("\"score\":{score}")),
+        "score {score}"
+    );
+    assert!(text.contains("\"verdict\":\"critical\""));
+    assert!(text.contains("Rohes SSTI-Angriffsmuster"));
+    // Self-contained: no external scripts, styles or images.
+    assert!(!text.contains("src=\"http"));
+    assert!(!text.contains("<link"));
+    assert!(text.contains("Content-Security-Policy"));
+}
+
+#[test]
+fn html_scan_export_contains_report_sections() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    let html = scan_format(&root, &state, "html");
+    assert!(!html.contains("__REPORT_JSON__"));
+    for needle in [
+        "Sicherheitsbericht",
+        "Handlungsempfehlungen",
+        "Shop-Integrität",
+        "@media print",
+        "prefers-color-scheme:dark",
+        "mediafiles/Bilder/wso.php",
+        "\"grade\":",
+    ] {
+        assert!(html.contains(needle), "missing {needle}");
+    }
 }
 
 #[test]
