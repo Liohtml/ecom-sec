@@ -603,6 +603,7 @@ a.link-btn { text-decoration: none; }
 .empty { text-align: center; padding: var(--sp-12) var(--sp-6); display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); }
 .empty-icon { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--surface-3); color: var(--text-2); }
 .empty-icon .icon { width: 26px; height: 26px; }
+.empty-icon.ic-critical { color: var(--crit); background: var(--crit-weak); }
 .empty h2 { font-size: var(--fs-lg); }
 .empty p { color: var(--muted); max-width: 52ch; margin: 0; }
 .empty.compact { padding: var(--sp-6) var(--sp-4); }
