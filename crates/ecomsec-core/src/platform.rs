@@ -323,6 +323,12 @@ pub trait Platform: Send + Sync {
         None
     }
 
+    /// Request patterns of known attacks to look for in web server access
+    /// logs (`--access-log`).
+    fn access_log_indicators(&self) -> Vec<crate::access_log::LogIndicator> {
+        Vec::new()
+    }
+
     /// Integrity checks: admin accounts, payment configuration, config file
     /// permissions, …
     fn integrity(&self, _ctx: &PlatformContext) -> anyhow::Result<IntegrityReport> {

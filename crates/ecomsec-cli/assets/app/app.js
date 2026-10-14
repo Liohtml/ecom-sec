@@ -87,7 +87,7 @@
     integrity_deviation: "Integritätsabweichung", third_party_injection: "Fremdcode / Injection", scan_limitation: "Scan-Einschränkung", informational: "Information",
   };
   const catLabel = (c) => CAT[c] || c;
-  const SOURCE = { file_system: "Dateisystem", database: "Datenbank", api: "API", configuration: "Konfiguration", scanner: "Scanner" };
+  const SOURCE = { file_system: "Dateisystem", database: "Datenbank", api: "API", configuration: "Konfiguration", scanner: "Scanner", access_log: "Webserver-Log" };
   const ST = {
     ok: { label: "OK", icon: "ok", rank: 0 },
     unknown: { label: "Unbekannt", icon: "unknown", rank: 1 },

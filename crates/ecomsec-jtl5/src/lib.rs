@@ -13,10 +13,14 @@
 //! * e-mail history (`temailhistory`, 90 days) and stored e-mail templates
 //!   searched for the SSTI payload,
 //! * customer / contact records containing template syntax,
-//! * plugins and cron jobs added after the reference date.
+//! * plugins and cron jobs added after the reference date,
+//! * file evidence for the security releases 5.6.3 – 5.8.2 (consent XSS,
+//!   safe-mode toggle, path traversal, RMA IDOR …), injected consent names in
+//!   `consent_statistics` and the matching access-log indicators.
 
 mod config;
 mod db_checks;
+mod fixes;
 
 pub use config::JtlConfig;
 
@@ -260,7 +264,19 @@ impl Platform for Jtl5 {
         self.config.db.clone()
     }
 
+    fn access_log_indicators(&self) -> Vec<ecomsec_core::access_log::LogIndicator> {
+        fixes::log_indicators()
+    }
+
     fn patch_evidence(&self, advisory: &Advisory, _ctx: &PlatformContext) -> Option<PatchEvidence> {
+        if fixes::handles(&advisory.id) {
+            let ev = fixes::evidence(&advisory.id, &|rel| self.read_rel(rel));
+            // CVE-2026-54390: fall back to the heuristic below for back-patches
+            // that do not touch the renderer the way the official fix does.
+            if ev.is_some() || advisory.id != "CVE-2026-54390" {
+                return ev;
+            }
+        }
         if advisory.id != "CVE-2026-54390" {
             return None;
         }

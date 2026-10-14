@@ -145,10 +145,13 @@ ecomsec self-update           # neueste Version laden, Prüfsumme prüfen, Progr
 - **CVE-2026-54390-Angriffsmuster** (`{capture}…{eval}`, gefährliche Smarty-Modifier) in Dateien, kompilierten Templates und Logs
 - **WordPress-/WooCommerce-Hintertüren** (versteckte Admin-Anlage, Login-Bypass, Must-Use-Plugins, Schein-Plugins, `.ico`-Loader) und **Magecart-Skimmer** in WooCommerce- und Magento-Checkouts, RequireJS-Konfigurationen und CMS-Inhalten
 - **Öffentlich erreichbare Backups, Datenbank-Dumps und Konfigurationskopien**
+- **Angriffsspuren in Webserver-Logs:** `--access-log auto` (oder ein Pfad) durchsucht Apache-/nginx-Access-Logs inklusive `.gz`-Rotationen nach den Anfragemustern veröffentlichter Lücken – z. B. `/admin/logout?safemode=`, `rmaSummary` per GET oder eingeschleuste Consent-Namen – mit Zeitraum und Absender-IPs
 
 ### 2 · Shop-Integrität – ist dein Shop noch deiner?
 
 - **Patch-Status** für CVE-2026-54390: zuerst anhand der Version (5.5.4 / 5.6.2 / 5.7.2 / ab 5.8), sonst anhand der geprüften Datei – das Ergebnis sagt immer, worauf es beruht
+- **Alle JTL-Sicherheitsupdates bis 5.8.2** (Oktober 2026): gespeichertes XSS in der Consent-Statistik (CVE-2026-103904), Wartungsmodus per URL (CVE-2026-103905), Path Traversal, IDOR im Retouren-Modul, XSS in „Passwort vergessen“ und im Backend. Eingespielte Patch-Dateien werden **direkt im Code** erkannt, die Prüfmerkmale stammen aus dem öffentlichen JTL-Quellcode und sind gegen jedes Release von 5.0 bis 5.8.2 getestet
+- **Eingeschleuste Consent-Namen** in der Datenbank (Spur von CVE-2026-103904) samt Bereinigungs-Hinweis
 - **Patch-Status für WordPress, WooCommerce und Magento** inklusive Patch-Level (`2.4.6-p6`) – z. B. CosmicSting, SessionReaper, WP_Query-SQL-Injection, WooCommerce-Store-API
 - **Zahlungs-, URL- und Script-Einstellungen in der Datenbank** (Head-/Footer-Scripts, `siteurl`, Basis-URLs, Webhooks, API-Schlüssel) mit Änderungserkennung zwischen zwei Scans
 - **Admin-Konten** mit letztem Login und 2FA-Status; **neue Konten seit dem letzten Scan** werden kritisch gemeldet
@@ -392,7 +395,7 @@ Alles, was nach dem Referenzdatum verändert wurde, ist erst einmal verdächtig 
 
 <details>
 <summary><b>Woher weiß ecomsec, ob der CVE-2026-54390-Patch drin ist?</b></summary>
-Zuerst anhand der Shop-Version (5.5.4, 5.6.2, 5.7.2 und ab 5.8 gelten als gepatcht). Bei älteren Versionen – oder wenn ein Back-Patch eingespielt wurde – prüft es die Smarty-Mail-Klassen: Sind die gefährlichen Modifier <code>unserialize</code>/<code>file_get_contents</code> noch registriert? Enthält der Renderer Härtungsmarker? Das Ergebnis nennt immer, ob die Version oder die Datei die Grundlage war.
+Zuerst anhand der Shop-Version (5.5.4, 5.6.2, 5.7.2 und ab 5.8 gelten als gepatcht). Bei älteren Versionen, unbekannter Version oder eingespieltem Back-Patch prüft es die Datei, die der offizielle Fix ändert: Maskiert der Mail-Renderer Smarty-Klammern in Platzhaltern (<code>{ldelim}</code>), ist der Fix drin. Für abweichende Back-Patches gibt es eine Rückfallprüfung der Smarty-Mail-Klassen. Genauso arbeiten die Prüfungen für die Updates 5.6.3 bis 5.8.2. Das Ergebnis nennt immer, ob die Version oder die Datei die Grundlage war.
 </details>
 
 <details>
@@ -437,7 +440,7 @@ Gleicher Prüfumfang und gleiche drei Ansichten – aber als eigenständiges Pro
 ecomsec scan      [--root PFAD | --platform shopify --shop … --token …]
                   [--format text|json|html|sarif|junit|markdown] [--output DATEI] [--time-budget 45s]
                   [--reference-date YYYY-MM-DD] [--skip-remote] [--fail-on never|warning|critical]
-                  [--online] [--advisories DIR]
+                  [--online] [--advisories DIR] [--access-log auto|PFAD]
 ecomsec advisories list | lint [PFAD…] | update [--url BASIS-URL]
 ecomsec watch     [Scan-Optionen] [--notify-on critical|warning|any|always] [--no-notify]
                   [--no-update] [--interval 24h] [--quiet] [--install-systemd | --install-cron [--at HH:MM]]

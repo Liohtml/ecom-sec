@@ -60,6 +60,10 @@ pub struct ScanOptions {
     /// Allow online lookups (OSV.dev) – sends package names and versions.
     #[serde(default)]
     pub online: bool,
+    /// Web server access logs to search for attack traces (files,
+    /// directories or `auto`).
+    #[serde(default)]
+    pub access_logs: Vec<PathBuf>,
 }
 
 impl Default for ScanOptions {
@@ -77,6 +81,7 @@ impl Default for ScanOptions {
             no_persist: false,
             advisory_dirs: Vec::new(),
             online: false,
+            access_logs: Vec::new(),
         }
     }
 }
@@ -336,6 +341,53 @@ impl Engine {
         match platform.additional_checks(&ctx) {
             Ok(more) => findings.extend(more),
             Err(e) => limitations.push(format!("Zusätzliche Prüfungen fehlgeschlagen: {e}")),
+        }
+
+        // ---------------------------------------------------------- access logs
+        let indicators = platform.access_log_indicators();
+        if !indicators.is_empty() {
+            if options.access_logs.is_empty() {
+                limitations.push(
+                    "Webserver-Access-Logs nicht geprüft – mit `--access-log auto` oder `--access-log PFAD` \
+                     nach Angriffsspuren bekannter Lücken suchen."
+                        .into(),
+                );
+            } else {
+                let (files, notes) = crate::access_log::expand(&options.access_logs);
+                limitations.extend(notes);
+                let scan = crate::access_log::scan(&files, &indicators);
+                limitations.extend(scan.limitations);
+                let hits = scan.findings.len();
+                integrity.push(
+                    IntegrityItem::new(
+                        "access_log.summary",
+                        "Webserver-Logs",
+                        "Access-Logs auf Angriffsspuren geprüft",
+                        if scan.files.is_empty() {
+                            IntegrityStatus::Warning
+                        } else if hits > 0 {
+                            IntegrityStatus::Critical
+                        } else {
+                            IntegrityStatus::Ok
+                        },
+                        format!(
+                            "{} Datei(en) · {} Zeilen · {} Muster · {} mit Treffern",
+                            scan.files.len(),
+                            scan.lines,
+                            indicators.len(),
+                            hits
+                        ),
+                    )
+                    .with_detail(
+                        scan.files
+                            .iter()
+                            .map(|p| p.display().to_string())
+                            .collect::<Vec<_>>()
+                            .join(", "),
+                    ),
+                );
+                findings.extend(scan.findings);
+            }
         }
 
         // Stable section order: Shop, Patch-Status, Integrität, then the rest.

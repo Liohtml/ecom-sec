@@ -145,6 +145,8 @@ pub enum Source {
     Api,
     Configuration,
     Scanner,
+    /// Web server access logs (`--access-log`).
+    AccessLog,
 }
 
 /// A single finding.

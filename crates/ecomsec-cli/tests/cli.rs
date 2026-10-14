@@ -97,6 +97,16 @@ fn rules_of(report: &serde_json::Value) -> Vec<(String, String)> {
         .collect()
 }
 
+/// Advisory status by id (the list order depends on the advisory database).
+fn advisory<'a>(report: &'a serde_json::Value, id: &str) -> &'a serde_json::Value {
+    report["advisories"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["advisory"]["id"] == id || a["id"] == id)
+        .unwrap_or_else(|| panic!("advisory {id} missing"))
+}
+
 #[test]
 fn jtl_scan_detects_planted_artifacts_and_patch_state() {
     let tmp = tempfile::tempdir().unwrap();
@@ -120,7 +130,7 @@ fn jtl_scan_detects_planted_artifacts_and_patch_state() {
     assert!(has("jtl_ssti_capture_eval", "jtllogs/shop.log"));
     assert!(has("exposed_file", "backup.sql"));
     assert!(has("advisory_cve-2026-54390", "5.3.1"));
-    let adv = &report["advisories"][0];
+    let adv = advisory(&report, "CVE-2026-54390");
     assert_eq!(adv["state"], "vulnerable");
     assert!(adv["basis"].as_str().unwrap().contains("unserialize"));
     assert!(report["recommendations"].as_array().unwrap().len() >= 3);
@@ -140,14 +150,92 @@ fn patched_version_is_reported_as_patched() {
     write(
         &root,
         "includes/defines.php",
-        b"<?php\nconst APPLICATION_VERSION = '5.7.2';\n",
+        b"<?php\nconst APPLICATION_VERSION = '5.8.2';\n",
     );
     backdate(&root);
     let report = scan_json(&root, &state, &[]);
-    assert_eq!(report["advisories"][0]["state"], "patched");
+    assert_eq!(advisory(&report, "CVE-2026-54390")["state"], "patched");
+    assert_eq!(advisory(&report, "CVE-2026-103904")["state"], "patched");
     assert!(!rules_of(&report)
         .iter()
         .any(|(r, _)| r.starts_with("advisory_")));
+}
+
+#[test]
+fn jtl_october_2026_fixes_and_access_log_traces() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    write(
+        &root,
+        "includes/defines.php",
+        b"<?php\nconst APPLICATION_VERSION = '5.8.1';\n",
+    );
+    // 5.8.1 code of the consent statistics template and the auth middleware.
+    write(
+        &root,
+        "admin/templates/bootstrap/statistik.tpl",
+        b"{else}\n    {$oStat->$cMemberVar}\n{/if}\n",
+    );
+    write(
+        &root,
+        "includes/src/Consent/Statistics/Repositories/ConsentStatisticsRepository.php",
+        b"<?php\n",
+    );
+    write(
+        &root,
+        "includes/src/Router/Middleware/AuthMiddleware.php",
+        b"<?php\nif (isset($GLOBALS['plgSafeMode'])) { \\touch(\\SAFE_MODE_LOCK); }\nif (!$this->account->isValid()) { return; }\n",
+    );
+    backdate(&root);
+    let logs = tmp.path().join("logs");
+    fs::create_dir_all(&logs).unwrap();
+    fs::write(
+        logs.join("access.log"),
+        concat!(
+            "203.0.113.7 - - [13/Oct/2026:23:12:01 +0200] \"GET /admin/logout?safemode=1 HTTP/1.1\" 302 0 \"https://evil.example/\" \"-\"\n",
+            "203.0.113.9 - - [13/Oct/2026:23:14:11 +0200] \"GET /io?io=%7B%22name%22%3A%22rmaSummary%22%7D HTTP/1.1\" 200 812 \"-\" \"curl/8\"\n",
+            "198.51.100.2 - - [13/Oct/2026:23:15:00 +0200] \"GET / HTTP/1.1\" 200 512 \"-\" \"-\"\n",
+        ),
+    )
+    .unwrap();
+
+    let report = scan_json(&root, &state, &["--access-log", logs.to_str().unwrap()]);
+    let consent = advisory(&report, "CVE-2026-103904");
+    assert_eq!(consent["state"], "vulnerable");
+    assert!(consent["basis"].as_str().unwrap().contains("statistik.tpl"));
+    let safemode = advisory(&report, "CVE-2026-103905");
+    assert_eq!(safemode["state"], "vulnerable");
+    assert!(safemode["basis"]
+        .as_str()
+        .unwrap()
+        .contains("AuthMiddleware.php"));
+    assert_eq!(advisory(&report, "JTL-SHOP-9886")["state"], "patched");
+
+    let rules = rules_of(&report);
+    assert!(rules.iter().any(
+        |(r, s)| r == "jtl5_log_safemode_toggle" && s == "access-log:jtl5_log_safemode_toggle"
+    ));
+    assert!(rules.iter().any(|(r, _)| r == "jtl5_log_rma_summary_get"));
+    let item = report["integrity"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|i| i["key"] == "access_log.summary")
+        .expect("access log summary");
+    assert!(item["value"]
+        .as_str()
+        .unwrap()
+        .starts_with("1 Datei(en) · 3 Zeilen"));
+
+    // Without --access-log the scan says the logs were not checked.
+    let report = scan_json(&root, &state, &[]);
+    assert!(report["limitations"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|l| l.as_str().unwrap().contains("--access-log")));
 }
 
 #[test]
@@ -168,8 +256,9 @@ fn backpatch_marker_in_renderer_counts_as_patched() {
     );
     backdate(&root);
     let report = scan_json(&root, &state, &[]);
-    assert_eq!(report["advisories"][0]["state"], "patched");
-    assert!(report["advisories"][0]["basis"]
+    let adv = advisory(&report, "CVE-2026-54390");
+    assert_eq!(adv["state"], "patched");
+    assert!(adv["basis"]
         .as_str()
         .unwrap()
         .contains("SmartyRenderer.php"));
@@ -187,7 +276,7 @@ fn acceptance_persists_across_scans_and_changes_verdict() {
     write(
         &root,
         "includes/defines.php",
-        b"<?php\nconst APPLICATION_VERSION = '5.7.2';\n",
+        b"<?php\nconst APPLICATION_VERSION = '5.8.2';\n",
     );
     backdate(&root);
     let report = scan_json(&root, &state, &[]);

@@ -68,6 +68,9 @@ pub struct ScanSection {
     pub advisory_dirs: Vec<PathBuf>,
     #[serde(default)]
     pub online: bool,
+    /// Access logs searched for attack traces (files, directories or `auto`).
+    #[serde(default)]
+    pub access_logs: Vec<PathBuf>,
 }
 
 #[derive(Debug, Clone, Default, Deserialize)]

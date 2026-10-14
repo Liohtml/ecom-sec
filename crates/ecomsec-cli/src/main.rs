@@ -176,6 +176,9 @@ struct ScanOptionArgs {
     /// Zusätzliches Advisory-Verzeichnis (*.toml), mehrfach möglich
     #[arg(long = "advisories", value_name = "DIR")]
     advisory_dirs: Vec<PathBuf>,
+    /// Webserver-Access-Log (Datei, Verzeichnis oder `auto`) nach Angriffsspuren durchsuchen, mehrfach möglich
+    #[arg(long = "access-log", value_name = "PFAD")]
+    access_logs: Vec<PathBuf>,
 }
 
 #[derive(Args)]
@@ -369,6 +372,13 @@ fn scan_options(
     o.advisory_dirs
         .extend(cfg.scan.advisory_dirs.iter().cloned());
     o.advisory_dirs.extend(args.advisory_dirs.iter().cloned());
+    o.access_logs = cfg
+        .scan
+        .access_logs
+        .iter()
+        .cloned()
+        .chain(args.access_logs.iter().cloned())
+        .collect();
     if let Some(d) = args.reference_date.or_else(|| {
         cfg.scan
             .reference_date

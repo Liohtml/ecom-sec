@@ -20,3 +20,84 @@ reference = "https://sansec.io/research/jtl-shop-ssti-rce"
 published = 2026-06-17
 tags = ["ssti", "rce", "unauthenticated"]
 source = "https://nvd.nist.gov/vuln/detail/CVE-2026-54390"
+
+[[advisory]]
+id = "CVE-2026-103904"
+platform = "jtl5"
+title = "Unauthentifiziertes gespeichertes XSS in der Consent-Statistik (Backend-Übernahme)"
+severity = "critical"
+score = 9.3
+affected = [">=5.4.0 <5.6.5", ">=5.7.0 <5.7.5", ">=5.8.0 <5.8.2"]
+fixed_in = ["5.6.5", "5.7.5", "5.8.2"]
+backpatch_note = "Über /_updateconsent lassen sich ohne Anmeldung beliebige Einwilligungs-Namen in consent_statistics speichern; beim Öffnen von Statistiken → Consent-Manager (/admin/stats/6) läuft der Code mit den Rechten des Administrators. Für 5.4/5.5 gibt es keinen Patch (Upgrade auf 5.6.5+). JTL stellt Patch-Dateien bereit; deren Einspielung wird anhand von statistik.tpl und Consent/Manager.php erkannt. Bis zum Update die Consent-Statistik nicht öffnen bzw. das Recht STATS_CONSENT_VIEW entziehen; ecomsec prüft consent_statistics auf eingeschleuste Namen."
+reference = "https://www.jtl-software.com/de/security/sicherheitsluecke-shop-xss/"
+published = 2026-10-14
+tags = ["xss", "stored-xss", "unauthenticated", "admin-takeover", "consent"]
+source = "JTL Security Advisory (Code-Diff 5.8.1 → 5.8.2 verifiziert)"
+
+[[advisory]]
+id = "CVE-2026-103905"
+platform = "jtl5"
+title = "Unauthentifiziertes Umschalten des Wartungsmodus (Safe-Mode)"
+severity = "critical"
+score = 7.5
+affected = [">=5.3.0 <5.6.5", ">=5.7.0 <5.7.5", ">=5.8.0 <5.8.2"]
+fixed_in = ["5.6.5", "5.7.5", "5.8.2"]
+backpatch_note = "Ein Aufruf von /admin/logout?safemode=… schaltet den Shop ohne Anmeldung in den Wartungsmodus (auch über eingebettete Ressourcen auf fremden Seiten). Kein Datenzugriff, aber Shop-Ausfall. Für 5.3–5.5 gibt es keinen Patch (Upgrade auf 5.6.5+). Ein eingespielter Patch wird an der Reihenfolge in AuthMiddleware.php erkannt; Spuren mit --access-log suchen."
+reference = "https://www.jtl-software.com/de/security/shop-maintenance-mode"
+published = 2026-10-14
+tags = ["missing-authorization", "unauthenticated", "dos"]
+source = "JTL Security Advisory (Code-Diff 5.8.1 → 5.8.2 verifiziert)"
+
+[[advisory]]
+id = "JTL-2026-PATH-TRAVERSAL"
+platform = "jtl5"
+title = "Path Traversal: Dateien löschen (Banner/ImageMap) und schreiben (Wawi-Bildabgleich)"
+severity = "warning"
+affected = [">=5.0.0 <5.6.5", ">=5.7.0 <5.7.5", ">=5.8.0 <5.8.2"]
+fixed_in = ["5.6.5", "5.7.5", "5.8.2"]
+backpatch_note = "Zwei Lücken, die Backend- bzw. Wawi-Sync-Zugang voraussetzen: Banner- und ImageMap-Verwaltung löschen Dateien ohne Pfadprüfung (ab 5.6.0), der dbeS-Bildabgleich übernimmt Dateinamen mit ../ ungeprüft (ab 5.0.0). Mit gestohlenen Admin- oder Sync-Zugangsdaten lassen sich so Dateien außerhalb der Bildverzeichnisse löschen bzw. ablegen."
+reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-2.249343/"
+published = 2026-10-14
+tags = ["path-traversal", "authenticated", "file-deletion"]
+source = "JTL-Forum (Release 5.8.2), Code-Diff 5.8.1 → 5.8.2"
+
+[[advisory]]
+id = "JTL-SHOP-9886"
+platform = "jtl5"
+title = "IDOR im Retouren-Modul: Lieferadressen aller Kunden auslesbar"
+severity = "critical"
+score = 6.5
+affected = [">=5.3.0 <5.6.4", ">=5.7.0 <5.7.4", ">=5.8.0 <5.8.1"]
+fixed_in = ["5.6.4", "5.7.4", "5.8.1"]
+backpatch_note = "Jeder angemeldete Kunde kann über die IO-Methode rmaSummary (Parameter returnAddress) fortlaufende IDs aus tlieferadressevorlage abfragen. Das Abschalten der Retouren hilft nicht. Für 5.3–5.5 gibt es nur einen manuellen Patch; dessen Einspielung wird an RMAReturnAddressService.php erkannt. Datenschutzrechtlich (DSGVO Art. 33) prüfen, ob eine Meldung nötig ist."
+reference = "https://www.jtl-software.com/de/advisory-shop-security-bola-idor-shop-9886/"
+published = 2026-09-24
+tags = ["idor", "bola", "data-leak", "gdpr"]
+source = "JTL Security Advisory (Code-Diff 5.8.0 → 5.8.1 verifiziert)"
+
+[[advisory]]
+id = "JTL-2026-PWRESET-XSS"
+platform = "jtl5"
+title = "Reflected XSS in „Passwort vergessen“"
+severity = "warning"
+affected = [">=5.3.0 <5.6.4", ">=5.7.0 <5.7.4", ">=5.8.0 <5.8.1"]
+fixed_in = ["5.6.4", "5.7.4", "5.8.1"]
+backpatch_note = "Die eingegebene E-Mail-Adresse wurde ungefiltert in die Erfolgs-/Fehlermeldung übernommen. Gemeinsam mit JTL-SHOP-9886 behoben."
+reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-2.249343/"
+published = 2026-09-24
+tags = ["xss", "reflected-xss"]
+source = "JTL-Forum (Release 5.8.1), Code-Diff 5.8.0 → 5.8.1"
+
+[[advisory]]
+id = "JTL-2026-ADMIN-XSS"
+platform = "jtl5"
+title = "XSS in zwei Backend-Funktionen (Bewertungen, Freischaltungen)"
+severity = "critical"
+affected = [">=5.0.0 <5.6.3", ">=5.7.0 <5.7.3"]
+fixed_in = ["5.6.3", "5.7.3", "5.8.0"]
+backpatch_note = "Werte aus Bewertungen (Name, Titel) und Suchparameter der Freischaltungen wurden im Backend ungefiltert ausgegeben; präparierte Kundenbewertungen konnten so JavaScript in der Admin-Sitzung ausführen. Versionen vor 5.6.0 erhalten keinen Fix."
+reference = "https://www.jtl-software.com/de/shop-patch-xss"
+published = 2026-08-26
+tags = ["xss", "admin"]
+source = "JTL Security Advisory (Code-Diff 5.7.2 → 5.7.3 verifiziert)"

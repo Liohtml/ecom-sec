@@ -20,6 +20,9 @@ rule_dirs = []
 online = false
 # Zusätzliche Advisory-Verzeichnisse (*.toml); heruntergeladene (advisories update) werden immer geladen
 advisory_dirs = []
+# Webserver-Access-Logs nach Angriffsspuren bekannter Lücken durchsuchen
+# (Dateien, Verzeichnisse mit *access*-Dateien inkl. .gz, oder "auto" für /var/log/apache2, /var/log/nginx …)
+# access_logs = ["auto"]
 
 [shopify]
 # shop = "my-store.myshopify.com"

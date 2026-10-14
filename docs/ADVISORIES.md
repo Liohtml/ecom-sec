@@ -67,6 +67,33 @@ eine `fixed_in`-Version, gilt der Eintrag als gepatcht. Liegt sie in einem Berei
 Engine den Plattform-Adapter nach einem dateibasierten Nachweis (z. B. Back-Patch), bevor sie
 „verwundbar“ meldet.
 
+## Patch-Nachweis im Code und Spuren in Logs
+
+Die Versionsnummer allein reicht bei JTL-Shop nicht: JTL verteilt Fixes für ältere Zweige auch als
+lose Patch-Dateien. Liegt die Version im betroffenen Bereich oder ist sie unbekannt, prüft der
+JTL-Adapter deshalb die Dateien, die der offizielle Fix ändert. Die Merkmale stammen aus dem
+öffentlichen Quellcode (`gitlab.com/jtl-software/jtl-shop/core`) und sind gegen jedes Release von
+5.0.0 bis 5.8.2 getestet:
+
+| Advisory | Geprüfte Datei(en) | Merkmal des Fixes |
+|---|---|---|
+| CVE-2026-54390 | `includes/src/Mail/Renderer/SmartyRenderer.php` | `{ldelim}`/`{rdelim}`-Maskierung von Platzhalterwerten |
+| CVE-2026-103904 | `admin/templates/bootstrap/statistik.tpl`, `includes/src/Consent/Manager.php` | `escape` der Namen, `getActiveItemIDs()` |
+| CVE-2026-103905 | `includes/src/Router/Middleware/AuthMiddleware.php` | Safe-Mode erst nach der Anmeldeprüfung |
+| JTL-2026-PATH-TRAVERSAL | `dbeS/Sync/ImageUpload.php`, `ImageMap.php`, `BannerController.php` | `Path::hasTraversal`, `realpath`-Prüfung |
+| JTL-SHOP-9886 | `includes/src/RMA/Services/RMAReturnAddressService.php` | Besitzprüfung über `$customerID` |
+| JTL-2026-PWRESET-XSS | `includes/src/Router/Controller/ForgotPasswordController.php` | `Text::filterXSS($email)` |
+| JTL-2026-ADMIN-XSS | `tpl_inc/bewertung_editieren.tpl`, `ActivationController.php` | `htmlentities` / `filterXSS` |
+
+Ein nur teilweise eingespielter Patch zählt als verwundbar.
+
+Zusätzlich sucht `ecomsec scan --access-log auto|PFAD` in Webserver-Access-Logs (auch `.gz`) nach
+den Anfragemustern aus den Advisories, etwa `/admin/logout?safemode=` (CVE-2026-103905),
+`rmaSummary` per GET (JTL-SHOP-9886) oder HTML in Anfragen an `/_updateconsent`
+(CVE-2026-103904). Mit Datenbankzugang meldet der JTL-Adapter außerdem Namen in
+`consent_statistics`, die zu keiner Einwilligung in `tconsent` passen. Solche mit HTML- oder
+Skript-Zeichen sind kritisch.
+
 ## Automatische Pflege
 
 Der Workflow `.github/workflows/advisories.yml` läuft wöchentlich (und per Hand):

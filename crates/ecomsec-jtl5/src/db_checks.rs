@@ -32,6 +32,7 @@ pub fn run(jtl: &Jtl5, conn: &mut Conn, ctx: &PlatformContext, report: &mut Inte
         ("E-Mail-Vorlagen", mail_templates),
         ("E-Mail-Historie", mail_history),
         ("Kundendaten", customer_records),
+        ("Consent-Statistik", consent_statistics),
     ];
     for (name, step) in steps {
         if let Err(e) = step(jtl, conn, ctx, report) {
@@ -850,9 +851,127 @@ fn customer_records(
     Ok(())
 }
 
+/// Whether an injected consent name looks like markup or script
+/// (CVE-2026-103904; `eventName` holds at most 24 characters).
+fn looks_like_markup(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    name.contains(['<', '>', '"', '\'', '&', '`', '(', ')', '='])
+        || lower.contains("javascript")
+        || lower.contains("script")
+}
+
+/// CVE-2026-103904: names in `consent_statistics` that match no configured
+/// consent (`tconsent.itemID`) were stored via `/_updateconsent`.  Names with
+/// markup are XSS payloads that run when an admin opens the statistics;
+/// plain unknown names are usually left-overs of uninstalled plugins.
+fn consent_statistics(
+    _jtl: &Jtl5,
+    conn: &mut Conn,
+    _ctx: &PlatformContext,
+    report: &mut IntegrityReport,
+) -> anyhow::Result<()> {
+    if !table_exists(conn, "consent_statistics")? || !table_exists(conn, "tconsent")? {
+        return Ok(());
+    }
+    // Same comparison as in the JTL advisory: first 24 characters of itemID.
+    let rows = query_rows(
+        conn,
+        "SELECT s.eventName AS name, COUNT(*) AS n, MIN(s.eventDate) AS first_seen, \
+                MAX(s.eventDate) AS last_seen \
+         FROM consent_statistics s \
+         LEFT JOIN tconsent c ON s.eventName = LEFT(c.itemID, 24) \
+         WHERE c.id IS NULL AND s.eventName <> 'accepted_all' \
+         GROUP BY s.eventName ORDER BY n DESC LIMIT 500",
+    )?;
+    let mut payloads = 0usize;
+    let mut unknown = Vec::new();
+    for row in &rows {
+        let name = col(row, "name");
+        let (n, first, last) = (col(row, "n"), col(row, "first_seen"), col(row, "last_seen"));
+        if looks_like_markup(name) {
+            payloads += 1;
+            report.findings.push(
+                Finding::new(
+                    Severity::Critical,
+                    Category::AttackTrace,
+                    Source::Database,
+                    "jtl5_consent_statistics_injection",
+                    format!("consent_statistics:{}", sha256_hex(name.as_bytes())),
+                    "Eingeschleuster Einwilligungs-Name mit HTML/Skript in der Consent-Statistik",
+                )
+                .with_description(
+                    "consent_statistics.eventName enthält einen Namen, der zu keiner Einwilligung in tconsent passt und \
+                     HTML- oder Skript-Zeichen enthält. Das ist die Spur von CVE-2026-103904: Beim Öffnen von \
+                     Statistiken → Consent-Manager läuft der Code mit den Rechten des Administrators. Die Statistik \
+                     nicht öffnen, Shop auf 5.6.5 / 5.7.5 / 5.8.2 aktualisieren, Datenbanksicherung anlegen und den \
+                     Eintrag gezielt löschen. Admin-Konten, Gruppenrechte, Plugins, Templates und Einstellungen ab dem \
+                     ersten Auftreten prüfen, Admin-Passwörter ändern und Sitzungen beenden.",
+                )
+                .with_evidence(format!("eventName = {name:?}"))
+                .with_evidence(format!("{n} Einträge · {first} – {last}"))
+                .with_evidence(format!(
+                    "Bereinigung (nach Backup): DELETE FROM consent_statistics WHERE eventName = '{}';",
+                    name.replace('\\', "\\\\").replace('\'', "\\'")
+                )),
+            );
+        } else {
+            unknown.push(format!("{name} ({n}×, {first} – {last})"));
+        }
+    }
+    if !unknown.is_empty() {
+        report.findings.push(
+            Finding::new(
+                Severity::Info,
+                Category::Informational,
+                Source::Database,
+                "jtl5_consent_statistics_unknown",
+                "consent_statistics:unknown",
+                format!(
+                    "{} unbekannte Einwilligungs-Namen in der Consent-Statistik",
+                    unknown.len()
+                ),
+            )
+            .with_description(
+                "Diese Namen passen zu keiner Einwilligung in tconsent. Meist sind es Altdaten deinstallierter Plugins; \
+                 unbekannte oder sinnlose Namen können aber auch über /_updateconsent eingeschleust worden sein \
+                 (CVE-2026-103904). Nur eindeutig verdächtige Einträge löschen.",
+            )
+            .with_evidence(unknown.iter().take(20).cloned().collect::<Vec<_>>().join(" · ")),
+        );
+    }
+    report.items.push(
+        IntegrityItem::new(
+            "consent_statistics.injection",
+            "Patch-Status",
+            "Consent-Statistik: eingeschleuste Namen (CVE-2026-103904)",
+            if payloads > 0 {
+                IntegrityStatus::Critical
+            } else if unknown.is_empty() {
+                IntegrityStatus::Ok
+            } else {
+                IntegrityStatus::Warning
+            },
+            format!("{payloads} mit HTML/Skript · {} unbekannt", unknown.len()),
+        )
+        .with_detail(
+            "Abgleich consent_statistics.eventName gegen tconsent.itemID (erste 24 Zeichen)",
+        ),
+    );
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn consent_markup_detection() {
+        assert!(looks_like_markup("<svg/onload=alert(1)>"));
+        assert!(looks_like_markup("\"><img src=x>"));
+        assert!(looks_like_markup("javascript:alert"));
+        assert!(!looks_like_markup("google_analytics"));
+        assert!(!looks_like_markup("jtl_paypal_checkout"));
+    }
 
     #[test]
     fn like_clause_escapes() {

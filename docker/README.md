@@ -29,6 +29,10 @@ docker run --rm --network host \
 docker run --rm -v /var/www/shop:/shop:ro -v ecomsec-state:/state -v "$PWD:/out" \
   ghcr.io/liohtml/ecom-sec:latest scan --skip-remote --format sarif --output /out/ecomsec.sarif
 
+# Zusätzlich die Webserver-Logs nach Angriffsspuren durchsuchen (read-only einhängen)
+docker run --rm -v /var/www/shop:/shop:ro -v ecomsec-state:/state -v /var/log/nginx:/logs:ro \
+  ghcr.io/liohtml/ecom-sec:latest scan --skip-remote --access-log /logs
+
 # Dashboard (im Container auf 0.0.0.0 binden – dann immer mit Token!)
 # Aufruf: http://127.0.0.1:8787/?token=<TOKEN>
 TOKEN="$(openssl rand -hex 16)"; echo "Token: $TOKEN"

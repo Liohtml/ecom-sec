@@ -18,8 +18,10 @@
 //!   ([`state`]),
 //! * change detection between two reports ([`diff`]),
 //! * prioritised recommendations ([`recommendations`]),
-//! * a deterministic security posture score with grade ([`score`]).
+//! * a deterministic security posture score with grade ([`score`]),
+//! * a read-only search for attack traces in web server logs ([`access_log`]).
 
+pub mod access_log;
 pub mod advisories;
 pub mod baseline;
 pub mod db;

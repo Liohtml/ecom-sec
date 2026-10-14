@@ -597,6 +597,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "filetime",
+ "flate2",
  "hex",
  "log",
  "mysql",
