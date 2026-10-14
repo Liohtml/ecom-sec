@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="referrer" content="no-referrer">
+<title>ecomsec Dashboard</title>
+<script>
+// Apply theme and sidebar state before the first paint (no flash).
+(function () {
+  var d = document.documentElement, q = new URLSearchParams(location.search), t = null, c = null;
+  try { t = localStorage.getItem("ecomsec-theme"); c = localStorage.getItem("ecomsec-nav-collapsed"); } catch (e) {}
+  t = q.get("theme") || t;
+  if (t === "light" || t === "dark") d.setAttribute("data-theme", t);
+  if (c === "1") d.setAttribute("data-nav", "collapsed");
+})();
+</script>
+<link rel="stylesheet" href="app.css?v=__VERSION__">
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-overview" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+  <symbol id="i-findings" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2"/><circle cx="4.5" cy="12" r="1.2"/><circle cx="4.5" cy="18" r="1.2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-checklist" viewBox="0 0 24 24"><path d="M11 6h9M11 12h9M11 18h9"/><path d="M3.5 6l1.5 1.5L7.5 5"/><path d="M3.5 12l1.5 1.5L7.5 11"/><path d="M3.5 18l1.5 1.5L7.5 17"/></symbol>
+  <symbol id="i-history" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v4.5H8"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-ai" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9.5 2.5V6M14.5 2.5V6M9.5 18v3.5M14.5 18v3.5M2.5 9.5H6M2.5 14.5H6M18 9.5h3.5M18 14.5h3.5"/><rect x="9.5" y="9.5" width="5" height="5" rx="1"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.6.3-1 .8-1 1.5v.4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+  <symbol id="i-scan" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.4-4.6L4 8"/><path d="M4 3.5V8h4.5"/><path d="M4 13a8 8 0 0 0 14.4 4.6L20 16"/><path d="M20 20.5V16h-4.5"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2.5 12h2M19.5 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="M15.5 10l-2 2 2 2"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-crit" viewBox="0 0 24 24"><path d="M8.2 3h7.6L21 8.2v7.6L15.8 21H8.2L3 15.8V8.2z"/><path d="M12 7.5v5.5M12 16.5h.01"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M10.3 4.2L2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5h.01"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 10"/></symbol>
+  <symbol id="i-unknown" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></symbol>
+  <symbol id="i-accepted" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z"/><path d="M8.5 12h7"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.5 7.5V19l-4-2v-4.5z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-trend-up" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-trend-down" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></symbol>
+  <symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></symbol>
+  <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7.5 14h9"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+  <symbol id="i-diff" viewBox="0 0 24 24"><path d="M7 4v10M2 9h10M14 18h8"/><path d="M17 4l-6 16"/></symbol>
+</svg>
+
+<a class="skip-link" href="#main">Zum Inhalt springen</a>
+
+<div class="app" id="app">
+  <aside class="sidebar" id="sidebar" aria-label="Seitenleiste">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-shield"/></svg></span>
+      <span class="brand-text"><b>ecomsec</b><small>Kompromittierungs-Check</small></span>
+    </div>
+    <nav class="nav" aria-label="Hauptnavigation" id="nav">
+      <a href="#/overview" data-view="overview"><svg class="icon"><use href="#i-overview"/></svg><span class="nav-label">Übersicht</span></a>
+      <a href="#/findings" data-view="findings"><svg class="icon"><use href="#i-findings"/></svg><span class="nav-label">Befunde</span><span class="nav-badge" data-badge="findings" hidden></span></a>
+      <a href="#/integrity" data-view="integrity"><svg class="icon"><use href="#i-shield"/></svg><span class="nav-label">Shop-Integrität</span><span class="nav-badge" data-badge="integrity" hidden></span></a>
+      <a href="#/recommendations" data-view="recommendations"><svg class="icon"><use href="#i-checklist"/></svg><span class="nav-label">Empfehlungen</span><span class="nav-badge" data-badge="recommendations" hidden></span></a>
+      <a href="#/history" data-view="history"><svg class="icon"><use href="#i-history"/></svg><span class="nav-label">Verlauf</span></a>
+      <a href="#/audit" data-view="audit"><svg class="icon"><use href="#i-ai"/></svg><span class="nav-label">KI-Audit</span><span class="nav-badge" data-badge="audit" hidden></span></a>
+      <div class="nav-sep" role="separator"></div>
+      <a href="#/settings" data-view="settings"><svg class="icon"><use href="#i-settings"/></svg><span class="nav-label">Einstellungen &amp; Hilfe</span></a>
+    </nav>
+    <div class="sidebar-foot">
+      <button type="button" class="nav-collapse" id="navCollapse" aria-label="Seitenleiste einklappen" title="Seitenleiste ein-/ausklappen">
+        <svg class="icon"><use href="#i-sidebar"/></svg><span class="nav-label">Einklappen</span>
+      </button>
+      <div class="sidebar-meta nav-label">read-only · offline · v__VERSION__</div>
+    </div>
+  </aside>
+  <div class="scrim" id="navScrim" hidden></div>
+
+  <div class="main-col">
+    <header class="topbar" id="topbar">
+      <button type="button" class="icon-btn only-mobile" id="navOpen" aria-label="Navigation öffnen" aria-controls="sidebar" aria-expanded="false"><svg class="icon"><use href="#i-menu"/></svg></button>
+      <div class="target" id="target">
+        <span class="target-icon" aria-hidden="true"><svg class="icon"><use href="#i-server"/></svg></span>
+        <span class="target-text"><b id="targetName">ecomsec</b><small id="targetMeta">Lade Daten …</small></span>
+      </div>
+      <div class="topbar-actions">
+        <a class="score-chip" id="scoreChip" href="#/overview" hidden></a>
+        <button type="button" class="btn btn-primary scan-btn" id="scanBtn">
+          <svg class="icon"><use href="#i-scan"/></svg><span class="scan-label">Scan starten</span>
+        </button>
+        <button type="button" class="icon-btn" id="themeToggle" aria-label="Farbschema umschalten" title="Hell/Dunkel (t)">
+          <svg class="icon theme-dark-icon"><use href="#i-moon"/></svg><svg class="icon theme-light-icon"><use href="#i-sun"/></svg>
+        </button>
+        <button type="button" class="icon-btn hide-mobile" id="helpBtn" aria-label="Tastenkürzel anzeigen" title="Tastenkürzel (?)"><svg class="icon"><use href="#i-keyboard"/></svg></button>
+      </div>
+      <div class="scan-progress" id="scanProgress" role="progressbar" aria-label="Scan-Fortschritt" aria-valuemin="0" aria-valuemax="100" hidden><div></div></div>
+    </header>
+
+    <main id="main" class="main" tabindex="-1">
+      <section class="view" id="view-overview" data-view="overview" aria-labelledby="h-overview"></section>
+      <section class="view" id="view-findings" data-view="findings" aria-labelledby="h-findings" hidden></section>
+      <section class="view" id="view-integrity" data-view="integrity" aria-labelledby="h-integrity" hidden></section>
+      <section class="view" id="view-recommendations" data-view="recommendations" aria-labelledby="h-recommendations" hidden></section>
+      <section class="view" id="view-history" data-view="history" aria-labelledby="h-history" hidden></section>
+      <section class="view" id="view-audit" data-view="audit" aria-labelledby="h-audit" hidden></section>
+      <section class="view" id="view-settings" data-view="settings" aria-labelledby="h-settings" hidden></section>
+    </main>
+  </div>
+</div>
+
+<div class="drawer-scrim" id="drawerScrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="false" aria-labelledby="drawerTitle" hidden tabindex="-1"></aside>
+
+<div class="modal-wrap" id="modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1"></div>
+</div>
+
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div class="sr-only" id="announcer" aria-live="assertive"></div>
+
+<script src="app.js?v=__VERSION__"></script>
+</body>
+</html>
