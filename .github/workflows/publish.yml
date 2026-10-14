@@ -114,22 +114,42 @@ jobs:
             exit 1
           fi
           # Crates, deren Version schon auf crates.io liegt (z. B. nach einem
-          # abgebrochenen Lauf), werden übersprungen statt den Lauf scheitern zu lassen.
-          exclude=()
-          while read -r name version; do
-            code="$(curl -s -o /dev/null -w '%{http_code}' -A "ecomsec-release (github.com/${GITHUB_REPOSITORY})" \
-              "https://crates.io/api/v1/crates/${name}/${version}")"
-            if [ "$code" = 200 ]; then
-              echo "${name} ${version} ist bereits veröffentlicht"
-              exclude+=(--exclude "$name")
+          # abgebrochenen Lauf), werden übersprungen. crates.io begrenzt das
+          # Anlegen neuer Crates (429 mit "try again after <Zeit>"); dann wird
+          # bis zu diesem Zeitpunkt gewartet und weitergemacht.
+          packages="$(cargo metadata --no-deps --format-version 1 \
+            | python3 -c 'import json,sys; [print(p["name"], p["version"]) for p in json.load(sys.stdin)["packages"]]')"
+          for attempt in $(seq 1 12); do
+            exclude=()
+            while read -r name version; do
+              code="$(curl -s -o /dev/null -w '%{http_code}' -A "ecomsec-release (github.com/${GITHUB_REPOSITORY})" \
+                "https://crates.io/api/v1/crates/${name}/${version}")"
+              if [ "$code" = 200 ]; then
+                exclude+=(--exclude "$name")
+              fi
+            done <<< "$packages"
+            done_count=$(( ${#exclude[@]} / 2 ))
+            total="$(printf '%s\n' "$packages" | wc -l)"
+            echo "Bereits veröffentlicht: ${done_count}/${total}"
+            if [ "$done_count" -eq "$total" ]; then
+              echo "Alle Crates sind veröffentlicht."
+              exit 0
             fi
-          done < <(cargo metadata --no-deps --format-version 1 \
-            | python3 -c 'import json,sys; [print(p["name"], p["version"]) for p in json.load(sys.stdin)["packages"]]')
-          total="$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json,sys; print(len(json.load(sys.stdin)["packages"]))')"
-          if [ "$(( ${#exclude[@]} / 2 ))" -eq "$total" ]; then
-            echo "Alle Crates sind bereits veröffentlicht."
-            exit 0
-          fi
-          # cargo publiziert die Crates in Abhängigkeitsreihenfolge und wartet
-          # jeweils, bis das Crate im Index verfügbar ist.
-          cargo publish --workspace --locked --no-verify "${exclude[@]}"
+            # cargo publiziert in Abhängigkeitsreihenfolge und wartet jeweils,
+            # bis das Crate im Index verfügbar ist.
+            if cargo publish --workspace --locked --no-verify "${exclude[@]}" 2>&1 | tee publish.log; then
+              echo "Alle übrigen Crates sind veröffentlicht."
+              exit 0
+            fi
+            retry="$(grep -o 'try again after [^.]*GMT' publish.log | head -1 | sed 's/try again after //' || true)"
+            if [ -z "$retry" ]; then
+              echo "::error::cargo publish ist fehlgeschlagen (kein Rate-Limit)."
+              exit 1
+            fi
+            wait=$(( $(date -d "$retry" +%s) - $(date +%s) + 10 ))
+            [ "$wait" -lt 10 ] && wait=10
+            echo "::notice::crates.io-Rate-Limit für neue Crates – warte ${wait}s bis ${retry} (Versuch ${attempt})."
+            sleep "$wait"
+          done
+          echo "::error::Nach 12 Versuchen noch nicht alle Crates veröffentlicht."
+          exit 1
