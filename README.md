@@ -175,17 +175,20 @@ der Shop abgeschaltet wird), **Sofortmaßnahmen**, **Kompromittierungs-Prüfung*
 <p align="center"><img src="docs/img/report_dark.png" alt="HTML-Bericht – Befunde, dunkles Design" width="92%"></p>
 <p align="center"><i>Befunde im HTML-Bericht (dunkles Design): Filter, Gruppierung nach Verzeichnis und aufklappbare Details mit Beweisausschnitten.</i></p>
 
-<p align="center"><img src="docs/img/dashboard.png" alt="Dashboard – Security Scan" width="92%"></p>
-<p align="center"><i>Dashboard, Tab „Security Scan“: Filter, Gruppierung nach Verzeichnis, Befunde einzeln oder gesammelt als unbedenklich markieren.</i></p>
+<p align="center"><img src="docs/img/dashboard.png" alt="Dashboard – Übersicht mit Ampel, Score und Änderungen seit dem letzten Scan" width="92%"></p>
+<p align="center"><i>Dashboard, Übersicht: Ampel, Sicherheitsniveau mit Note und den größten Abzügen, Kennzahlen im Vergleich zum letzten Scan, Änderungen seit dem letzten Scan und die nächsten Schritte.</i></p>
+
+<p align="center"><img src="docs/img/dashboard_dark.png" alt="Dashboard – Befunde mit Detailansicht, dunkles Design" width="92%"></p>
+<p align="center"><i>Befunde im dunklen Design: Facettenfilter und Suche, Detailansicht mit Beweisen, KI-Bewertung und verknüpften Empfehlungen; einzeln, je Verzeichnis oder je Regel als unbedenklich markieren.</i></p>
 
 <p align="center"><img src="docs/img/integrity.png" alt="Dashboard – Shop-Integrität" width="92%"></p>
-<p align="center"><i>Tab „Shop-Integrität“: bekannte Schwachstellen mit Begründung des Patch-Status, Version, Baseline, Dateirechte.</i></p>
+<p align="center"><i>Shop-Integrität: Installation, bekannte Schwachstellen mit Begründung des Patch-Status und die Prüfungen nach Bereichen – Auffälliges zuerst.</i></p>
 
-<p align="center"><img src="docs/img/integrity_accounts.png" alt="Shop-Integrität – Admin-Konten, PayPal, E-Mail" width="92%"></p>
-<p align="center"><i>Admin-Konten mit 2FA-Status, PayPal-Empfänger, E-Mail-Historie und Plugins (Beispieldaten).</i></p>
+<p align="center"><img src="docs/img/integrity_accounts.png" alt="Shop-Integrität – Admin-Konten, Zahlung, E-Mail, Plugins" width="92%"></p>
+<p align="center"><i>Admin-Konten mit 2FA-Status, PayPal-Empfänger, E-Mail-Historie, Dateirechte und Plugins (Beispieldaten).</i></p>
 
-<p align="center"><img src="docs/img/recommendations.png" alt="Dashboard – Handlungsempfehlungen, dunkles Design" width="92%"></p>
-<p align="center"><i>Tab „Handlungsempfehlungen“ im dunklen Design: priorisierte Checkliste mit Verweis auf die auslösenden Befunde.</i></p>
+<p align="center"><img src="docs/img/recommendations.png" alt="Dashboard – Empfehlungen, dunkles Design" width="92%"></p>
+<p align="center"><i>Empfehlungen im dunklen Design: priorisierte Checkliste zum Abhaken mit Verweisen auf die auslösenden Befunde.</i></p>
 
 ---
 
