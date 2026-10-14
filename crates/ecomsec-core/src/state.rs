@@ -227,6 +227,31 @@ impl StateStore {
         files.iter().rev().find_map(|p| Self::load_report(p).ok())
     }
 
+    /// Time stamps (`20261013T041700.123Z`) of the archived reports, oldest
+    /// first.  The stamp is the report's `generated_at` truncated to
+    /// milliseconds.
+    pub fn archived_stamps(&self) -> Vec<String> {
+        self.archived_reports()
+            .iter()
+            .filter_map(|p| archive_timestamp(p).map(str::to_string))
+            .collect()
+    }
+
+    /// The archived report with the given stamp (see
+    /// [`StateStore::archived_stamps`]).  Invalid stamps yield `None`.
+    pub fn archived_report(&self, stamp: &str) -> Option<crate::report::Report> {
+        let valid = stamp.len() == 20
+            && stamp.as_bytes()[8] == b'T'
+            && stamp.ends_with('Z')
+            && stamp
+                .chars()
+                .all(|c| c.is_ascii_digit() || matches!(c, 'T' | '.' | 'Z'));
+        if !valid {
+            return None;
+        }
+        Self::load_report(&self.dir.join(REPORTS_DIR).join(format!("{stamp}.json"))).ok()
+    }
+
     /// The newest archived report generated strictly before `before`.
     pub fn previous_report(&self, before: DateTime<Utc>) -> Option<crate::report::Report> {
         let cutoff = before.format(ARCHIVE_TS_FORMAT).to_string();
@@ -402,5 +427,20 @@ mod tests {
         );
         let oldest_kept = start + chrono::Duration::days(3);
         assert!(store.previous_report(oldest_kept).is_none());
+    }
+
+    #[test]
+    fn archived_report_by_stamp() {
+        let tmp = tempfile::tempdir().unwrap();
+        let store = StateStore::new(tmp.path());
+        let at = Utc::now();
+        store.archive_report(&dummy_report(at)).unwrap();
+        let stamps = store.archived_stamps();
+        assert_eq!(stamps.len(), 1);
+        assert_eq!(stamps[0], at.format(ARCHIVE_TS_FORMAT).to_string());
+        let r = store.archived_report(&stamps[0]).unwrap();
+        assert_eq!(r.generated_at, at);
+        assert!(store.archived_report("../last-report").is_none());
+        assert!(store.archived_report("20260101T000000.000Z").is_none());
     }
 }
