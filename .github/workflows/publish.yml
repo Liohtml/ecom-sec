@@ -1,8 +1,10 @@
 name: crates.io
 
 # Publishes all workspace crates to crates.io in dependency order after a
-# GitHub Release was published (or on demand).  Needs the repository secret
-# CARGO_REGISTRY_TOKEN (crates.io API token with "publish-new" / "publish-update").
+# GitHub Release was published (or on demand).  Needs the secret
+# CARGO_REGISTRY_TOKEN (crates.io API token with "publish-new" / "publish-update"),
+# either as a repository secret or in the deployment environment named by the
+# "environment" input, the repository variable CRATES_ENVIRONMENT, or "crates.io".
 
 on:
   release:
@@ -13,6 +15,10 @@ on:
         description: "Nur packen und prüfen, nichts hochladen"
         type: boolean
         default: true
+      environment:
+        description: "GitHub-Environment mit dem Secret CARGO_REGISTRY_TOKEN"
+        type: string
+        default: "crates.io"
 
 permissions:
   contents: read
@@ -20,6 +26,8 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Environment secrets are only visible to jobs that name the environment.
+    environment: ${{ inputs.environment || vars.CRATES_ENVIRONMENT || 'crates.io' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,8 +50,9 @@ jobs:
         if: github.event_name == 'release' || inputs.dry_run == false
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          ENVIRONMENT: ${{ inputs.environment || vars.CRATES_ENVIRONMENT || 'crates.io' }}
         run: |
-          [ -n "$CARGO_REGISTRY_TOKEN" ] || { echo "Secret CARGO_REGISTRY_TOKEN fehlt"; exit 1; }
+          [ -n "$CARGO_REGISTRY_TOKEN" ] || { echo "Secret CARGO_REGISTRY_TOKEN fehlt (weder als Repository-Secret noch im Environment \"$ENVIRONMENT\")"; exit 1; }
           # cargo publiziert die Crates in Abhängigkeitsreihenfolge und wartet
           # jeweils, bis das Crate im Index verfügbar ist.
           cargo publish --workspace --locked --no-verify
