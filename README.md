@@ -167,7 +167,13 @@ der Shop abgeschaltet wird), **Sofortmaßnahmen**, **Kompromittierungs-Prüfung*
 ## 📸 Screenshots
 
 <p align="center"><img src="docs/img/terminal.png" alt="Scan-Ergebnis im Terminal" width="92%"></p>
-<p align="center"><i>Scan im Terminal: Ampel, Zusammenfassung und Befunde mit Beweisausschnitten.</i></p>
+<p align="center"><i>Scan im Terminal: Kopfkarte mit Ampel, Sicherheitsniveau und Score-Treibern, danach die Befunde nach Schweregrad mit Kategorie, Fundort, ID und Beweiszeilen – am Ende die nächsten Befehle.</i></p>
+
+<p align="center"><img src="docs/img/report.png" alt="HTML-Bericht – Zusammenfassung" width="92%"></p>
+<p align="center"><i>HTML-Bericht (<code>ecomsec report --format html</code>): eine einzelne Datei zum Weitergeben und Drucken – Ergebnis, Sicherheitsniveau, Kennzahlen, Diagramme und die drei wichtigsten Maßnahmen auf einen Blick.</i></p>
+
+<p align="center"><img src="docs/img/report_dark.png" alt="HTML-Bericht – Befunde, dunkles Design" width="92%"></p>
+<p align="center"><i>Befunde im HTML-Bericht (dunkles Design): Filter, Gruppierung nach Verzeichnis und aufklappbare Details mit Beweisausschnitten.</i></p>
 
 <p align="center"><img src="docs/img/dashboard.png" alt="Dashboard – Security Scan" width="92%"></p>
 <p align="center"><i>Dashboard, Tab „Security Scan“: Filter, Gruppierung nach Verzeichnis, Befunde einzeln oder gesammelt als unbedenklich markieren.</i></p>
