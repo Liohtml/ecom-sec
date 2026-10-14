@@ -191,7 +191,7 @@ pub fn detect_version(root: &Path) -> (Option<Version>, String) {
 }
 
 /// Embedded advisory file (`advisories/shopware6.toml` in the repository).
-pub const ADVISORIES_TOML: &str = include_str!("../../../advisories/shopware6.toml");
+pub const ADVISORIES_TOML: &str = include_str!("../advisories.toml");
 
 fn advisories() -> Vec<Advisory> {
     let mut db = ecomsec_core::AdvisoryDb::new();

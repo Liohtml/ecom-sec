@@ -18,18 +18,21 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/liohtml/ecom-sec"
+homepage = "https://github.com/liohtml/ecom-sec"
 rust-version = "1.80"
+keywords = ["security", "ecommerce", "malware", "scanner", "cve"]
+categories = ["command-line-utilities", "web-programming"]
 
 [workspace.dependencies]
-ecomsec-core = { path = "crates/ecomsec-core" }
-ecomsec-jtl5 = { path = "crates/ecomsec-jtl5" }
-ecomsec-shopware6 = { path = "crates/ecomsec-shopware6" }
-ecomsec-shopify = { path = "crates/ecomsec-shopify" }
-ecomsec-osv = { path = "crates/ecomsec-osv" }
-ecomsec-notify = { path = "crates/ecomsec-notify" }
-ecomsec-audit = { path = "crates/ecomsec-audit" }
-ecomsec-woocommerce = { path = "crates/ecomsec-woocommerce" }
-ecomsec-magento2 = { path = "crates/ecomsec-magento2" }
+ecomsec-core = { version = "0.1.0", path = "crates/ecomsec-core" }
+ecomsec-jtl5 = { version = "0.1.0", path = "crates/ecomsec-jtl5" }
+ecomsec-shopware6 = { version = "0.1.0", path = "crates/ecomsec-shopware6" }
+ecomsec-shopify = { version = "0.1.0", path = "crates/ecomsec-shopify" }
+ecomsec-osv = { version = "0.1.0", path = "crates/ecomsec-osv" }
+ecomsec-notify = { version = "0.1.0", path = "crates/ecomsec-notify" }
+ecomsec-audit = { version = "0.1.0", path = "crates/ecomsec-audit" }
+ecomsec-woocommerce = { version = "0.1.0", path = "crates/ecomsec-woocommerce" }
+ecomsec-magento2 = { version = "0.1.0", path = "crates/ecomsec-magento2" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

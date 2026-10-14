@@ -45,7 +45,7 @@ pub const PLATFORM_NAME: &str = "WooCommerce (WordPress)";
 pub const COMPONENT_WOOCOMMERCE: &str = "WooCommerce";
 pub const RULES_TOML: &str = include_str!("../signatures/rules_woocommerce.toml");
 /// Embedded advisory file (`advisories/woocommerce.toml` in the repository).
-pub const ADVISORIES_TOML: &str = include_str!("../../../advisories/woocommerce.toml");
+pub const ADVISORIES_TOML: &str = include_str!("../advisories.toml");
 
 const WC_MAIN_FILE: &str = "wp-content/plugins/woocommerce/woocommerce.php";
 

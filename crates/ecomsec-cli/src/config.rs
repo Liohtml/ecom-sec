@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn example_config_parses() {
-        let text = include_str!("../../../ecomsec.example.toml");
+        let text = include_str!("../ecomsec.example.toml");
         let cfg: FileConfig = toml::from_str(text).expect("example config is valid");
         assert!(cfg.watch.update_advisories.unwrap_or(true));
         assert_eq!(cfg.notify.on, Some(NotifyOn::Warning));

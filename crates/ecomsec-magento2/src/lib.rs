@@ -47,7 +47,7 @@ pub const PLATFORM_NAME: &str = "Magento 2 / Adobe Commerce";
 pub const COMPONENT_COMMERCE: &str = "Adobe Commerce";
 pub const RULES_TOML: &str = include_str!("../signatures/rules_magento2.toml");
 /// Embedded advisory file (`advisories/magento2.toml` in the repository).
-pub const ADVISORIES_TOML: &str = include_str!("../../../advisories/magento2.toml");
+pub const ADVISORIES_TOML: &str = include_str!("../advisories.toml");
 
 /// Composer inventories of a Magento project (core, extensions, libraries).
 pub const COMPOSER_INVENTORY: &[&str] = &["composer.lock", "vendor/composer/installed.json"];

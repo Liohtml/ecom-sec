@@ -1,0 +1,49 @@
+name: crates.io
+
+# Publishes all workspace crates to crates.io in dependency order after a
+# GitHub Release was published (or on demand).  Needs the repository secret
+# CARGO_REGISTRY_TOKEN (crates.io API token with "publish-new" / "publish-update").
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Nur packen und prüfen, nichts hochladen"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Versionen müssen zum Tag passen
+        if: github.event_name == 'release'
+        run: |
+          tag="${{ github.event.release.tag_name }}"
+          version="$(cargo metadata --no-deps --format-version 1 | python3 -c 'import json,sys; print(next(p["version"] for p in json.load(sys.stdin)["packages"] if p["name"]=="ecomsec"))')"
+          echo "Tag $tag · Cargo $version"
+          [ "$tag" = "v$version" ] || { echo "Tag und Cargo-Version stimmen nicht überein"; exit 1; }
+
+      - name: Packen und verifizieren
+        run: cargo package --workspace --locked
+
+      - name: Veröffentlichen
+        if: github.event_name == 'release' || inputs.dry_run == false
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          [ -n "$CARGO_REGISTRY_TOKEN" ] || { echo "Secret CARGO_REGISTRY_TOKEN fehlt"; exit 1; }
+          # cargo publiziert die Crates in Abhängigkeitsreihenfolge und wartet
+          # jeweils, bis das Crate im Index verfügbar ist.
+          cargo publish --workspace --locked --no-verify

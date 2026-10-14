@@ -103,6 +103,12 @@ curl -fsSL https://raw.githubusercontent.com/liohtml/ecom-sec/main/install.sh | 
 curl -fsSL https://raw.githubusercontent.com/liohtml/ecom-sec/main/install.sh | sh -s -- --version v0.2.0 --dir ~/bin
 ```
 
+**Mit Rust-Toolchain** (alle Plattformen, baut aus den Quellen von [crates.io](https://crates.io/crates/ecomsec)):
+
+```bash
+cargo install ecomsec --locked
+```
+
 **Windows:** ZIP-Paket `ecomsec-<version>-x86_64-pc-windows-msvc.zip` aus den [Releases](../../releases)
 laden und `ecomsec.exe` entpacken. Jedes Release enthält `SHA256SUMS` zum Prüfen.
 

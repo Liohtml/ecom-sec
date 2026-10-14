@@ -20,6 +20,8 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
       - run: cargo run -q -p ecomsec -- advisories lint advisories
+      - name: Crates sind veröffentlichbar (ohne Upload)
+        run: cargo package --workspace --locked --no-verify
       - run: cargo build --release
       - uses: actions/upload-artifact@v4
         with:

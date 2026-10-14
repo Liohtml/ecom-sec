@@ -6,7 +6,11 @@ edition.workspace = true
 license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
 default-run = "ecomsec"
+readme = "README.md"
 
 [[bin]]
 name = "ecomsec"
