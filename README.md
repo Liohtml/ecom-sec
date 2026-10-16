@@ -20,6 +20,8 @@
 </p>
 
 <p align="center">
+  <a href="https://crates.io/crates/ecomsec"><img alt="crates.io" src="https://img.shields.io/crates/v/ecomsec?logo=rust&label=crates.io"></a>
+  <a href="https://crates.io/crates/ecomsec"><img alt="Downloads" src="https://img.shields.io/crates/d/ecomsec?label=Downloads"></a>
   <img alt="Kostenlos" src="https://img.shields.io/badge/Preis-kostenfrei-2ea44f">
   <img alt="Lizenz MIT" src="https://img.shields.io/badge/Lizenz-MIT-blue">
   <img alt="Rust" src="https://img.shields.io/badge/Rust-1.80%2B-orange">
