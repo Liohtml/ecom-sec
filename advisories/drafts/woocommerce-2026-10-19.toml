@@ -1,0 +1,55 @@
+# Automatisch erzeugte Entwürfe vom 2026-10-19 – NICHT aktiv (draft = true).
+# Versionsbereiche und Titel prüfen, dann nach advisories/<platform>.toml übernehmen
+# und `draft` entfernen. Siehe docs/ADVISORIES.md.
+
+[[advisory]]
+id = "CVE-2023-39999"
+platform = "woocommerce"
+title = "Exposure of Sensitive Information to an Unauthorized Actor in WordPress from 6.3 through 6.3.1, from 6.2 through 6.2.2, from 6.1 through 6.13, from 6.0 through "
+severity = "warning"
+score = 4.3
+affected = [">=4.1 <=4.1.38", ">=4.2 <=4.2.35", ">=4.3 <=4.3.31", ">=4.4 <=4.4.30", ">=4.5 <=4.5.29", ">=4.6 <=4.6.26", ">=4.7 <=4.7.26", ">=4.8 <=4.8.22", ">=4.9 <=4.9.23", ">=5.0 <=5.0.19", ">=5.1 <=5.1.16", ">=5.2 <=5.2.18", ">=5.3 <=5.3.15", ">=5.4 <=5.4.13", ">=5.5 <=5.5.12", ">=5.6 <=5.6.11", ">=5.7 <=5.7.9", ">=5.8 <=5.8.7", ">=5.9 <=5.9.7", ">=6.0 <=6.0.5", ">=6.1 <=6.1.3", ">=6.2 <=6.2.2", ">=6.3 <6.3.2"]
+fixed_in = ["6.3.2"]
+reference = "https://lists.debian.org/debian-lts-announce/2023/11/msg00014.html"
+published = 2023-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-60137"
+platform = "woocommerce"
+title = "WordPress 6.8.x before 6.8.6, 6.9.x before 6.9.5, and 7.0.x before 7.0.2 does not properly sanitise the author__not_in parameter of WP_Query, which could allow "
+severity = "warning"
+score = 5.9
+affected = [">=6.8 <6.8.6", ">=6.9 <6.9.5", ">=7.0 <7.0.2"]
+fixed_in = ["6.8.6", "6.9.5", "7.0.2"]
+reference = "https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-fpp7-x2x2-2mjf"
+published = 2026-07-17
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-63030"
+platform = "woocommerce"
+title = "WordPress 6.9.x before 6.9.5 and 7.0.x before 7.0.2 is affected by a REST API batch endpoint route confusion issue which, combined with the author__not_in WP_Qu"
+severity = "critical"
+score = 9.8
+affected = [">=6.9 <6.9.5", ">=7.0 <7.0.2"]
+fixed_in = ["6.9.5", "7.0.2"]
+reference = "https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-ff9f-jf42-662q"
+published = 2026-07-17
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-87902"
+platform = "woocommerce"
+title = "An unauthenticated attacker can make `get_page_template()` page-template resolution include a chosen readable local `.php` file outside the active theme directo"
+severity = "critical"
+score = 8.1
+affected = ["<4.7.37", ">=4.8 <4.8.32", ">=4.9 <4.9.33", ">=5.0 <5.0.29", ">=5.1 <5.1.26", ">=5.2 <5.2.28", ">=5.3 <5.3.25", ">=5.4 <5.4.23", ">=5.5 <5.5.22", ">=5.6 <5.6.21", ">=5.7 <5.7.19", ">=5.8 <5.8.17", ">=5.9 <5.9.18", ">=6.0 <6.0.16", ">=6.1 <6.1.14", ">=6.2 <6.2.13", ">=6.3 <6.3.12", ">=6.4 <6.4.12", ">=6.5 <6.5.12", ">=6.6 <6.6.9", ">=6.7 <6.7.9", ">=6.8 <6.8.10", ">=6.9 <6.9.9", ">=7.0 <7.0.6", ">=7.1 <7.1.2"]
+fixed_in = ["4.7.37", "4.8.32", "4.9.33", "5.0.29", "5.1.26", "5.2.28", "5.3.25", "5.4.23", "5.5.22", "5.6.21", "5.7.19", "5.8.17", "5.9.18", "6.0.16", "6.1.14", "6.2.13", "6.3.12", "6.4.12", "6.5.12", "6.6.9", "6.7.9", "6.8.10", "6.9.9", "7.0.6", "7.1.2"]
+reference = "https://github.com/WordPress/wordpress-develop/security/advisories/GHSA-7hp8-65ch-5whp"
+published = 2026-09-22
+source = "nvd"
+draft = true
