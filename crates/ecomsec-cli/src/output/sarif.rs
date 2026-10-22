@@ -59,6 +59,7 @@ pub fn category_help(c: Category) -> &'static str {
         Category::AdminAccount => "Auffälligkeit bei Administratorkonten (neu, geändert, ohne 2FA). Konten zuordnen, unbekannte deaktivieren, 2FA erzwingen.",
         Category::PaymentConfiguration => "Zahlungsempfänger oder Zahlungsanbieter-Konfiguration wurde geändert. Sofort mit dem Händlerkonto abgleichen.",
         Category::ConfigPermissions => "Konfigurationsdatei mit Zugangsdaten hat zu offene Dateirechte. Rechte auf 0640/0600 einschränken.",
+        Category::InsecureConfiguration => "Die PHP-Laufzeitkonfiguration schwächt die Absicherung. Direktive wie beschrieben setzen und mit `php -i` gegenprüfen.",
         Category::ExposedFile => "Backup, Dump oder Konfigurationskopie ist über den Webserver abrufbar. Aus dem Webroot entfernen.",
         Category::IntegrityDeviation => "Datei weicht von der Integritäts-Baseline ab. Änderung einem Update/Deployment zuordnen oder wiederherstellen.",
         Category::ThirdPartyInjection => "Fremdcode im Storefront (Script-Tags, Apps, Webhooks, Theme). Herkunft und Zielhosts prüfen.",

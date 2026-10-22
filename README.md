@@ -161,6 +161,7 @@ ecomsec self-update           # neueste Version laden, Prüfsumme prüfen, Progr
 - **E-Mail-Historie der letzten 90 Tage** auf eingeschleuste Angriffs-Payloads
 - **E-Mail-Vorlagen, Kunden- und Kontaktdaten** mit Template-Syntax
 - **Dateirechte** der Konfigurationsdatei, **Plugins und Cronjobs**, die nach dem Referenzdatum hinzukamen
+- **Session-Härtung in `php.ini` / `.user.ini`:** aktiver Upload-Progress-Handler (`session.upload_progress.enabled`, der Pfad hinter CVE-2026-109618/109619), fehlender `session.use_strict_mode`, Session-ID aus GET/POST, gesetztes `unserialize_callback_func`, `session.save_path` in einem gemeinsamen `/tmp` und widersprüchliche `session.serialize_handler` – fehlende Direktiven werden nur in einer `php.ini` als Info gemeldet, denn dort greift der unsichere Default
 - Optional eine **Baseline**: ein Fingerabdruck aller Kerndateien, gegen den spätere Scans vergleichen
 
 ### 3 · Handlungsempfehlungen – was jetzt zu tun ist

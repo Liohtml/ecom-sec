@@ -24,6 +24,7 @@ pub const CATEGORIES: &[Category] = &[
     Category::AdminAccount,
     Category::PaymentConfiguration,
     Category::ConfigPermissions,
+    Category::InsecureConfiguration,
     Category::ExposedFile,
     Category::IntegrityDeviation,
     Category::ThirdPartyInjection,

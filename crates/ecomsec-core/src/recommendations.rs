@@ -289,6 +289,19 @@ pub fn build(report: &Report, extra: Vec<Recommendation>) -> Vec<RecommendationG
         )
         .related(perms),
     );
+    let ini = active(Category::InsecureConfiguration);
+    recs.push(
+        Recommendation::new(
+            G::Hardening,
+            if ini.is_empty() { 3 } else { 2 },
+            "Session-Handling in der PHP-Konfiguration härten",
+            "`session.upload_progress.enabled = Off` schließt den Upload-Progress-Pfad, der die Session \
+             schon vor dem Shop-Code deserialisiert; dazu `session.use_strict_mode = 1`, \
+             `session.use_only_cookies = 1`, leeres `unserialize_callback_func` und ein eigener \
+             `session.save_path` je Pool. Effektive Werte mit `php -i` prüfen, nicht nur die Datei.",
+        )
+        .related(ini),
+    );
     recs.push(Recommendation::new(
         G::Hardening,
         3,

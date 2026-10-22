@@ -69,6 +69,8 @@ pub enum Category {
     PaymentConfiguration,
     /// Permissions of sensitive configuration files.
     ConfigPermissions,
+    /// Runtime configuration (php.ini, .user.ini) weakens the platform.
+    InsecureConfiguration,
     /// Backup / dump / config files reachable through the web root.
     ExposedFile,
     /// Core file deviates from the recorded baseline.
@@ -96,6 +98,7 @@ impl Category {
             Category::AdminAccount => "Admin-Konto",
             Category::PaymentConfiguration => "Zahlungs-Konfiguration",
             Category::ConfigPermissions => "Dateirechte",
+            Category::InsecureConfiguration => "Unsichere Konfiguration",
             Category::ExposedFile => "Öffentlich erreichbare Datei",
             Category::IntegrityDeviation => "Integritätsabweichung",
             Category::ThirdPartyInjection => "Fremdcode / Injection",

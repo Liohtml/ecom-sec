@@ -6,6 +6,7 @@ pub mod file_scan;
 use crate::advisories::{merge_by_id, AdvisoryDb};
 use crate::baseline::Baseline;
 use crate::finding::{Category, Finding, Severity, Source};
+use crate::php_ini;
 use crate::platform::{
     evaluate_advisories, evaluated_version, IntegrityItem, IntegrityStatus, PatchState, Platform,
     PlatformContext,
@@ -199,6 +200,12 @@ impl Engine {
                         remaining_files
                     ));
                 }
+            }
+
+            // ------------------------------------------------- php.ini hardening
+            if !options.skip_files {
+                let ini_files = php_ini::collect(profile);
+                findings.extend(php_ini::findings(&profile.root, &ini_files));
             }
 
             // ------------------------------------------------------ baseline

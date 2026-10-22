@@ -138,7 +138,7 @@ pub fn classify(path: &Path, rel: &str, profile: &FileScanProfile) -> FileClass 
     FileClass::Other
 }
 
-fn under_any(rel: &str, dirs: &[String]) -> bool {
+pub(crate) fn under_any(rel: &str, dirs: &[String]) -> bool {
     dirs.iter().any(|d| {
         let d = d.trim_end_matches('/').trim_start_matches("./");
         !d.is_empty() && (rel == d || rel.starts_with(&format!("{d}/")))

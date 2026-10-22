@@ -29,6 +29,7 @@ pub mod diff;
 pub mod engine;
 pub mod finding;
 pub mod hosts;
+pub mod php_ini;
 pub mod platform;
 pub mod recommendations;
 pub mod report;
