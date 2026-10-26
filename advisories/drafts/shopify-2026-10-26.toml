@@ -1,0 +1,16 @@
+# Automatisch erzeugte Entwürfe vom 2026-10-26 – NICHT aktiv (draft = true).
+# Versionsbereiche und Titel prüfen, dann nach advisories/<platform>.toml übernehmen
+# und `draft` entfernen. Siehe docs/ADVISORIES.md.
+
+[[advisory]]
+id = "CVE-2026-44644"
+platform = "shopify"
+title = "LiquidJS is a Shopify/GitHub Pages compatible template engine written in pure JavaScript. Versions 10.25.7 and below are vulnerable to XSS through a flaw in the"
+severity = "warning"
+score = 6.1
+affected = []
+fixed_in = []
+reference = "https://github.com/harttle/liquidjs/commit/26ea2856c7a90aec892b98d94a9b7a3e18539045"
+published = 2026-06-17
+source = "nvd"
+draft = true

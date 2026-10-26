@@ -1,0 +1,16 @@
+# Automatisch erzeugte Entwürfe vom 2026-10-26 – NICHT aktiv (draft = true).
+# Versionsbereiche und Titel prüfen, dann nach advisories/<platform>.toml übernehmen
+# und `draft` entfernen. Siehe docs/ADVISORIES.md.
+
+[[advisory]]
+id = "CVE-2026-104937"
+platform = "shopware6"
+title = "Shopware version 6.7 allows the upload of attacker‑controlled HTML files and serves them as text/html without effective security headers, enabling stored cross-"
+severity = "critical"
+score = 8.1
+affected = []
+fixed_in = []
+reference = "https://kb.cert.org/vuls/id/157374"
+published = 2026-10-13
+source = "nvd"
+draft = true

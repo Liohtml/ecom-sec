@@ -1,0 +1,224 @@
+# Automatisch erzeugte Entwürfe vom 2026-10-26 – NICHT aktiv (draft = true).
+# Versionsbereiche und Titel prüfen, dann nach advisories/<platform>.toml übernehmen
+# und `draft` entfernen. Siehe docs/ADVISORIES.md.
+
+[[advisory]]
+id = "CVE-2025-54263"
+platform = "magento2"
+title = "Adobe Commerce versions 2.4.9-alpha2, 2.4.8-p2, 2.4.7-p7, 2.4.6-p12, 2.4.5-p14, 2.4.4-p15 and earlier are affected by an Incorrect Authorization vulnerability. "
+severity = "critical"
+score = 8.1
+affected = ["2.4.4", "2.4.4-p1", "2.4.4-p10", "2.4.4-p11", "2.4.4-p12", "2.4.4-p13", "2.4.4-p14", "2.4.4-p15", "2.4.4-p2", "2.4.4-p3", "2.4.4-p4", "2.4.4-p5", "2.4.4-p6", "2.4.4-p7", "2.4.4-p8", "2.4.4-p9", "2.4.5", "2.4.5-p1", "2.4.5-p10", "2.4.5-p11", "2.4.5-p12", "2.4.5-p13", "2.4.5-p14", "2.4.5-p2", "2.4.5-p3", "2.4.5-p4", "2.4.5-p5", "2.4.5-p6", "2.4.5-p7", "2.4.5-p8", "2.4.5-p9", "2.4.6", "2.4.6-p1", "2.4.6-p10", "2.4.6-p11", "2.4.6-p12", "2.4.6-p2", "2.4.6-p3", "2.4.6-p4", "2.4.6-p5", "2.4.6-p6", "2.4.6-p7", "2.4.6-p8", "2.4.6-p9", "2.4.7", "2.4.7-p1", "2.4.7-p2", "2.4.7-p3", "2.4.7-p4", "2.4.7-p5", "2.4.7-p6", "2.4.7-p7", "2.4.8", "2.4.8-p1", "2.4.8-p2", "2.4.9"]
+fixed_in = []
+reference = "https://helpx.adobe.com/security/products/magento/apsb25-94.html"
+published = 2025-10-14
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2025-54264"
+platform = "magento2"
+title = "Adobe Commerce versions 2.4.9-alpha2, 2.4.8-p2, 2.4.7-p7, 2.4.6-p12, 2.4.5-p14, 2.4.4-p15 and earlier are affected by a stored Cross-Site Scripting (XSS) Cross-"
+severity = "critical"
+score = 8.1
+affected = ["2.4.4", "2.4.4-p1", "2.4.4-p10", "2.4.4-p11", "2.4.4-p12", "2.4.4-p13", "2.4.4-p14", "2.4.4-p15", "2.4.4-p2", "2.4.4-p3", "2.4.4-p4", "2.4.4-p5", "2.4.4-p6", "2.4.4-p7", "2.4.4-p8", "2.4.4-p9", "2.4.5", "2.4.5-p1", "2.4.5-p10", "2.4.5-p11", "2.4.5-p12", "2.4.5-p13", "2.4.5-p14", "2.4.5-p2", "2.4.5-p3", "2.4.5-p4", "2.4.5-p5", "2.4.5-p6", "2.4.5-p7", "2.4.5-p8", "2.4.5-p9", "2.4.6", "2.4.6-p1", "2.4.6-p10", "2.4.6-p11", "2.4.6-p12", "2.4.6-p2", "2.4.6-p3", "2.4.6-p4", "2.4.6-p5", "2.4.6-p6", "2.4.6-p7", "2.4.6-p8", "2.4.6-p9", "2.4.7", "2.4.7-p1", "2.4.7-p2", "2.4.7-p3", "2.4.7-p4", "2.4.7-p5", "2.4.7-p6", "2.4.7-p7", "2.4.8", "2.4.8-p1", "2.4.8-p2", "2.4.9"]
+fixed_in = []
+reference = "https://helpx.adobe.com/security/products/magento/apsb25-94.html"
+published = 2025-10-14
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2025-54265"
+platform = "magento2"
+title = "Adobe Commerce versions 2.4.9-alpha2, 2.4.8-p2, 2.4.7-p7, 2.4.6-p12, 2.4.5-p14, 2.4.4-p15 and earlier are affected by an Incorrect Authorization vulnerability. "
+severity = "warning"
+score = 5.9
+affected = ["2.4.4", "2.4.4-p1", "2.4.4-p10", "2.4.4-p11", "2.4.4-p12", "2.4.4-p13", "2.4.4-p14", "2.4.4-p15", "2.4.4-p2", "2.4.4-p3", "2.4.4-p4", "2.4.4-p5", "2.4.4-p6", "2.4.4-p7", "2.4.4-p8", "2.4.4-p9", "2.4.5", "2.4.5-p1", "2.4.5-p10", "2.4.5-p11", "2.4.5-p12", "2.4.5-p13", "2.4.5-p14", "2.4.5-p2", "2.4.5-p3", "2.4.5-p4", "2.4.5-p5", "2.4.5-p6", "2.4.5-p7", "2.4.5-p8", "2.4.5-p9", "2.4.6", "2.4.6-p1", "2.4.6-p10", "2.4.6-p11", "2.4.6-p12", "2.4.6-p2", "2.4.6-p3", "2.4.6-p4", "2.4.6-p5", "2.4.6-p6", "2.4.6-p7", "2.4.6-p8", "2.4.6-p9", "2.4.7", "2.4.7-p1", "2.4.7-p2", "2.4.7-p3", "2.4.7-p4", "2.4.7-p5", "2.4.7-p6", "2.4.7-p7", "2.4.8", "2.4.8-p1", "2.4.8-p2", "2.4.9"]
+fixed_in = []
+reference = "https://helpx.adobe.com/security/products/magento/apsb25-94.html"
+published = 2025-10-14
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2025-54266"
+platform = "magento2"
+title = "Adobe Commerce versions 2.4.9-alpha2, 2.4.8-p2, 2.4.7-p7, 2.4.6-p12, 2.4.5-p14, 2.4.4-p15 and earlier are affected by a stored Cross-Site Scripting (XSS) vulner"
+severity = "warning"
+score = 4.8
+affected = ["2.4.4", "2.4.4-p1", "2.4.4-p10", "2.4.4-p11", "2.4.4-p12", "2.4.4-p13", "2.4.4-p14", "2.4.4-p15", "2.4.4-p2", "2.4.4-p3", "2.4.4-p4", "2.4.4-p5", "2.4.4-p6", "2.4.4-p7", "2.4.4-p8", "2.4.4-p9", "2.4.5", "2.4.5-p1", "2.4.5-p10", "2.4.5-p11", "2.4.5-p12", "2.4.5-p13", "2.4.5-p14", "2.4.5-p2", "2.4.5-p3", "2.4.5-p4", "2.4.5-p5", "2.4.5-p6", "2.4.5-p7", "2.4.5-p8", "2.4.5-p9", "2.4.6", "2.4.6-p1", "2.4.6-p10", "2.4.6-p11", "2.4.6-p12", "2.4.6-p2", "2.4.6-p3", "2.4.6-p4", "2.4.6-p5", "2.4.6-p6", "2.4.6-p7", "2.4.6-p8", "2.4.6-p9", "2.4.7", "2.4.7-p1", "2.4.7-p2", "2.4.7-p3", "2.4.7-p4", "2.4.7-p5", "2.4.7-p6", "2.4.7-p7", "2.4.8", "2.4.8-p1", "2.4.8-p2", "2.4.9"]
+fixed_in = []
+reference = "https://helpx.adobe.com/security/products/magento/apsb25-94.html"
+published = 2025-10-14
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2025-54267"
+platform = "magento2"
+title = "Adobe Commerce versions 2.4.9-alpha2, 2.4.8-p2, 2.4.7-p7, 2.4.6-p12, 2.4.5-p14, 2.4.4-p15 and earlier are affected by an Incorrect Authorization vulnerability. "
+severity = "warning"
+score = 6.5
+affected = ["2.4.4", "2.4.4-p1", "2.4.4-p10", "2.4.4-p11", "2.4.4-p12", "2.4.4-p13", "2.4.4-p14", "2.4.4-p15", "2.4.4-p2", "2.4.4-p3", "2.4.4-p4", "2.4.4-p5", "2.4.4-p6", "2.4.4-p7", "2.4.4-p8", "2.4.4-p9", "2.4.5", "2.4.5-p1", "2.4.5-p10", "2.4.5-p11", "2.4.5-p12", "2.4.5-p13", "2.4.5-p14", "2.4.5-p2", "2.4.5-p3", "2.4.5-p4", "2.4.5-p5", "2.4.5-p6", "2.4.5-p7", "2.4.5-p8", "2.4.5-p9", "2.4.6", "2.4.6-p1", "2.4.6-p10", "2.4.6-p11", "2.4.6-p12", "2.4.6-p2", "2.4.6-p3", "2.4.6-p4", "2.4.6-p5", "2.4.6-p6", "2.4.6-p7", "2.4.6-p8", "2.4.6-p9", "2.4.7", "2.4.7-p1", "2.4.7-p2", "2.4.7-p3", "2.4.7-p4", "2.4.7-p5", "2.4.7-p6", "2.4.7-p7", "2.4.8", "2.4.8-p1", "2.4.8-p2", "2.4.9"]
+fixed_in = []
+reference = "https://helpx.adobe.com/security/products/magento/apsb25-94.html"
+published = 2025-10-14
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-71362"
+platform = "magento2"
+title = "Adobe Commerce is affected by an Incorrect Authorization vulnerability that could result in privilege escalation. An attacker could leverage this vulnerability "
+severity = "critical"
+score = 9.1
+affected = ["<2.4.4", "2.4.4", "2.4.4-p1", "2.4.4-p10", "2.4.4-p11", "2.4.4-p12", "2.4.4-p13", "2.4.4-p14", "2.4.4-p15", "2.4.4-p16", "2.4.4-p17", "2.4.4-p18", "2.4.4-p2", "2.4.4-p3", "2.4.4-p4", "2.4.4-p5", "2.4.4-p6", "2.4.4-p7", "2.4.4-p8", "2.4.4-p9", "2.4.5", "2.4.5-p1", "2.4.5-p10", "2.4.5-p11", "2.4.5-p12", "2.4.5-p13", "2.4.5-p14", "2.4.5-p15", "2.4.5-p16", "2.4.5-p17", "2.4.5-p2", "2.4.5-p3", "2.4.5-p4", "2.4.5-p5", "2.4.5-p6", "2.4.5-p7", "2.4.5-p8", "2.4.5-p9", "2.4.6", "2.4.6-p1", "2.4.6-p10", "2.4.6-p11", "2.4.6-p12", "2.4.6-p13", "2.4.6-p14", "2.4.6-p15", "2.4.6-p2", "2.4.6-p3", "2.4.6-p4", "2.4.6-p5", "2.4.6-p6", "2.4.6-p7", "2.4.6-p8", "2.4.6-p9", "2.4.7", "2.4.7-p1", "2.4.7-p10", "2.4.7-p2", "2.4.7-p3", "2.4.7-p4", "2.4.7-p5", "2.4.7-p6", "2.4.7-p7", "2.4.7-p8", "2.4.7-p9", "2.4.8", "2.4.8-p1", "2.4.8-p2", "2.4.8-p3", "2.4.8-p4", "2.4.8-p5", "2.4.9", "<=2.4.6"]
+fixed_in = ["2.4.4"]
+reference = "https://helpx.adobe.com/security/products/magento/apsb26-92.html"
+published = 2026-08-11
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-100133"
+platform = "magento2"
+title = "Adobe Commerce is affected by a stored Cross-Site Scripting (XSS) vulnerability that could be abused by an attacker to inject malicious scripts into vulnerable "
+severity = "critical"
+score = 9.3
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-103849"
+platform = "magento2"
+title = "Adobe Commerce is affected by an Improper Neutralization of Special Elements Used in a Template Engine vulnerability that could result in arbitrary code executi"
+severity = "critical"
+score = 10.0
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-91013"
+platform = "magento2"
+title = "Adobe Commerce is affected by a stored Cross-Site Scripting (XSS) vulnerability that could be abused by an attacker to inject malicious scripts into vulnerable "
+severity = "critical"
+score = 9.3
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-92464"
+platform = "magento2"
+title = "Adobe Commerce is affected by an Improper Input Validation vulnerability that could result in arbitrary code execution in the context of the current user. An at"
+severity = "critical"
+score = 9.1
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-92908"
+platform = "magento2"
+title = "Adobe Commerce is affected by an Incorrect Authorization vulnerability that could result in a Security feature bypass. A low-privileged attacker could leverage "
+severity = "critical"
+score = 8.3
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-92909"
+platform = "magento2"
+title = "Adobe Commerce is affected by an Incorrect Authorization vulnerability that could result in arbitrary code execution in the context of the current user. An atta"
+severity = "critical"
+score = 9.8
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-92910"
+platform = "magento2"
+title = "Adobe Commerce is affected by an Incorrect Authorization vulnerability that could result in a Security feature bypass. An attacker could leverage this vulnerabi"
+severity = "critical"
+score = 7.2
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-92911"
+platform = "magento2"
+title = "Adobe Commerce is affected by a stored Cross-Site Scripting (XSS) vulnerability that could be abused by a low-privileged attacker to inject malicious scripts in"
+severity = "critical"
+score = 8.7
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-92922"
+platform = "magento2"
+title = "Adobe Commerce is affected by a stored Cross-Site Scripting (XSS) vulnerability that could be abused by a high-privileged attacker to inject malicious scripts i"
+severity = "critical"
+score = 8.1
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-95630"
+platform = "magento2"
+title = "Adobe Commerce is affected by an Improper Input Validation vulnerability that could result in a Security feature bypass. A low-privileged attacker could leverag"
+severity = "warning"
+score = 4.3
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
+
+[[advisory]]
+id = "CVE-2026-95631"
+platform = "magento2"
+title = "Adobe Commerce is affected by an Improper Input Validation vulnerability that could result in arbitrary code execution in the context of the current user. An at"
+severity = "critical"
+score = 8.7
+affected = []
+fixed_in = []
+reference = "https://www.adobe.com/trust/security/products/commerce/apsb26-153.html"
+published = 2026-10-13
+source = "nvd"
+draft = true
