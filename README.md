@@ -96,8 +96,9 @@ ecomsec serve --root /var/www/shop
 
 ## 📦 Installation & Updates
 
-**Linux & macOS – ein Befehl** (erkennt System und Prozessor, prüft die SHA-256-Prüfsumme,
-installiert nach `/usr/local/bin` bzw. `~/.local/bin`):
+**Linux & macOS – ein Befehl** (erkennt System und Prozessor, prüft die minisign-Signatur
+der Prüfsummendatei und danach die SHA-256-Prüfsumme, installiert nach `/usr/local/bin`
+bzw. `~/.local/bin`):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/liohtml/ecom-sec/main/install.sh | sh
@@ -112,7 +113,26 @@ cargo install ecomsec --locked
 ```
 
 **Windows:** ZIP-Paket `ecomsec-<version>-x86_64-pc-windows-msvc.zip` aus den [Releases](../../releases)
-laden und `ecomsec.exe` entpacken. Jedes Release enthält `SHA256SUMS` zum Prüfen.
+laden und `ecomsec.exe` entpacken. Jedes Release enthält `SHA256SUMS` und `SHA256SUMS.minisig`.
+
+**Signatur prüfen.** Derselbe öffentliche minisign-Schlüssel steht in
+[`distrib/minisign.pub`](distrib/minisign.pub) und ist in `install.sh` sowie im Programm eingebettet:
+
+```
+RWTGwHhSW1wh5CJQ9Drgo7xvbxiG4mbERJ03PxlA/D7ciOYvnLYdrPUR
+```
+
+```bash
+minisign -Vm SHA256SUMS -P RWTGwHhSW1wh5CJQ9Drgo7xvbxiG4mbERJ03PxlA/D7ciOYvnLYdrPUR -x SHA256SUMS.minisig
+sha256sum -c SHA256SUMS
+gh attestation verify ecomsec-<version>-<ziel>.tar.gz --repo liohtml/ecom-sec
+```
+
+`install.sh` und `ecomsec self-update` brechen ab, wenn die Signatur fehlt oder nicht zur Prüfsummendatei
+passt. `gh attestation verify` prüft zusätzlich die Build-Provenance (GitHub Artifact Attestation des
+Release-Workflows). Solange die erste Zeile von `distrib/minisign.pub` den Hinweis `PLACEHOLDER` enthält,
+ist noch kein eigener Schlüssel hinterlegt und die Installation verweigert den Download – Schlüssel
+hinterlegen steht in [docs/CI.md](docs/CI.md#release-signatur).
 
 **Docker** (Image `ghcr.io/liohtml/ecom-sec`, 19 MB, für amd64 und arm64; Shop read-only eingehängt,
 Zustand im Volume – Details und Compose-Beispiele in [docker/README.md](docker/README.md)):
@@ -130,7 +150,7 @@ docker compose up -d dashboard
 
 ```bash
 ecomsec self-update --check   # nur nachsehen
-ecomsec self-update           # neueste Version laden, Prüfsumme prüfen, Programm ersetzen
+ecomsec self-update           # neueste Version laden, Signatur und Prüfsumme prüfen, Programm ersetzen
 ```
 
 ---
