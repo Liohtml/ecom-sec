@@ -33,12 +33,13 @@ docker run --rm -v /var/www/shop:/shop:ro -v ecomsec-state:/state -v "$PWD:/out"
 docker run --rm -v /var/www/shop:/shop:ro -v ecomsec-state:/state -v /var/log/nginx:/logs:ro \
   ghcr.io/liohtml/ecom-sec:latest scan --skip-remote --access-log /logs
 
-# Dashboard (im Container auf 0.0.0.0 binden – dann immer mit Token!)
-# Aufruf: http://127.0.0.1:8787/?token=<TOKEN>
+# Dashboard (im Container auf 0.0.0.0 binden – dann immer mit Token)
+# Aufruf: http://127.0.0.1:8787/  (Token steckt nicht in der Adresse)
 TOKEN="$(openssl rand -hex 16)"; echo "Token: $TOKEN"
 docker run --rm -p 127.0.0.1:8787:8787 \
+  -e ECOMSEC_AUTH_TOKEN="$TOKEN" \
   -v /var/www/shop:/shop:ro -v ecomsec-state:/state \
-  ghcr.io/liohtml/ecom-sec:latest serve --bind 0.0.0.0:8787 --auth-token "$TOKEN"
+  ghcr.io/liohtml/ecom-sec:latest serve --bind 0.0.0.0:8787
 ```
 
 ## Docker Compose
@@ -48,7 +49,7 @@ Die Datei [`docker-compose.yml`](../docker-compose.yml) im Repository enthält d
 | Dienst | Aufruf | Zweck |
 |---|---|---|
 | `scan` | `docker compose run --rm scan` | einmaliger Scan, HTML-Bericht nach `./reports/ecomsec.html` |
-| `dashboard` | `docker compose up -d dashboard` | Web-Dashboard auf `http://127.0.0.1:8787/?token=…` |
+| `dashboard` | `docker compose up -d dashboard` | Web-Dashboard auf `http://127.0.0.1:8787/` |
 | `watch` | `docker compose up -d watch` | tägliche Überwachung mit Benachrichtigung (Kanäle in `ecomsec.toml`) |
 
 ```bash

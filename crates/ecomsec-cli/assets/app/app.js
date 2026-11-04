@@ -10,7 +10,8 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ESC[c]);
   const icon = (name, cls = "") => `<svg class="icon ${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
   const QUERY = new URLSearchParams(location.search);
-  const TOKEN = QUERY.get("token") || "";
+  const tokenMeta = document.querySelector('meta[name="ecomsec-token"]');
+  const TOKEN = tokenMeta && tokenMeta.content && tokenMeta.content !== "__AUTH_TOKEN__" ? tokenMeta.content : "";
   const NF = new Intl.NumberFormat("de-DE");
   const fmtNum = (n) => NF.format(n || 0);
   const fmtDateTime = (t) => (t ? new Date(t).toLocaleString("de-DE", { dateStyle: "medium", timeStyle: "short" }) : "–");
@@ -171,12 +172,37 @@
         const j = await r.json();
         if (j && j.error) msg = j.error;
       } catch (e) { /* not json */ }
-      if (r.status === 401) msg = "Zugriff verweigert: Token fehlt oder ist ungültig. Dashboard mit ?token=… öffnen.";
+      if (r.status === 401) msg = "Zugriff verweigert: Token fehlt oder ist ungültig. Seite neu laden.";
       throw new ApiError(r.status, msg);
     }
     return r.status === 204 ? null : r.json();
   }
-  const withToken = (url) => (TOKEN ? `${url}${url.includes("?") ? "&" : "?"}token=${encodeURIComponent(TOKEN)}` : url);
+  async function downloadExport(format) {
+    const headers = {};
+    if (TOKEN) headers["X-Auth-Token"] = TOKEN;
+    let r;
+    try {
+      r = await fetch(`/api/report/export?format=${encodeURIComponent(format)}`, { headers, cache: "no-store" });
+    } catch (e) {
+      toast("Server nicht erreichbar – läuft „ecomsec serve“ noch?", "err");
+      return;
+    }
+    if (!r.ok) {
+      toast(r.status === 401 ? "Zugriff verweigert: Token fehlt oder ist ungültig." : "Export fehlgeschlagen", "err");
+      return;
+    }
+    const blob = await r.blob();
+    const match = /filename="([^"]+)"/.exec(r.headers.get("Content-Disposition") || "");
+    const name = match ? match[1] : `ecomsec-report.${format}`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
   // ================================================================ state
   const DEFAULT_STATE_FILTER = ["open"];
@@ -1664,7 +1690,7 @@
               <label class="check hide-mobile"><input type="checkbox" id="setNav" ${root.getAttribute("data-nav") === "collapsed" ? "checked" : ""}>Seitenleiste eingeklappt</label>
             </div></section>
           <section class="card"><div class="card-head"><h2>${icon("download")}Bericht exportieren</h2><span class="sub">${r ? `Scan vom ${esc(fmtShort(r.generated_at))}` : "kein Report"}</span></div>
-            ${r ? `<div class="docs-links">${exp.map(([f, l, d]) => `<a href="${esc(withToken(`/api/report/export?format=${f}`))}" download><span><b>${l}</b><br><span class="muted small" style="font-weight:400">${d}</span></span>${icon("download")}</a>`).join("")}</div>` : `<p class="muted">Nach dem ersten Scan verfügbar.</p>`}</section>
+            ${r ? `<div class="docs-links">${exp.map(([f, l, d]) => `<button type="button" class="export-link" data-action="export" data-format="${esc(f)}"><span><b>${l}</b><br><span class="muted small" style="font-weight:400">${d}</span></span>${icon("download")}</button>`).join("")}</div>` : `<p class="muted">Nach dem ersten Scan verfügbar.</p>`}</section>
           <section class="card"><div class="card-head"><h2>${icon("layers")}Integritäts-Baseline</h2></div>
             <p class="muted">Ein Hash-Manifest der Kerndateien als Vergleichsbasis für künftige Scans. Nur nach einer verifizierten, sauberen Prüfung erzeugen – sonst werden manipulierte Dateien zur Referenz.</p>
             <button type="button" class="btn" data-action="baseline">${icon("layers")}Baseline erzeugen</button></section>
@@ -1797,6 +1823,7 @@
         break;
       }
       case "baseline": confirmBaseline(); break;
+      case "export": downloadExport(t.dataset.format || "json"); break;
       case "theme-set": setTheme(t.dataset.theme); break;
       case "settings-reset": store.set("ecomsec.scanOptions", null); renderSettings(); toast("Server-Standard wiederhergestellt"); break;
       default: break;

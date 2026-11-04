@@ -41,7 +41,9 @@ max_assets = 150
 
 [serve]
 bind = "127.0.0.1:8787"
-# token = "geheim"
+# token = "geheim"                 # oder Umgebungsvariable ECOMSEC_AUTH_TOKEN
+# Auf Loopback wird ohne Token eines erzeugt. Eine nicht lokale Adresse braucht ein Token.
+# trusted_hosts = ["dashboard.example.com"]  # zusätzlicher Host-Header, z. B. Reverse-Proxy
 
 # ---------------------------------------------------------------------------
 # Tägliche Überwachung (`ecomsec watch`) – siehe docs/MONITORING.md
