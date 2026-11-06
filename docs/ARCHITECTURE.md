@@ -140,8 +140,14 @@ Monitoring und Weiterverarbeitung.
 `crates/ecomsec-cli/assets/app/` – `index.html`, `app.css`, `app.js` (ES2020 ohne Framework,
 ohne Build-Schritt, ohne externe Ressourcen; per `include_str!` im Binary). Design-Tokens
 (Abstände, Radien, Schriftgrößen, Status- und Schweregradfarben) stehen als CSS-Variablen am
-Anfang von `app.css`, helles und dunkles Design inklusive. Alle Daten kommen aus der lokalen API
-(bei `--auth-token` mit Header `X-Auth-Token` oder `?token=`):
+Anfang von `app.css`, helles und dunkles Design inklusive. Alle Daten kommen aus der lokalen API.
+Jede `/api/*`-Anfrage braucht den Header `X-Auth-Token` (Vergleich in konstanter Zeit). Ein
+`?token=` wird nicht akzeptiert. Ohne gesetztes Token erzeugt `ecomsec serve` auf Loopback eines
+und setzt es in die HTML-Seite ein, aber nur wenn der `Host`-Header zur Bind-Adresse passt
+(`localhost`, `127.0.0.1`, `::1` samt Port). Eine nicht lokale Bind-Adresse ohne Token startet
+nicht. Hostnamen sind nur erlaubt, wenn sie mit `--trusted-host` oder `[serve] trusted_hosts`
+genannt wurden. `Origin`, sofern gesendet, muss dazu passen; `Sec-Fetch-Site: cross-site` wird
+abgelehnt.
 
 | Endpunkt | Inhalt |
 |---|---|

@@ -103,6 +103,10 @@ pub struct StateSection {
 pub struct ServeSection {
     pub bind: Option<String>,
     pub token: Option<String>,
+    /// Hostnames allowed in the `Host` header in addition to the bind address
+    /// (reverse proxies). IP literals of an unspecified bind are always allowed.
+    #[serde(default)]
+    pub trusted_hosts: Vec<String>,
 }
 
 impl FileConfig {

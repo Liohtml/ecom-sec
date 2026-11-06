@@ -4,12 +4,20 @@
 //!
 //! The UI is a static app (`assets/app/`: `index.html`, `app.css`,
 //! `app.js`) without external resources; all data comes from `/api/*`.
+//!
+//! Every API call needs the `X-Auth-Token` header. The token is never read
+//! from the query string. On loopback a token is generated when none was
+//! configured and embedded in the HTML for that host only. Requests whose
+//! `Host` or `Origin` is not the bind address (or an explicitly trusted
+//! hostname) are rejected, as are browser `Sec-Fetch-Site: cross-site`
+//! requests. Binding somewhere other than loopback without a token fails
+//! at startup.
 
 use crate::output::{self, html, Format};
 use crate::platforms::TargetSpec;
 use axum::body::Bytes;
 use axum::extract::{Path, Query, Request, State};
-use axum::http::{header, HeaderMap, HeaderValue, StatusCode};
+use axum::http::{header, HeaderValue, Method, StatusCode, Uri};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
@@ -19,10 +27,11 @@ use ecomsec_core::finding::FindingId;
 use ecomsec_core::{Engine, Report, ScanOptions, StateStore};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::collections::HashMap;
-use std::net::SocketAddr;
+use sha2::{Digest, Sha256};
+use std::net::{IpAddr, SocketAddr};
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use subtle::ConstantTimeEq;
 
 struct Inner {
     spec: TargetSpec,
@@ -41,12 +50,50 @@ struct Inner {
 #[derive(Clone)]
 struct AppState {
     inner: Arc<Mutex<Inner>>,
-    token: Option<String>,
+    token: String,
+    policy: HostPolicy,
+}
+
+/// Result of resolving the dashboard token before the listener starts.
+#[derive(Debug)]
+pub struct ServeAuth {
+    pub token: String,
+    /// `true` when the token was created for this process (loopback only).
+    pub generated: bool,
+}
+
+/// Require an explicit token when the socket is not loopback-only.
+/// An empty token does not count. On loopback a token is generated.
+pub fn prepare_serve_auth(
+    bind: SocketAddr,
+    configured: Option<String>,
+) -> anyhow::Result<ServeAuth> {
+    if let Some(token) = configured
+        .map(|t| t.trim().to_string())
+        .filter(|t| !t.is_empty())
+    {
+        return Ok(ServeAuth {
+            token,
+            generated: false,
+        });
+    }
+    if !bind.ip().is_loopback() {
+        anyhow::bail!(
+            "Das Dashboard lauscht auf {bind} und ist damit nicht nur über Loopback erreichbar. \
+             Ein Zugriffstoken ist erforderlich (--auth-token, ECOMSEC_AUTH_TOKEN oder [serve] token)."
+        );
+    }
+    Ok(ServeAuth {
+        token: generate_token(),
+        generated: true,
+    })
 }
 
 pub fn serve(
     bind: SocketAddr,
-    token: Option<String>,
+    token: String,
+    generated: bool,
+    trusted_hosts: Vec<String>,
     spec: TargetSpec,
     options: ScanOptions,
     store: StateStore,
@@ -67,11 +114,22 @@ pub fn serve(
         };
         let state = AppState {
             inner: Arc::new(Mutex::new(inner)),
-            token,
+            token: token.clone(),
+            policy: HostPolicy {
+                bind,
+                extra_hosts: normalize_hosts(trusted_hosts),
+            },
         };
         let app = router(state);
         let listener = tokio::net::TcpListener::bind(bind).await?;
         eprintln!("ecomsec Dashboard: http://{bind}/  (Strg+C zum Beenden)");
+        if generated {
+            eprintln!(
+                "Zugriffstoken für diese Sitzung (Header X-Auth-Token, nicht in der Adresse): {token}"
+            );
+        } else {
+            eprintln!("Zugriff nur mit gesetztem Token (Header X-Auth-Token).");
+        }
         axum::serve(listener, app).await?;
         Ok::<(), anyhow::Error>(())
     })
@@ -91,30 +149,63 @@ fn router(state: AppState) -> Router {
         .route("/archive/{stamp}", get(get_archived))
         .route("/diff", get(get_diff))
         .route("/audit", get(get_audit))
-        .route("/baseline", post(create_baseline))
-        .route_layer(middleware::from_fn_with_state(state.clone(), auth));
+        .route("/baseline", post(create_baseline));
     Router::new()
         .route("/", get(index))
         .route("/app.css", get(app_css))
         .route("/app.js", get(app_js))
         .nest("/api", api)
+        .layer(middleware::from_fn_with_state(state.clone(), guard))
         .with_state(state)
 }
 
-async fn auth(
-    State(state): State<AppState>,
-    headers: HeaderMap,
-    query: Query<HashMap<String, String>>,
-    req: Request,
-    next: Next,
-) -> Response {
-    if let Some(expected) = &state.token {
+/// Hosts the dashboard is willing to answer. Domain names are rejected
+/// unless listed in `extra_hosts`, so a rebound DNS name does not match.
+#[derive(Clone, Debug)]
+struct HostPolicy {
+    bind: SocketAddr,
+    extra_hosts: Vec<String>,
+}
+
+async fn guard(State(state): State<AppState>, req: Request, next: Next) -> Response {
+    if let Some(loc) = location_without_token(req.uri()) {
+        // The query token is never accepted. GET/HEAD drop it from the
+        // address bar; other methods are rejected so the body is not retried
+        // as a GET.
+        if *req.method() == Method::GET || *req.method() == Method::HEAD {
+            return see_other(loc);
+        }
+        return error(
+            StatusCode::BAD_REQUEST,
+            "Der Parameter token wird nicht akzeptiert",
+        );
+    }
+    let headers = req.headers();
+    let host = headers
+        .get(header::HOST)
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    if !host_allowed(&state.policy, host) {
+        return error(StatusCode::FORBIDDEN, "Host nicht erlaubt");
+    }
+    if let Some(origin) = headers.get(header::ORIGIN).and_then(|v| v.to_str().ok()) {
+        if !origin_allowed(&state.policy, origin) {
+            return error(StatusCode::FORBIDDEN, "Origin nicht erlaubt");
+        }
+    }
+    if headers
+        .get("sec-fetch-site")
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v.eq_ignore_ascii_case("cross-site"))
+    {
+        return error(StatusCode::FORBIDDEN, "Cross-Site-Anfrage abgelehnt");
+    }
+    if req.uri().path().starts_with("/api") {
         let given = headers
             .get("x-auth-token")
             .and_then(|v| v.to_str().ok())
-            .map(str::to_string)
-            .or_else(|| query.get("token").cloned());
-        if given.as_deref() != Some(expected.as_str()) {
+            .unwrap_or("");
+        if !tokens_equal(&state.token, given) {
             return (
                 StatusCode::UNAUTHORIZED,
                 Json(json!({"error": "Token fehlt oder ungültig"})),
@@ -122,7 +213,27 @@ async fn auth(
                 .into_response();
         }
     }
-    next.run(req).await
+    let mut resp = next.run(req).await;
+    let headers = resp.headers_mut();
+    headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(header::X_FRAME_OPTIONS, HeaderValue::from_static("DENY"));
+    headers.insert(
+        header::REFERRER_POLICY,
+        HeaderValue::from_static("no-referrer"),
+    );
+    if !headers.contains_key(header::CONTENT_SECURITY_POLICY) {
+        headers.insert(
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_static(
+                "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'",
+            ),
+        );
+    }
+    resp
 }
 
 /// Response with the given content type and `Cache-Control: no-cache` (the
@@ -139,8 +250,19 @@ fn asset(content_type: &'static str, body: String) -> Response {
     resp
 }
 
-async fn index() -> Response {
-    asset("text/html; charset=utf-8", html::render_web())
+async fn index(State(state): State<AppState>) -> Response {
+    let nonce = random_hex(16);
+    let body = html::render_web()
+        .replace("__AUTH_TOKEN__", &escape_attr(&state.token))
+        .replace("__CSP_NONCE__", &escape_attr(&nonce));
+    let mut resp = asset("text/html; charset=utf-8", body);
+    if let Ok(value) = HeaderValue::from_str(&format!(
+        "default-src 'none'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; object-src 'none'"
+    )) {
+        resp.headers_mut()
+            .insert(header::CONTENT_SECURITY_POLICY, value);
+    }
+    resp
 }
 
 async fn app_css() -> Response {
@@ -552,6 +674,199 @@ async fn create_baseline(State(state): State<AppState>) -> Response {
     }
 }
 
+fn generate_token() -> String {
+    random_hex(32)
+}
+
+fn random_hex(nbytes: usize) -> String {
+    let mut buf = vec![0u8; nbytes];
+    getrandom::getrandom(&mut buf).expect("CSPRNG");
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut out = String::with_capacity(nbytes * 2);
+    for byte in buf {
+        out.push(HEX[(byte >> 4) as usize] as char);
+        out.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    out
+}
+
+/// SHA-256 both sides so the comparison length does not depend on the token,
+/// then compare with `subtle`.
+fn tokens_equal(expected: &str, presented: &str) -> bool {
+    let a = Sha256::digest(expected.as_bytes());
+    let b = Sha256::digest(presented.as_bytes());
+    bool::from(a.as_slice().ct_eq(b.as_slice()))
+}
+
+fn escape_attr(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+        .replace('<', "&lt;")
+}
+
+fn normalize_hosts(hosts: Vec<String>) -> Vec<String> {
+    hosts
+        .into_iter()
+        .filter_map(|host| {
+            let host = host.trim().trim_end_matches('.');
+            if host.is_empty() {
+                return None;
+            }
+            split_host(host).map(|(name, _)| name)
+        })
+        .collect()
+}
+
+/// `host[:port]` or `[ipv6]:port` → (name lowercase, port).
+fn split_host(value: &str) -> Option<(String, Option<u16>)> {
+    let value = value.trim();
+    if value.is_empty() || value.contains(['/', '@', '?', '#', '\\']) {
+        return None;
+    }
+    if let Some(rest) = value.strip_prefix('[') {
+        let (name, after) = rest.split_once(']')?;
+        if name.is_empty() {
+            return None;
+        }
+        if after.is_empty() {
+            return Some((name.to_ascii_lowercase(), None));
+        }
+        let port = after.strip_prefix(':')?.parse().ok()?;
+        return Some((name.to_ascii_lowercase(), Some(port)));
+    }
+    match value.matches(':').count() {
+        0 => Some((value.to_ascii_lowercase(), None)),
+        1 => {
+            let (name, port) = value.split_once(':')?;
+            if name.is_empty() {
+                return None;
+            }
+            Some((name.to_ascii_lowercase(), Some(port.parse().ok()?)))
+        }
+        _ => None,
+    }
+}
+
+fn name_allowed(policy: &HostPolicy, name: &str) -> bool {
+    if policy
+        .extra_hosts
+        .iter()
+        .any(|host| host.eq_ignore_ascii_case(name))
+    {
+        return true;
+    }
+    let bind_ip = policy.bind.ip();
+    if bind_ip.is_loopback() {
+        return name.eq_ignore_ascii_case("localhost")
+            || matches!(name.parse::<IpAddr>(), Ok(ip) if ip.is_loopback());
+    }
+    if let Ok(parsed) = name.parse::<IpAddr>() {
+        return bind_ip.is_unspecified() || parsed == bind_ip;
+    }
+    bind_ip.is_unspecified() && name.eq_ignore_ascii_case("localhost")
+}
+
+fn port_allowed(policy: &HostPolicy, name: &str, port: Option<u16>, https: bool) -> bool {
+    match port {
+        Some(p) => p == policy.bind.port(),
+        None => {
+            let default = if https { 443 } else { 80 };
+            policy.bind.port() == default
+                || policy
+                    .extra_hosts
+                    .iter()
+                    .any(|host| host.eq_ignore_ascii_case(name))
+        }
+    }
+}
+
+fn host_allowed(policy: &HostPolicy, host: &str) -> bool {
+    let Some((name, port)) = split_host(host) else {
+        return false;
+    };
+    port_allowed(policy, &name, port, false) && name_allowed(policy, &name)
+}
+
+fn origin_allowed(policy: &HostPolicy, origin: &str) -> bool {
+    let origin = origin.trim();
+    if origin.is_empty() || origin.eq_ignore_ascii_case("null") {
+        return false;
+    }
+    let (https, rest) = if let Some(rest) = origin.strip_prefix("https://") {
+        (true, rest)
+    } else if let Some(rest) = origin.strip_prefix("http://") {
+        (false, rest)
+    } else {
+        return false;
+    };
+    if rest.contains(['/', '?', '@', '#', '\\']) {
+        return false;
+    }
+    // The dashboard speaks HTTP on `bind.port`, except an explicit trusted
+    // name reached through a TLS-terminating proxy (port omitted or 443).
+    let Some((name, port)) = split_host(rest) else {
+        return false;
+    };
+    if https
+        && policy.bind.port() != 443
+        && !policy
+            .extra_hosts
+            .iter()
+            .any(|h| h.eq_ignore_ascii_case(&name))
+    {
+        return false;
+    }
+    if !https && policy.bind.port() == 443 {
+        return false;
+    }
+    port_allowed(policy, &name, port, https) && name_allowed(policy, &name)
+}
+
+/// Redirect target with every `token` parameter removed. `None` when the
+/// query did not contain one.
+fn location_without_token(uri: &Uri) -> Option<String> {
+    let query = uri.query()?;
+    let mut kept = Vec::new();
+    let mut saw = false;
+    for pair in query.split('&') {
+        if pair.is_empty() {
+            continue;
+        }
+        let name = pair.split('=').next().unwrap_or("");
+        if name == "token" {
+            saw = true;
+            continue;
+        }
+        kept.push(pair);
+    }
+    if !saw {
+        return None;
+    }
+    let path = if uri.path().is_empty() {
+        "/"
+    } else {
+        uri.path()
+    };
+    if kept.is_empty() {
+        Some(path.to_string())
+    } else {
+        Some(format!("{path}?{}", kept.join("&")))
+    }
+}
+
+fn see_other(location: String) -> Response {
+    let mut resp = StatusCode::SEE_OTHER.into_response();
+    match HeaderValue::from_str(&location) {
+        Ok(value) => {
+            resp.headers_mut().insert(header::LOCATION, value);
+            resp
+        }
+        Err(_) => error(StatusCode::BAD_REQUEST, "Anfrage abgelehnt"),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -612,5 +927,289 @@ mod tests {
             ..Default::default()
         };
         assert!(scan_options_for(&base(), &bad_budget).is_err());
+    }
+
+    #[test]
+    fn token_comparison_rejects_near_misses() {
+        let token = "0123456789abcdef0123456789abcdef";
+        assert!(tokens_equal(token, token));
+        assert!(!tokens_equal(token, ""));
+        assert!(!tokens_equal(token, &token[..token.len() - 1]));
+        assert!(!tokens_equal(token, &format!("{token}00")));
+        assert!(!tokens_equal(token, &format!("ff{token}")));
+        let mut flipped = token.to_string();
+        flipped.replace_range(0..1, "1");
+        assert!(!tokens_equal(token, &flipped));
+    }
+
+    #[test]
+    fn non_loopback_without_token_is_refused() {
+        let open: SocketAddr = "0.0.0.0:8787".parse().unwrap();
+        let err = prepare_serve_auth(open, None).unwrap_err();
+        assert!(err.to_string().contains("Zugriffstoken"));
+        assert!(prepare_serve_auth(open, Some("  ".into())).is_err());
+        let kept = prepare_serve_auth(open, Some(" fest ".into())).unwrap();
+        assert_eq!(kept.token, "fest");
+        assert!(!kept.generated);
+
+        let local: SocketAddr = "127.0.0.1:8787".parse().unwrap();
+        let generated = prepare_serve_auth(local, None).unwrap();
+        assert!(generated.generated);
+        assert_eq!(generated.token.len(), 64);
+        assert!(generated.token.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    #[test]
+    fn host_policy_allows_loopback_names_and_rejects_dns_names() {
+        let policy = host_policy("127.0.0.1:8787", &[]);
+        assert!(host_allowed(&policy, "127.0.0.1:8787"));
+        assert!(host_allowed(&policy, "localhost:8787"));
+        assert!(host_allowed(&policy, "[::1]:8787"));
+        assert!(!host_allowed(&policy, "evil.example:8787"));
+        assert!(!host_allowed(&policy, "127.0.0.1:9"));
+        assert!(!host_allowed(&policy, "127.0.0.1"));
+        assert!(origin_allowed(&policy, "http://127.0.0.1:8787"));
+        assert!(!origin_allowed(&policy, "http://evil.example:8787"));
+        assert!(!origin_allowed(&policy, "null"));
+        assert!(!origin_allowed(&policy, "https://127.0.0.1:8787"));
+    }
+
+    #[test]
+    fn unspecified_bind_allows_ip_literals_only() {
+        let policy = host_policy("0.0.0.0:8787", &[]);
+        assert!(host_allowed(&policy, "192.0.2.10:8787"));
+        assert!(host_allowed(&policy, "127.0.0.1:8787"));
+        assert!(host_allowed(&policy, "localhost:8787"));
+        assert!(!host_allowed(&policy, "rebind.example:8787"));
+        let trusted = host_policy("0.0.0.0:8787", &["dash.example"]);
+        assert!(host_allowed(&trusted, "dash.example"));
+        assert!(host_allowed(&trusted, "dash.example:8787"));
+        assert!(origin_allowed(&trusted, "https://dash.example"));
+        assert!(!host_allowed(&trusted, "other.example"));
+    }
+
+    fn host_policy(bind: &str, extra: &[&str]) -> HostPolicy {
+        HostPolicy {
+            bind: bind.parse().unwrap(),
+            extra_hosts: normalize_hosts(extra.iter().map(|s| (*s).to_string()).collect()),
+        }
+    }
+
+    fn test_router(token: &str, bind: &str, extra: &[&str]) -> Router {
+        let dir = std::env::temp_dir().join(format!("ecomsec-web-test-{}", std::process::id()));
+        let state = AppState {
+            inner: Arc::new(Mutex::new(Inner {
+                spec: TargetSpec {
+                    platform: "jtl5".into(),
+                    root: None,
+                    shop: None,
+                    token: None,
+                    api_version: None,
+                    allow_hosts: vec![],
+                    max_assets: None,
+                },
+                options: ScanOptions::default(),
+                store: StateStore::new(dir),
+                report: None,
+                running: false,
+                done: 0,
+                total: 0,
+                error: None,
+                started: None,
+                last_scan_options: None,
+            })),
+            token: token.to_string(),
+            policy: host_policy(bind, extra),
+        };
+        router(state)
+    }
+
+    async fn send(
+        app: Router,
+        method: &str,
+        uri: &str,
+        host: &str,
+        extra: &[(&str, &str)],
+    ) -> Response {
+        use axum::body::Body;
+        use tower::ServiceExt;
+        let mut builder = axum::http::Request::builder()
+            .method(method)
+            .uri(uri)
+            .header("host", host);
+        for (name, value) in extra {
+            builder = builder.header(*name, *value);
+        }
+        app.oneshot(builder.body(Body::empty()).unwrap())
+            .await
+            .unwrap()
+    }
+
+    async fn body_string(resp: Response) -> String {
+        use http_body_util::BodyExt;
+        let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+        String::from_utf8_lossy(&bytes).into_owned()
+    }
+
+    #[tokio::test]
+    async fn api_requires_header_token_and_ignores_query_token() {
+        let app = test_router("sekret", "127.0.0.1:8787", &[]);
+        let missing = send(app.clone(), "GET", "/api/status", "127.0.0.1:8787", &[]).await;
+        assert_eq!(missing.status(), StatusCode::UNAUTHORIZED);
+
+        let wrong = send(
+            app.clone(),
+            "GET",
+            "/api/status",
+            "127.0.0.1:8787",
+            &[("x-auth-token", "falsch")],
+        )
+        .await;
+        assert_eq!(wrong.status(), StatusCode::UNAUTHORIZED);
+
+        let query = send(
+            app.clone(),
+            "GET",
+            "/api/status?token=sekret",
+            "127.0.0.1:8787",
+            &[],
+        )
+        .await;
+        assert_eq!(query.status(), StatusCode::SEE_OTHER);
+        let location = query
+            .headers()
+            .get(header::LOCATION)
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert_eq!(location, "/api/status");
+        assert!(!location.contains("sekret"));
+
+        let posted = send(
+            app.clone(),
+            "POST",
+            "/api/scan?token=sekret",
+            "127.0.0.1:8787",
+            &[("x-auth-token", "sekret")],
+        )
+        .await;
+        assert_eq!(posted.status(), StatusCode::BAD_REQUEST);
+
+        let ok = send(
+            app,
+            "GET",
+            "/api/status",
+            "127.0.0.1:8787",
+            &[("x-auth-token", "sekret")],
+        )
+        .await;
+        assert_eq!(ok.status(), StatusCode::OK);
+        let text = body_string(ok).await;
+        assert!(text.contains("\"running\""));
+    }
+
+    #[tokio::test]
+    async fn foreign_host_origin_and_cross_site_are_rejected() {
+        let token = "sekret";
+        let app = test_router(token, "127.0.0.1:8787", &[]);
+        let auth = [("x-auth-token", token)];
+
+        let rebound = send(
+            app.clone(),
+            "GET",
+            "/api/report",
+            "evil.example:8787",
+            &auth,
+        )
+        .await;
+        assert_eq!(rebound.status(), StatusCode::FORBIDDEN);
+        assert!(!body_string(rebound).await.contains(token));
+
+        let page = send(app.clone(), "GET", "/", "evil.example:8787", &[]).await;
+        assert_eq!(page.status(), StatusCode::FORBIDDEN);
+        assert!(!body_string(page).await.contains(token));
+
+        let origin = send(
+            app.clone(),
+            "POST",
+            "/api/baseline",
+            "127.0.0.1:8787",
+            &[
+                ("x-auth-token", token),
+                ("origin", "http://evil.example:8787"),
+            ],
+        )
+        .await;
+        assert_eq!(origin.status(), StatusCode::FORBIDDEN);
+
+        let fetched = send(
+            app.clone(),
+            "GET",
+            "/api/status",
+            "127.0.0.1:8787",
+            &[("x-auth-token", token), ("sec-fetch-site", "cross-site")],
+        )
+        .await;
+        assert_eq!(fetched.status(), StatusCode::FORBIDDEN);
+
+        let same = send(
+            app,
+            "GET",
+            "/api/status",
+            "127.0.0.1:8787",
+            &[
+                ("x-auth-token", token),
+                ("origin", "http://127.0.0.1:8787"),
+                ("sec-fetch-site", "same-origin"),
+            ],
+        )
+        .await;
+        assert_eq!(same.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn dashboard_embeds_token_only_for_an_allowed_host() {
+        let app = test_router("sekret", "0.0.0.0:8787", &[]);
+        let ok = send(app.clone(), "GET", "/", "127.0.0.1:8787", &[]).await;
+        assert_eq!(ok.status(), StatusCode::OK);
+        let csp = ok
+            .headers()
+            .get(header::CONTENT_SECURITY_POLICY)
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        assert!(csp.contains("script-src 'self' 'nonce-"));
+        let html = body_string(ok).await;
+        assert!(html.contains("content=\"sekret\""));
+        assert!(html.contains("nonce=\""));
+        assert!(!html.contains("__AUTH_TOKEN__"));
+        assert!(!html.contains("?token="));
+        let nonce = csp
+            .split("nonce-")
+            .nth(1)
+            .unwrap()
+            .split('\'')
+            .next()
+            .unwrap();
+        assert!(html.contains(&format!("nonce=\"{nonce}\"")));
+
+        let blocked = send(
+            app,
+            "GET",
+            "/?token=sekret&theme=dark",
+            "rebind.example:8787",
+            &[],
+        )
+        .await;
+        assert_eq!(blocked.status(), StatusCode::SEE_OTHER);
+        let location = blocked
+            .headers()
+            .get(header::LOCATION)
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert_eq!(location, "/?theme=dark");
+        assert!(!body_string(blocked).await.contains("sekret"));
     }
 }
