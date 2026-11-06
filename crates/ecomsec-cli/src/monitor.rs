@@ -329,7 +329,7 @@ fn watch_once(ctx: &Context_, args: &WatchArgs) -> anyhow::Result<u8> {
             .or(cfg.watch.update_url.as_deref());
         match advisories_cmd::update(&ctx.state_base, url) {
             Ok(files) => {
-                let n: usize = files.iter().map(|(_, n, _)| n).sum();
+                let n: usize = files.iter().map(|(_, n, _, _)| n).sum();
                 if !args.quiet {
                     eprintln!("Advisory-Datenbank aktualisiert ({n} Einträge).");
                 }

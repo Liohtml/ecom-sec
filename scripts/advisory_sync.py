@@ -13,7 +13,9 @@ advisories/ignored.toml and writes
   advisories/drafts/<platform>-<date>.toml   best-effort draft entries
                                (draft = true, therefore NOT evaluated by scans)
 
-Usage: scripts/advisory_sync.py [--days 30] [--out advisories/candidates.json]
+Usage: scripts/advisory_sync.py [--days 3] [--out advisories/candidates.json]
+A three-day overlap covers delayed/rate-limited daily syncs; known IDs are removed.
+Partial source failures are recorded in metadata and can fail the scheduled run.
 Environment: NVD_API_KEY (optional, raises the NVD rate limit)
 Exit code 0; prints a Markdown summary; sets GITHUB_OUTPUT `count` when run in Actions.
 """
@@ -30,6 +32,7 @@ import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -92,6 +95,7 @@ VERSION_MAPS = {"magento_framework": magento_framework}
 
 NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 OSV_URL = "https://api.osv.dev/v1/query"
+KEV_URL = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
 UA = "ecomsec-advisory-sync/1.0 (+https://github.com/liohtml/ecom-sec)"
 
 
@@ -215,24 +219,35 @@ def ranges_from_cpe(cve: dict, cpe_prefixes: list[str]) -> tuple[list[str], list
     return affected, sorted(set(fixed))
 
 
-def nvd_candidates(platform: str, cfg: dict, since: dt.datetime, api_key: str | None) -> list[dict]:
+def nvd_candidates(
+    platform: str,
+    cfg: dict,
+    since: dt.datetime,
+    until: dt.datetime,
+    api_key: str | None,
+    errors: list[str],
+) -> list[dict]:
     seen: dict[str, dict] = {}
     base = {
         "lastModStartDate": since.strftime("%Y-%m-%dT%H:%M:%S.000"),
-        "lastModEndDate": dt.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S.000"),
+        "lastModEndDate": until.strftime("%Y-%m-%dT%H:%M:%S.000"),
     }
     for kw in cfg["nvd_keywords"]:
         try:
             for cve in nvd_search(dict(base, keywordSearch=kw), api_key):
                 seen[cve["id"]] = cve
         except Exception as e:  # noqa: BLE001
-            print(f"WARN NVD keyword {kw!r}: {e}", file=sys.stderr)
+            message = f"NVD Stichwort {kw!r}: {e}"
+            errors.append(message)
+            print(f"WARN {message}", file=sys.stderr)
     for cpe in cfg["nvd_cpe"]:
         try:
             for cve in nvd_search(dict(base, virtualMatchString=cpe), api_key):
                 seen[cve["id"]] = cve
         except Exception as e:  # noqa: BLE001
-            print(f"WARN NVD cpe {cpe!r}: {e}", file=sys.stderr)
+            message = f"NVD CPE {cpe!r}: {e}"
+            errors.append(message)
+            print(f"WARN {message}", file=sys.stderr)
     out = []
     for cve in seen.values():
         desc = next((d["value"] for d in cve.get("descriptions", []) if d.get("lang") == "en"), "")
@@ -269,18 +284,23 @@ def nvd_candidates(platform: str, cfg: dict, since: dt.datetime, api_key: str | 
     return out
 
 
-def osv_candidates(platform: str, cfg: dict, since: dt.datetime) -> list[dict]:
+def osv_candidates(platform: str, cfg: dict, since: dt.datetime, errors: list[str]) -> list[dict]:
     out: dict[str, dict] = {}
     for pkg in cfg["osv_packages"]:
         try:
             data = http_json(OSV_URL, {"package": {"name": pkg, "ecosystem": "Packagist"}})
         except Exception as e:  # noqa: BLE001
-            print(f"WARN OSV {pkg}: {e}", file=sys.stderr)
+            message = f"OSV {pkg}: {e}"
+            errors.append(message)
+            print(f"WARN {message}", file=sys.stderr)
             continue
         for v in data.get("vulns", []):
             modified = v.get("modified", "")[:19]
             try:
-                if dt.datetime.fromisoformat(modified) < since:
+                changed = dt.datetime.fromisoformat(modified)
+                if changed.tzinfo is None:
+                    changed = changed.replace(tzinfo=dt.UTC)
+                if changed < since:
                     continue
             except ValueError:
                 pass
@@ -413,51 +433,119 @@ def write_drafts(cands: list[dict], today: str) -> list[Path]:
     return written
 
 
+def kev_index(errors: list[str]) -> dict[str, str]:
+    """CVE -> dateAdded; KEV ist ein Priorisierungshinweis, kein aktiver Befund."""
+    try:
+        data = http_json(KEV_URL)
+        return {
+            v["cveID"].upper(): v.get("dateAdded", "")
+            for v in data.get("vulnerabilities", [])
+            if v.get("cveID")
+        }
+    except Exception as e:  # noqa: BLE001
+        message = f"CISA KEV: {e}"
+        errors.append(message)
+        print(f"WARN {message}", file=sys.stderr)
+        return {}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--days", type=int, default=30, help="look back this many days (modified date, max 120)")
+    ap.add_argument("--days", type=int, default=3, help="look back this many days (modified date, max 120)")
     ap.add_argument("--out", default=str(ADV_DIR / "candidates.json"))
     ap.add_argument("--no-drafts", action="store_true")
+    ap.add_argument("--require-all-sources", action="store_true", help="fail if any NVD/OSV request failed")
     args = ap.parse_args()
+    if args.days < 1:
+        ap.error("--days muss mindestens 1 sein")
 
-    # The NVD API rejects date windows above 120 days (HTTP 404).
-    since = dt.datetime.utcnow() - dt.timedelta(days=min(args.days, 120))
+    now = dt.datetime.now(dt.UTC)
+    until = now.replace(microsecond=0)
+    since = until - dt.timedelta(days=min(args.days, 120))
     api_key = os.environ.get("NVD_API_KEY")
     known, ignored = load_known()
-    today = dt.date.today().isoformat()
-
+    kev = kev_index(kev_errors := [])
+    errors: list[str] = []
+    kev_available = not kev_errors
     cands: list[dict] = []
     for platform, cfg in PLATFORMS.items():
-        for c in nvd_candidates(platform, cfg, since, api_key) + osv_candidates(platform, cfg, since):
+        found = nvd_candidates(platform, cfg, since, until, api_key, errors)
+        found += osv_candidates(platform, cfg, since, errors)
+        for c in found:
             ids = {c["id"].upper(), *(a.upper() for a in c.get("aliases", []))}
+            c["known_exploited"] = bool(ids & kev.keys()) if kev_available else None
+            c["kev_date_added"] = next((kev[i] for i in ids if i in kev), None)
             if ids & known or ids & ignored:
                 continue
             cands.append(c)
-    # de-duplicate by id
     uniq: dict[str, dict] = {}
     for c in cands:
-        uniq.setdefault(c["id"].upper(), c)
-    cands = sorted(uniq.values(), key=lambda c: (c["platform"], c["published"]), reverse=False)
+        previous = uniq.get(c["id"].upper())
+        if previous is None:
+            uniq[c["id"].upper()] = c
+        else:
+            previous["sources"] = sorted({*previous.get("sources", [previous["source"]]), c["source"]})
+            for field in ("affected", "fixed_in", "references", "aliases"):
+                previous[field] = list(dict.fromkeys(previous[field] + c[field]))
+            if c.get("score") is not None:
+                previous["score"] = c["score"]
+                previous["vector"] = c["vector"]
+    for c in uniq.values():
+        c.setdefault("sources", [c["source"]])
+    cands = sorted(uniq.values(), key=lambda c: (c["known_exploited"] is not True, c["platform"], c["published"]))
+    metadata_warnings = [*errors, *kev_errors]
+    source_counts = Counter(s for c in cands for s in c.get("sources", [c["source"]]))
+    metadata = {
+        "schema_version": 1,
+        "run_started_at": now.isoformat().replace("+00:00", "Z"),
+        "window": {
+            "start": since.isoformat().replace("+00:00", "Z"),
+            "end": until.isoformat().replace("+00:00", "Z"),
+            "days": args.days,
+        },
+        "complete": not errors,
+        "errors": errors,
+        "warnings": metadata_warnings,
+        "counts": {
+            "candidates": len(cands),
+            "known_exploited": sum(c["known_exploited"] is True for c in cands),
+            "by_source": dict(sorted(source_counts.items())),
+        },
+        "sources": {
+            "nvd": {"url": NVD_URL, "selection": "keyword/CPE, lastModified"},
+            "osv": {"url": OSV_URL, "selection": "Packagist package queries"},
+            "cisa_kev": {"url": KEV_URL, "purpose": "prioritization only", "available": kev_available},
+        },
+    }
+    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+    Path(args.out).write_text(json.dumps({"metadata": metadata, "candidates": cands}, indent=2, ensure_ascii=False))
+    drafts = [] if args.no_drafts or not cands else write_drafts(cands, now.date().isoformat())
 
-    Path(args.out).write_text(json.dumps({"generated": today, "since": since.isoformat(), "candidates": cands}, indent=2, ensure_ascii=False))
-    drafts = [] if args.no_drafts or not cands else write_drafts(cands, today)
-
-    print(f"## Advisory-Sync {today}\n")
-    print(f"Zeitraum: letzte {args.days} Tage · bekannte IDs: {len(known)} · ignoriert: {len(ignored)}\n")
+    print(f"## Advisory-Sync {now.date().isoformat()}\n")
+    print(f"Zeitraum: {since.isoformat()} bis {until.isoformat()} · bekannte IDs: {len(known)} · ignoriert: {len(ignored)}\n")
+    if errors:
+        print(f"**UNVOLLSTÄNDIG: {len(errors)} NVD-/OSV-Abfragen fehlgeschlagen. Kein Negativbefund.**\n")
+    elif kev_errors:
+        print(f"**Priorisierung unvollständig: {len(kev_errors)} KEV-Fehler; NVD/OSV vollständig.**\n")
     if not cands:
-        print("Keine neuen Kandidaten.")
+        status = "Keine neuen Kandidaten im vollständig abgefragten Zeitraum."
+        if errors:
+            status = "Keine neuen Kandidaten; wegen Quellfehlern ist das Ergebnis unvollständig."
+        print(status)
     else:
-        print("| ID | Plattform | Schwere | Veröffentlicht | Betroffen | Behoben | Titel |")
+        print("| ID | Plattform | KEV | Quelle | Veröffentlicht | Behoben | Titel |")
         print("|---|---|---|---|---|---|---|")
         for c in cands:
-            print(f"| {c['id']} | {c['platform']} | {c['severity']} | {c['published']} | {', '.join(c['affected']) or '?'} | {', '.join(c['fixed_in']) or '?'} | {c['title'][:80]} |")
+            kev_label = {True: f"ja {c['kev_date_added'] or ''}", False: "nein", None: "unbekannt"}[c["known_exploited"]]
+            print(f"| {c['id']} | {c['platform']} | {kev_label} | {c['source']} | {c['published']} | {', '.join(c['fixed_in']) or '?'} | {c['title'][:80]} |")
         if drafts:
             print("\nEntwürfe: " + ", ".join(str(p.relative_to(ROOT)) for p in drafts))
     if out := os.environ.get("GITHUB_OUTPUT"):
         with open(out, "a") as fh:
             fh.write(f"count={len(cands)}\n")
             fh.write(f"drafts={' '.join(str(p.relative_to(ROOT)) for p in drafts)}\n")
-    return 0
+            fh.write(f"complete={'true' if not errors else 'false'}\n")
+    return 1 if errors and args.require_all_sources else 0
 
 
 if __name__ == "__main__":
