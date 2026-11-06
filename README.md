@@ -121,11 +121,11 @@ laden und `ecomsec.exe` entpacken. Jedes Release enthält `SHA256SUMS` und `SHA2
 [`distrib/minisign.pub`](distrib/minisign.pub) und ist in `install.sh` sowie im Programm eingebettet:
 
 ```
-RWTGwHhSW1wh5CJQ9Drgo7xvbxiG4mbERJ03PxlA/D7ciOYvnLYdrPUR
+RWQ/klHVfwN2O3cvbvoiSvkvYdudzeGLcY7cUA3FESnY3oM6V82YJcua
 ```
 
 ```bash
-minisign -Vm SHA256SUMS -P RWTGwHhSW1wh5CJQ9Drgo7xvbxiG4mbERJ03PxlA/D7ciOYvnLYdrPUR -x SHA256SUMS.minisig
+minisign -Vm SHA256SUMS -P RWQ/klHVfwN2O3cvbvoiSvkvYdudzeGLcY7cUA3FESnY3oM6V82YJcua -x SHA256SUMS.minisig
 sha256sum -c SHA256SUMS
 gh attestation verify ecomsec-<version>-<ziel>.tar.gz --repo liohtml/ecom-sec
 ```

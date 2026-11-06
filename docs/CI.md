@@ -227,29 +227,31 @@ einzige Funktion mit Netzwerkzugriff.
 ## Release-Signatur
 
 Der Release-Workflow signiert `SHA256SUMS` mit minisign und legt eine Build-Provenance
-(GitHub Artifact Attestation) über die Release-Dateien. Beides ist erst möglich, wenn ein
-eigener Schlüssel hinterlegt ist. Der im Repository ausgelieferte `distrib/minisign.pub` ist
-bis dahin ein Platzhalter; `install.sh` und `ecomsec self-update` lehnen ihn ab.
+(GitHub Artifact Attestation) über die Release-Dateien.
 
-1. Schlüssel ohne Passwort erzeugen (der private Schlüssel bleibt offline, nicht ins Repository):
+Der öffentliche Schlüssel ist hinterlegt. Dieselbe Schlüsselzeile steht in
+`distrib/minisign.pub`, in `install.sh` (`MINISIGN_PUB`, `MINISIGN_PUB_IS_PLACEHOLDER=0`)
+und im Abschnitt „Signatur prüfen“ der `README.md`. `ecomsec self-update` bettet keinen
+eigenen Schlüssel ein, sondern liest `distrib/minisign.pub` direkt (`include_str!`).
+Schlüssel-ID `3B76037FD551923F`:
 
-   ```bash
-   minisign -G -W -p minisign.pub -s minisign.key
-   ```
+```
+untrusted comment: minisign public key 3B76037FD551923F
+RWQ/klHVfwN2O3cvbvoiSvkvYdudzeGLcY7cUA3FESnY3oM6V82YJcua
+```
 
-2. `distrib/minisign.pub` durch die neue Public-Key-Datei ersetzen. In `install.sh`
-   `MINISIGN_PUB` auf die Schlüsselzeile setzen und `MINISIGN_PUB_IS_PLACEHOLDER=0` eintragen.
-   Denselben Schlüssel in den Abschnitt „Signatur prüfen“ der `README.md` schreiben.
-   `scripts/check-minisign-pubkey.sh` prüft, dass die drei Stellen übereinstimmen. Das Programm
-   liest `distrib/minisign.pub` direkt.
+`scripts/check-minisign-pubkey.sh` prüft, dass die drei Stellen übereinstimmen. Solange die
+erste Zeile von `distrib/minisign.pub` den Hinweis `PLACEHOLDER` enthält, setzen `install.sh`
+und `ecomsec self-update` die Installation aus.
 
-3. Den **gesamten** Inhalt von `minisign.key` als Repository-Secret `MINISIGN_SECRET_KEY`
-   hinterlegen (Settings → Secrets and variables → Actions). Der Workflow signiert nur mit
-   diesem unverschlüsselten Schlüssel und prüft die Signatur danach gegen `distrib/minisign.pub`.
-   `minisign.key` danach nur noch offline aufbewahren.
+Der private Schlüssel liegt beim Eigentümer des Repositorys und wird als Actions-Secret
+`MINISIGN_SECRET_KEY` hinterlegt (Settings → Secrets and variables → Actions) – der gesamte
+Inhalt von `minisign.key`, niemals im Repository. Der Workflow signiert nur mit diesem
+unverschlüsselten Schlüssel und prüft die Signatur danach gegen `distrib/minisign.pub`.
 
-4. Nächstes Release (Tag `v*`) erzeugt `SHA256SUMS.minisig` und die Attestation. Prüfen mit:
+Nächstes Release (Tag `v*`) erzeugt `SHA256SUMS.minisig` und die Attestation, sobald
+`MINISIGN_SECRET_KEY` gesetzt ist. Prüfen mit:
 
-   ```bash
-   gh attestation verify ecomsec-<version>-<ziel>.tar.gz --repo liohtml/ecom-sec
-   ```
+```bash
+gh attestation verify ecomsec-<version>-<ziel>.tar.gz --repo liohtml/ecom-sec
+```

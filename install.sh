@@ -19,11 +19,11 @@
 
 set -eu
 
-# Public key from distrib/minisign.pub. Keep the three in sync
-# (scripts/check-minisign-pubkey.sh). PLACEHOLDER=1 until the maintainer
-# replaces the key; the installer then refuses to run.
-MINISIGN_PUB_IS_PLACEHOLDER=1
-MINISIGN_PUB='RWTGwHhSW1wh5CJQ9Drgo7xvbxiG4mbERJ03PxlA/D7ciOYvnLYdrPUR'
+# Public key from distrib/minisign.pub (key id 3B76037FD551923F). Keep the
+# three in sync (scripts/check-minisign-pubkey.sh). The installer refuses
+# to run while MINISIGN_PUB_IS_PLACEHOLDER=1.
+MINISIGN_PUB_IS_PLACEHOLDER=0
+MINISIGN_PUB='RWQ/klHVfwN2O3cvbvoiSvkvYdudzeGLcY7cUA3FESnY3oM6V82YJcua'
 
 REPO="${ECOMSEC_REPO:-liohtml/ecom-sec}"
 VERSION="${ECOMSEC_VERSION:-latest}"
