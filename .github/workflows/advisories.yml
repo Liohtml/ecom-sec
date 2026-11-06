@@ -1,22 +1,24 @@
 name: Advisories aktualisieren
 
-# Wöchentlich: neue CVEs/GHSAs für JTL-Shop, Shopware und Shopify-Apps suchen,
+# Täglich: neue CVEs/GHSAs für JTL-Shop, Shopware und Shopify-Apps suchen,
 # durch einen Claude-Agenten recherchieren und als Pull Request einpflegen.
 # Ohne ANTHROPIC_API_KEY werden nur die automatischen Entwürfe als PR angelegt.
 
 on:
   schedule:
-    - cron: "17 6 * * 1"   # Montag 06:17 UTC
+    - cron: "37 5 * * *"   # täglich 05:37 UTC; drei Tage Überlappung
   workflow_dispatch:
     inputs:
       days:
         description: "Zeitraum in Tagen (lastModified)"
-        default: "30"
+        default: "3"
 
 permissions:
-  contents: write
-  pull-requests: write
-  id-token: write
+  contents: read
+
+concurrency:
+  group: advisory-sync
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -25,19 +27,22 @@ jobs:
       count: ${{ steps.sync.outputs.count }}
       drafts: ${{ steps.sync.outputs.drafts }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: "3.12"
-      - name: Kandidaten suchen (NVD, OSV)
+      - name: Sync-Regressionstests (offline)
+        run: python3 -m unittest discover -s tests -v
+      - name: Kandidaten suchen (NVD, OSV, CISA KEV)
         id: sync
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
         run: |
-          python3 scripts/advisory_sync.py --days "${{ github.event.inputs.days || '30' }}" | tee sync.md
+          python3 scripts/advisory_sync.py --days "${{ github.event.inputs.days || '3' }}" --require-all-sources | tee sync.md
           echo "### Advisory-Sync" >> "$GITHUB_STEP_SUMMARY"
           cat sync.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        if: always()
         with:
           name: advisory-candidates
           path: |
@@ -50,24 +55,28 @@ jobs:
     needs: sync
     if: needs.sync.outputs.count != '0'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write
     env:
       HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           fetch-depth: 0
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           name: advisory-candidates
           path: .
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
       - name: Entwürfe prüfen (Lint ohne Semantik-Stopp)
         run: cargo run -q -p ecomsec -- advisories lint advisories/drafts || true
 
       - name: Claude-Agent recherchiert und pflegt Advisories ein
         if: env.HAS_KEY == 'true'
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@c0949c50a78c1ec8ce2647db36629b870e715d0c # v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -77,7 +86,7 @@ jobs:
           prompt: |
             Du pflegst die Schwachstellen-Datenbank von ecomsec (Verzeichnis `advisories/`).
             Lies zuerst `docs/ADVISORIES.md` (Format und Regeln) und `advisories/candidates.json`
-            (neue Kandidaten aus NVD/OSV, erzeugt am ${{ github.run_id }}).
+            (neue Kandidaten aus NVD/OSV, erzeugt in Lauf ${{ github.run_id }}).
 
             Für JEDEN Kandidaten:
             1. Recherchiere die Primärquellen (Hersteller-Advisory, GHSA, NVD, Sansec, JTL-Forum)
@@ -88,7 +97,8 @@ jobs:
                `advisories/<platform>.toml` ein (deutscher Titel, `affected` als ">=a <b"-Bereiche,
                `fixed_in`, `reference`, `published`, `source`, `tags`). Kein `draft`.
                Bei Unsicherheit über Versionsbereiche: Eintrag mit `draft = true` anlegen und im
-               PR-Text erklären, was fehlt.
+               PR-Text erklären, was fehlt. KEV-Treffer zuerst bearbeiten; ein unbekannter
+               KEV-Status ist kein Negativbefund. Mehrere Quellen desselben CVE abgleichen.
             3. Betrifft er die Plattform nicht (falscher Treffer, anderes Produkt, nur Shopware 5):
                trage die ID mit Begründung in `advisories/ignored.toml` ein.
             4. Lösche verarbeitete Dateien unter `advisories/drafts/` und `advisories/candidates.json`.
@@ -104,7 +114,7 @@ jobs:
 
       - name: Fallback-PR nur mit Entwürfen (kein API-Key oder Agent nicht gelaufen)
         if: env.HAS_KEY != 'true'
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
           branch: advisories/drafts-${{ github.run_id }}
           title: "Advisories: ${{ needs.sync.outputs.count }} neue Kandidaten (Entwürfe)"
