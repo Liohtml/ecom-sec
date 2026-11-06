@@ -5,14 +5,17 @@
 //! places where ecomsec talks to the network.  It never touches a shop.
 //!
 //! Flow: query `releases/latest`, compare the tag with `CARGO_PKG_VERSION`,
-//! download the archive for the running platform plus `SHA256SUMS`, verify
-//! the checksum, extract the binary next to the current one and swap it in
-//! atomically (`rename`).  Windows cannot overwrite a running executable, so
-//! the old binary is first renamed to `ecomsec.exe.old`.
+//! download the archive for the running platform plus `SHA256SUMS` and
+//! `SHA256SUMS.minisig`, verify the minisign signature of the checksum file
+//! against the embedded public key, then the checksum, extract the binary
+//! next to the current one and swap it in atomically (`rename`).  A missing
+//! or invalid signature aborts the update.  Windows cannot overwrite a
+//! running executable, so the old binary is first renamed to `ecomsec.exe.old`.
 //!
 //! Release asset layout (see `.github/workflows/release.yml`):
 //! `ecomsec-<tag>-<target>.tar.gz` (`.zip` on Windows) containing
-//! `ecomsec-<tag>-<target>/ecomsec[.exe]`, plus `SHA256SUMS`.
+//! `ecomsec-<tag>-<target>/ecomsec[.exe]`, plus `SHA256SUMS` and
+//! `SHA256SUMS.minisig`.
 
 use anyhow::{bail, Context};
 use serde::Deserialize;
@@ -166,6 +169,19 @@ pub fn parse_sha256sums(text: &str) -> BTreeMap<String, String> {
             Some((name.to_string(), hash.to_ascii_lowercase()))
         })
         .collect()
+}
+
+/// Verify the minisign signature of a `SHA256SUMS` file, then parse it.
+/// The signature is checked before the file is trusted as a checksum list.
+pub fn authenticate_checksums(
+    public_key: &str,
+    signature: &str,
+    sums_bytes: &[u8],
+) -> anyhow::Result<BTreeMap<String, String>> {
+    crate::minisign::verify(public_key, signature, sums_bytes)
+        .map_err(|e| anyhow::anyhow!("{e} – Update abgebrochen"))?;
+    let text = std::str::from_utf8(sums_bytes).context("SHA256SUMS ist kein UTF-8")?;
+    Ok(parse_sha256sums(text))
 }
 
 /// Verify `bytes` against the checksum list.
@@ -374,6 +390,11 @@ pub fn run(args: &SelfUpdateArgs) -> anyhow::Result<u8> {
     let target = current_target().context(
         "Für diese Plattform gibt es kein vorgefertigtes Release – bitte aus dem Quellcode bauen (cargo build --release).",
     )?;
+    if crate::minisign::is_placeholder() {
+        bail!(
+            "In diesem Build ist noch kein minisign-Public-Key hinterlegt (Platzhalter in distrib/minisign.pub). Update abgebrochen."
+        );
+    }
     let name = asset_name(&release.tag_name, target);
     let find = |n: &str| {
         release
@@ -390,12 +411,22 @@ pub fn run(args: &SelfUpdateArgs) -> anyhow::Result<u8> {
             release.tag_name
         )
     })?;
+    let sig_url = find("SHA256SUMS.minisig").with_context(|| {
+        format!(
+            "Release {} enthält keine SHA256SUMS.minisig – Update aus Sicherheitsgründen abgebrochen",
+            release.tag_name
+        )
+    })?;
     eprintln!("Lade {name} …");
-    let sums = parse_sha256sums(&String::from_utf8_lossy(&get(
-        &agent,
-        &sums_url,
-        "application/octet-stream",
-    )?));
+    let signature = String::from_utf8(get(&agent, &sig_url, "application/octet-stream")?)
+        .context("SHA256SUMS.minisig ist kein Text")?;
+    let sums_bytes = get(&agent, &sums_url, "application/octet-stream")?;
+    let sums = authenticate_checksums(
+        crate::minisign::embedded_public_key(),
+        &signature,
+        &sums_bytes,
+    )?;
+    eprintln!("Signatur (minisign) bestätigt.");
     let archive = get(&agent, &archive_url, "application/octet-stream")?;
     verify_checksum(&sums, &name, &archive)?;
     eprintln!("Prüfsumme (SHA-256) bestätigt.");
@@ -489,6 +520,33 @@ mod tests {
         verify_checksum(&sums, "ecomsec-v1-x.tar.gz", data).unwrap();
         assert!(verify_checksum(&sums, "ecomsec-v1-x.tar.gz", b"evil").is_err());
         assert!(verify_checksum(&sums, "missing", data).is_err());
+    }
+
+    #[test]
+    fn manipulated_sha256sums_fail_before_checksum_is_trusted() {
+        let key = include_str!("../fixtures/minisign/minisign.pub");
+        let key = key
+            .lines()
+            .map(|l| l.trim())
+            .find(|l| !l.is_empty() && !l.starts_with("untrusted comment:"))
+            .unwrap();
+        let sig = include_str!("../fixtures/minisign/SHA256SUMS.minisig");
+        let sums = include_bytes!("../fixtures/minisign/SHA256SUMS");
+        // The fixture file is not a checksum list; a valid signature still
+        // parses (to an empty map) and only then would checksums be trusted.
+        let parsed = authenticate_checksums(key, sig, sums).unwrap();
+        assert!(parsed.is_empty());
+
+        let mut tampered = sums.to_vec();
+        tampered[0] ^= 0xff;
+        let err = authenticate_checksums(key, sig, &tampered).unwrap_err();
+        let msg = format!("{err:#}");
+        assert!(
+            msg.contains("Signatur ist ungültig"),
+            "manipulierte SHA256SUMS muss an der Signatur scheitern, nicht an der Prüfsumme: {msg}"
+        );
+        // A missing signature is not a silent fallback.
+        assert!(authenticate_checksums(key, "", sums).is_err());
     }
 
     #[test]

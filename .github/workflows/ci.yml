@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -58,7 +61,11 @@ jobs:
       - name: Lint install.sh
         run: |
           sh -n install.sh
-          shellcheck -s sh install.sh
+          shellcheck -s sh install.sh scripts/install-minisign.sh scripts/check-minisign-pubkey.sh scripts/test-install-signature.sh
+      - name: minisign-Public-Key ist konsistent
+        run: sh scripts/check-minisign-pubkey.sh
+      - name: install.sh prüft die Signatur
+        run: sh scripts/test-install-signature.sh
       - name: Lint workflows (actionlint)
         run: |
           curl -fsSL https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz \

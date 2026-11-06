@@ -3,6 +3,7 @@
 mod advisories_cmd;
 mod audit_cmd;
 mod config;
+mod minisign;
 mod monitor;
 mod output;
 mod platforms;
