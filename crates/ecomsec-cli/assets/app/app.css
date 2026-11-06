@@ -595,9 +595,10 @@ a.link-btn { text-decoration: none; }
 .shortcut-list dd { margin: 0; color: var(--text-2); }
 .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); }
 .docs-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-2); }
-.docs-links a { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--border); border-radius: var(--r-sm); text-decoration: none; color: var(--text); font-weight: 560; font-size: var(--fs-sm); }
-.docs-links a:hover { border-color: var(--border-strong); background: var(--surface-2); }
-.docs-links a .icon:last-child { margin-left: auto; color: var(--muted); width: 14px; height: 14px; }
+.docs-links a, .docs-links button.export-link { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border: 1px solid var(--border); border-radius: var(--r-sm); text-decoration: none; color: var(--text); font-weight: 560; font-size: var(--fs-sm); }
+.docs-links button.export-link { background: transparent; font: inherit; font-weight: 560; font-size: var(--fs-sm); text-align: left; cursor: pointer; width: 100%; }
+.docs-links a:hover, .docs-links button.export-link:hover { border-color: var(--border-strong); background: var(--surface-2); }
+.docs-links a .icon:last-child, .docs-links button.export-link .icon:last-child { margin-left: auto; color: var(--muted); width: 14px; height: 14px; }
 
 /* ------------------------------------------------------------------ empty, error, skeleton */
 .empty { text-align: center; padding: var(--sp-12) var(--sp-6); display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); }

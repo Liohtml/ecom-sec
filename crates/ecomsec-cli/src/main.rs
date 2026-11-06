@@ -225,9 +225,18 @@ struct ServeArgs {
     /// Adresse (Standard 127.0.0.1:8787)
     #[arg(long, value_name = "HOST:PORT")]
     bind: Option<String>,
-    /// Zugriffstoken für Dashboard/API (Header X-Auth-Token oder ?token=)
-    #[arg(long, value_name = "TOKEN")]
+    /// Zugriffstoken (Header X-Auth-Token). Auf Loopback wird sonst eines erzeugt;
+    /// bei einer nicht lokalen Adresse ist es Pflicht.
+    #[arg(
+        long,
+        env = "ECOMSEC_AUTH_TOKEN",
+        hide_env_values = true,
+        value_name = "TOKEN"
+    )]
     auth_token: Option<String>,
+    /// Zusätzlicher Hostname, der im Host-Header erlaubt ist (Reverse-Proxy). Mehrfach möglich.
+    #[arg(long = "trusted-host", value_name = "HOST")]
+    trusted_hosts: Vec<String>,
 }
 
 #[derive(Subcommand)]
@@ -645,13 +654,21 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
                 .unwrap_or("127.0.0.1:8787")
                 .parse()
                 .context("ungültige --bind Adresse")?;
-            let token = args.auth_token.or_else(|| ctx.cfg.serve.token.clone());
-            if !bind.ip().is_loopback() && token.is_none() {
-                eprintln!("WARNUNG: Dashboard ist ohne --auth-token auf {bind} erreichbar.");
-            }
+            let configured = args.auth_token.or_else(|| ctx.cfg.serve.token.clone());
+            let auth = web::prepare_serve_auth(bind, configured)?;
+            let mut trusted_hosts = args.trusted_hosts;
+            trusted_hosts.extend(ctx.cfg.serve.trusted_hosts.iter().cloned());
             // Validate the target once so configuration errors surface immediately.
             let _ = ctx.spec.open()?;
-            web::serve(bind, token, ctx.spec, options, ctx.store)?;
+            web::serve(
+                bind,
+                auth.token,
+                auth.generated,
+                trusted_hosts,
+                ctx.spec,
+                options,
+                ctx.store,
+            )?;
             Ok(0)
         }
         Command::Diff(args) => monitor::diff_latest(&ctx, &args),

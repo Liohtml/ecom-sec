@@ -1,7 +1,7 @@
 # ecomsec im Container – Beispiel-Compose-Datei.
 #
 #   docker compose run --rm scan                 # einmaliger Scan (Dateisystem, read-only)
-#   docker compose up -d dashboard               # Web-Dashboard auf http://127.0.0.1:8787/?token=…
+#   docker compose up -d dashboard               # Web-Dashboard auf http://127.0.0.1:8787/
 #   docker compose up -d watch                   # tägliche Überwachung mit Benachrichtigung
 #
 # Pfad des Shops und Token über eine .env-Datei neben dieser Datei setzen:
@@ -35,12 +35,16 @@ services:
       - ./reports:/out
     command: ["scan", "--skip-remote", "--format", "html", "--output", "/out/ecomsec.html"]
 
-  # Web-Dashboard (nur lokal erreichbar; Token Pflicht, da im Container auf 0.0.0.0 gebunden)
+  # Web-Dashboard. Im Container auf 0.0.0.0, deshalb ist ein Token Pflicht.
+  # Veröffentlicht wird nur Loopback. Der Token kommt über die Umgebung, nicht über die Adresse.
   dashboard:
     <<: *ecomsec
+    environment:
+      ECOMSEC_CONFIG: /state/ecomsec.toml
+      ECOMSEC_AUTH_TOKEN: ${ECOMSEC_TOKEN:?ECOMSEC_TOKEN in .env setzen}
     ports:
       - "127.0.0.1:8787:8787"
-    command: ["serve", "--bind", "0.0.0.0:8787", "--auth-token", "${ECOMSEC_TOKEN:?ECOMSEC_TOKEN in .env setzen}", "--skip-remote"]
+    command: ["serve", "--bind", "0.0.0.0:8787", "--skip-remote"]
     restart: unless-stopped
 
   # Tägliche Überwachung: Advisories aktualisieren, scannen, vergleichen, benachrichtigen

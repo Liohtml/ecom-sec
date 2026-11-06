@@ -90,6 +90,8 @@ Befunde: 3 kritisch · 2 Warnungen · 0 Hinweise · 0 als unbedenklich markiert
 ```bash
 ecomsec serve --root /var/www/shop
 # → http://127.0.0.1:8787
+# Auf Loopback wird ein Zugriffstoken erzeugt und in die Seite eingesetzt (nicht in die Adresse).
+# Eine nicht lokale Adresse braucht --auth-token oder ECOMSEC_AUTH_TOKEN.
 ```
 
 ---
@@ -468,7 +470,7 @@ ecomsec watch     [Scan-Optionen] [--notify-on critical|warning|any|always] [--n
                   [--no-update] [--interval 24h] [--quiet] [--install-systemd | --install-cron [--at HH:MM]]
 ecomsec diff      [VORHER.json NACHHER.json] [--format text|json]
 ecomsec notify    test | list
-ecomsec serve     [--bind 127.0.0.1:8787] [--auth-token GEHEIM]
+ecomsec serve     [--bind 127.0.0.1:8787] [--auth-token GEHEIM] [--trusted-host HOST]
 ecomsec findings  list | accept <ID…> [--group DIR] [--rule REGEL] [--reason TEXT] | unaccept <ID…> [--all]
 ecomsec baseline  create [--core-only] | diff | show
 ecomsec report    [--format text|json|html|sarif|junit|markdown] [--output DATEI]
