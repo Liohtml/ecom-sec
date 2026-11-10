@@ -645,7 +645,7 @@ fn inspect_content(
             .with_evidence(excerpt(&src, 200)),
         );
     }
-    for hit in run.rules.scan("template", content.as_bytes()) {
+    for hit in run.rules.scan_deep("template", content.as_bytes()) {
         let spec = &hit.rule.spec;
         if spec.severity == Severity::Info {
             continue;

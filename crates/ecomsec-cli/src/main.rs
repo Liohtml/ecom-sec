@@ -174,7 +174,7 @@ struct ScanOptionArgs {
     /// Anzahl der Threads für den Dateiscan (Standard: alle Prozessorkerne)
     #[arg(long, value_name = "N")]
     threads: Option<usize>,
-    /// Online-Abgleich der Composer-Pakete mit OSV.dev (sendet Paketnamen + Versionen)
+    /// Online-Abgleich: Composer-Pakete mit OSV.dev, WordPress-Kern und -Plugins mit den Prüfsummen von WordPress.org (sendet Paketnamen/Slugs + Versionen)
     #[arg(long)]
     online: bool,
     /// Zusätzliches Advisory-Verzeichnis (*.toml), mehrfach möglich

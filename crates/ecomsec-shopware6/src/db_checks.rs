@@ -493,7 +493,7 @@ fn scan_text_rows(
             if text.is_empty() {
                 continue;
             }
-            for hit in rules.scan("template", text.as_bytes()) {
+            for hit in rules.scan_deep("template", text.as_bytes()) {
                 let spec = &hit.rule.spec;
                 if spec.severity == Severity::Info {
                     continue;
@@ -603,7 +603,7 @@ fn storefront_injection(
             total += 1;
             let value = col(row, "value");
             let sev = if rules
-                .scan("template", value.as_bytes())
+                .scan_deep("template", value.as_bytes())
                 .iter()
                 .any(|h| h.rule.spec.severity == Severity::Critical)
                 || value.contains("http")

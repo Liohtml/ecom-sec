@@ -556,7 +556,7 @@ fn mail_templates(
             if text.is_empty() {
                 continue;
             }
-            for hit in rules.scan("template", text.as_bytes()) {
+            for hit in rules.scan_deep("template", text.as_bytes()) {
                 if hit.rule.spec.category != Category::ExploitPayload
                     && hit.rule.spec.severity != Severity::Critical
                 {

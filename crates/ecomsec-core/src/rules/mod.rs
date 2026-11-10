@@ -10,6 +10,7 @@
 //! occur inside one window of `N` bytes.  Large bundles contain every
 //! keyword somewhere; malware uses them next to each other.
 
+use crate::deobf;
 use crate::finding::{Category, Severity};
 use regex::bytes::{Regex, RegexBuilder, RegexSet, RegexSetBuilder};
 use serde::{Deserialize, Serialize};
@@ -116,6 +117,10 @@ pub struct RuleMatch<'a> {
     pub rule: &'a Rule,
     /// Excerpts around each matched string.
     pub excerpts: Vec<String>,
+    /// De-obfuscation steps that made the match visible
+    /// (`base64_decode → gzinflate`); `None` when the rule matches the
+    /// content as written.  Set by [`RuleSet::scan_deep`].
+    pub chain: Option<String>,
 }
 
 impl Rule {
@@ -215,6 +220,7 @@ impl Rule {
         Some(RuleMatch {
             rule: self,
             excerpts,
+            chain: None,
         })
     }
 
@@ -464,6 +470,39 @@ impl RuleSet {
             })
             .filter_map(|p| self.rules[p.rule].matches(data))
             .collect()
+    }
+
+    /// Like [`scan`](Self::scan), and additionally on the de-obfuscated
+    /// layers of `data` (see [`crate::deobf`]): PHP for the class `php`,
+    /// JavaScript for `js` and `template` (files, CMS blocks, options and
+    /// other stored markup).  Each rule is reported once, preferring the
+    /// match in the content as written; matches found only in a layer carry
+    /// the steps in [`RuleMatch::chain`] and as a prefix of their excerpts.
+    pub fn scan_deep<'a>(&'a self, class: &str, data: &[u8]) -> Vec<RuleMatch<'a>> {
+        let mut hits = self.scan(class, data);
+        let lang = match class {
+            "php" => deobf::Lang::Php,
+            "js" | "template" => deobf::Lang::Js,
+            _ => return hits,
+        };
+        for layer in deobf::layers(data, lang, &deobf::Limits::default()) {
+            let classes: &[&str] = if layer.decoded {
+                &[class, "decoded"]
+            } else {
+                &[class]
+            };
+            for mut m in self.scan_classes(classes, &layer.data) {
+                if hits.iter().any(|h| std::ptr::eq(h.rule, m.rule)) {
+                    continue;
+                }
+                for excerpt in &mut m.excerpts {
+                    *excerpt = format!("[{}] {excerpt}", layer.chain);
+                }
+                m.chain = Some(layer.chain.clone());
+                hits.push(m);
+            }
+        }
+        hits
     }
 
     /// Group rules by tag (for `rules list`).

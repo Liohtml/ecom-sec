@@ -617,7 +617,7 @@ impl Shopify {
             } else {
                 "template"
             };
-            for hit in rules.scan(class, content.as_bytes()) {
+            for hit in rules.scan_deep(class, content.as_bytes()) {
                 hits += 1;
                 let mut f = Finding::new(hit.rule.spec.severity, hit.rule.spec.category, Source::Api, hit.rule.name().to_string(), format!("theme:{theme_id}:{key}"), format!("{key}: {}", hit.rule.spec.description))
                     .with_description(format!("Regel `{}` im Live-Theme. Code im Theme-Editor prüfen; bei unbekanntem Code Theme aus einem sauberen Backup wiederherstellen.", hit.rule.name()));

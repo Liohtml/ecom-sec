@@ -22,10 +22,9 @@
 //! that keeps shared-hosting PHP requests below the gateway timeout.
 
 use super::ScanOptions;
-use crate::deobf;
 use crate::finding::{Category, Finding, Severity};
 use crate::platform::FileScanProfile;
-use crate::rules::{Rule, RuleSet};
+use crate::rules::{RuleMatch, RuleSet};
 use crate::signatures::IocList;
 use crate::state::StateStore;
 use chrono::{DateTime, Duration as ChronoDuration, NaiveDate, Utc};
@@ -170,9 +169,14 @@ type FileResult = anyhow::Result<(u64, Vec<Finding>)>;
 /// between batches.
 const BATCH_SIZE: usize = 128;
 
-/// Oversized files are checked at both ends: droppers prepend or append
-/// their code, padding in between must not hide it.
+/// End of an oversized file that is scanned in addition to its beginning.
 const TAIL_BYTES: u64 = 256 * 1024;
+
+/// Beginning of an oversized image that is scanned.
+const IMAGE_HEAD_BYTES: u64 = 64 * 1024;
+
+/// Bytes read from a file of unknown type to decide whether it is PHP.
+const SNIFF_BYTES: u64 = 512;
 
 pub struct FileScanner<'a> {
     profile: &'a FileScanProfile,
@@ -613,7 +617,7 @@ impl<'a> FileScanner<'a> {
             }
             bytes_read += chunks.iter().map(|c| c.len() as u64).sum::<u64>();
             let hits = content_hits(self.rules, class, &chunks);
-            for ContentHit {
+            for RuleMatch {
                 rule,
                 excerpts,
                 chain,
@@ -665,10 +669,7 @@ impl<'a> FileScanner<'a> {
                     .filter(|e| seen.insert((*e).clone()))
                     .take(3)
                 {
-                    f = f.with_evidence(match &chain {
-                        Some(c) => format!("[{c}] {ex}"),
-                        None => ex.clone(),
-                    });
+                    f = f.with_evidence(ex.clone());
                 }
                 if let Some(r) = &spec.reference {
                     f = f.with_evidence(r.clone());
@@ -711,58 +712,19 @@ impl<'a> FileScanner<'a> {
     }
 }
 
-/// A content rule that matched a file.
-#[derive(Debug, Clone)]
-pub struct ContentHit<'r> {
-    pub rule: &'r Rule,
-    pub excerpts: Vec<String>,
-    /// De-obfuscation steps that made the match visible; `None` when the
-    /// rule matches the file as written.
-    pub chain: Option<String>,
-}
-
-/// Apply the rules of `class` to the content of one file: first as written,
-/// then to every de-obfuscated layer (PHP and JavaScript).  Each rule is
-/// reported once, preferring the match in the original text.
+/// Apply the rules of `class` to the content of one file – as written and
+/// after de-obfuscation.  Oversized files come as two chunks (beginning and
+/// end); each rule is reported once.
 pub fn content_hits<'r>(
     rules: &'r RuleSet,
     class: FileClass,
     chunks: &[Vec<u8>],
-) -> Vec<ContentHit<'r>> {
-    let cls = class.as_str();
-    let lang = match class {
-        FileClass::Php => Some(deobf::Lang::Php),
-        FileClass::Js => Some(deobf::Lang::Js),
-        _ => None,
-    };
-    let limits = deobf::Limits::default();
-    let mut hits = Vec::new();
-    let mut seen = std::collections::HashSet::new();
+) -> Vec<RuleMatch<'r>> {
+    let mut hits: Vec<RuleMatch<'r>> = Vec::new();
     for data in chunks {
-        for m in rules.scan(cls, data) {
-            if seen.insert(m.rule.name()) {
-                hits.push(ContentHit {
-                    rule: m.rule,
-                    excerpts: m.excerpts,
-                    chain: None,
-                });
-            }
-        }
-        let Some(lang) = lang else { continue };
-        for layer in deobf::layers(data, lang, &limits) {
-            let classes: &[&str] = if layer.decoded {
-                &[cls, "decoded"]
-            } else {
-                &[cls]
-            };
-            for m in rules.scan_classes(classes, &layer.data) {
-                if seen.insert(m.rule.name()) {
-                    hits.push(ContentHit {
-                        rule: m.rule,
-                        excerpts: m.excerpts,
-                        chain: Some(layer.chain.clone()),
-                    });
-                }
+        for m in rules.scan_deep(class.as_str(), data) {
+            if !hits.iter().any(|h| std::ptr::eq(h.rule, m.rule)) {
+                hits.push(m);
             }
         }
     }
@@ -879,31 +841,53 @@ fn collapse_deployment_noise(findings: &mut Vec<Finding>, files_scanned: u64) {
     );
 }
 
-/// Read the content to scan: the whole file, the tail of an oversized log,
-/// or the beginning and the end of any other oversized file.
+/// Read the content to scan.
+///
+/// * Files up to `limit` are read completely.
+/// * Oversized logs: the last `limit` bytes.
+/// * Other oversized files: beginning and end – droppers prepend or append
+///   their code, padding in between must not hide it.  Images are binary in
+///   between, so a short beginning is enough for them.
+/// * Files of no known type are only read when they begin like a PHP file;
+///   documents, fonts and media are not worth the I/O.
 fn read_chunks(
     path: &Path,
     size: u64,
     limit: u64,
     class: FileClass,
 ) -> std::io::Result<Vec<Vec<u8>>> {
-    if size <= limit {
-        return Ok(vec![fs::read(path)?]);
-    }
     let mut f = fs::File::open(path)?;
+    if class == FileClass::Other {
+        let mut head = Vec::with_capacity(SNIFF_BYTES as usize);
+        (&mut f).take(SNIFF_BYTES).read_to_end(&mut head)?;
+        if !contains_bytes(&head, b"<?") {
+            return Ok(vec![head]);
+        }
+        f.seek(SeekFrom::Start(0))?;
+    }
+    if size <= limit {
+        let mut data = Vec::with_capacity(size as usize);
+        f.read_to_end(&mut data)?;
+        return Ok(vec![data]);
+    }
     if class == FileClass::Log {
         f.seek(SeekFrom::Start(size - limit))?;
         let mut buf = Vec::with_capacity(limit as usize);
         f.read_to_end(&mut buf)?;
         return Ok(vec![buf]);
     }
-    let tail = TAIL_BYTES.min(limit);
+    let head_len = if class == FileClass::Image {
+        IMAGE_HEAD_BYTES.min(limit)
+    } else {
+        limit
+    };
+    let tail_len = TAIL_BYTES.min(limit);
     let mut head = Vec::new();
-    (&mut f).take(limit).read_to_end(&mut head)?;
-    f.seek(SeekFrom::Start(size - tail))?;
-    let mut end = Vec::with_capacity(tail as usize);
-    f.read_to_end(&mut end)?;
-    Ok(vec![head, end])
+    (&mut f).take(head_len).read_to_end(&mut head)?;
+    f.seek(SeekFrom::Start(size - tail_len))?;
+    let mut tail = Vec::with_capacity(tail_len as usize);
+    f.read_to_end(&mut tail)?;
+    Ok(vec![head, tail])
 }
 
 #[cfg(unix)]

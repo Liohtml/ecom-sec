@@ -166,6 +166,9 @@ ecomsec self-update           # neueste Version laden, Signatur und Prüfsumme p
 - **PHP in Upload- und Bilderverzeichnissen** – dort hat ausführbarer Code nichts verloren
 - **Manipulierte `.htaccess` / `.user.ini`**, die Bilder als PHP ausführen oder Code in jede Seite einschleusen
 - **Verdächtige Code-Muster** mit YARA-ähnlichen Regeln: `eval(base64_decode(…))`, China Chopper, Hex-Verschleierung, Reverse Shells, Dropper, Spam-Mailer, Karten-Skimmer
+- **Entschleierung vor der Prüfung:** Schadcode versteckt sich hinter zerlegten Funktionsnamen (`'sys'.'tem'`, `"\x73ystem"`, `chr(115)…`, `strrev('metsys')`), Kommentaren zwischen Tokens (`eval/**/(`) und mehrfach verpackten Nutzlasten (`gzinflate(base64_decode(…))`). `ecomsec` faltet das statisch zurück – ohne etwas auszuführen – und prüft die Regeln zusätzlich auf dem entschleierten Code. Der Befund nennt die Schritte, die den Treffer sichtbar gemacht haben
+- **PHP an Stellen, an denen keines sein darf:** in Bilddateien (`.ico`-Loader, Polyglots), in Dateien ohne PHP-Endung und hinter Megabytes von Fülldaten – große Dateien werden an Anfang und Ende geprüft statt übersprungen
+- **Symbolische Links**, die das Dateisystem oberhalb des Shops öffnen (`sym → /`)
 - **CVE-2026-54390-Angriffsmuster** (`{capture}…{eval}`, gefährliche Smarty-Modifier) in Dateien, kompilierten Templates und Logs
 - **WordPress-/WooCommerce-Hintertüren** (versteckte Admin-Anlage, Login-Bypass, Must-Use-Plugins, Schein-Plugins, `.ico`-Loader) und **Magecart-Skimmer** in WooCommerce- und Magento-Checkouts, RequireJS-Konfigurationen und CMS-Inhalten
 - **Öffentlich erreichbare Backups, Datenbank-Dumps und Konfigurationskopien**
@@ -184,6 +187,7 @@ ecomsec self-update           # neueste Version laden, Signatur und Prüfsumme p
 - **E-Mail-Vorlagen, Kunden- und Kontaktdaten** mit Template-Syntax
 - **Dateirechte** der Konfigurationsdatei, **Plugins und Cronjobs**, die nach dem Referenzdatum hinzukamen
 - Optional eine **Baseline**: ein Fingerabdruck aller Kerndateien, gegen den spätere Scans vergleichen
+- **WordPress: Abgleich mit den offiziellen Prüfsummen** (`--online`): jede Kerndatei und jede Datei der Plugins aus dem WordPress.org-Verzeichnis wird mit der veröffentlichten Prüfsumme verglichen. Geänderte Kerndateien und fremde PHP-Dateien in `wp-admin`/`wp-includes` sind kritisch; Dateien, die nachweislich Original sind, lösen keine Zeitstempel-Meldungen mehr aus, und Mustertreffer darin werden zum Hinweis
 
 ### 3 · Handlungsempfehlungen – was jetzt zu tun ist
 
@@ -195,11 +199,13 @@ der Shop abgeschaltet wird), **Sofortmaßnahmen**, **Kompromittierungs-Prüfung*
 
 - **Risikoakzeptanz:** Befunde einzeln, pro Verzeichnis oder pro Regel als unbedenklich markieren, mit Begründung. Bleibt über alle künftigen Scans erhalten.
 - **Berichte:** Terminal, JSON (für Monitoring), eine einzelne HTML-Datei zum Weitergeben sowie SARIF, JUnit und Markdown für CI und Security-Dashboards.
-- **Shared-Hosting-tauglich:** Mit `--time-budget 45s` scannt `ecomsec` in Etappen und setzt beim nächsten Aufruf fort – kein Timeout, keine Last.
+- **Shared-Hosting-tauglich:** Mit `--time-budget 45s` scannt `ecomsec` in Etappen und setzt beim nächsten Aufruf fort – kein Timeout, keine Last. `--threads 1` begrenzt den Scan auf einen Prozessorkern.
+- **Schnell:** Der Dateiscan nutzt alle Kerne; ein Vorfilter entscheidet in einem Durchlauf pro Datei, welche Regeln überhaupt in Frage kommen. Ein WordPress mit 14 großen Plugins (34.000 Dateien, 490 MB) ist auf vier Kernen in rund drei Sekunden geprüft.
+- **Wenig Fehlalarme:** Generische Dateinamen wie `shell.php` oder `test.php` zählen nur zusammen mit einem Inhaltstreffer oder im Upload-Verzeichnis als kritisch, Regeln für große JavaScript-Bündel verlangen die Merkmale nah beieinander, und Zertifikatsbündel oder Schema-Dateien gelten nicht als offengelegte Geheimnisse. Der Stand wird in der CI gegen ein Korpus aus Angriffstechniken und harmlosen Doppelgängern geprüft ([docs/RULES.md](docs/RULES.md#qualitätssicherung)).
 - **Hell und dunkel:** Dashboard und HTML-Bericht folgen deinem System oder per Klick.
 - **Scan-Verlauf:** Jeder Lauf wird mit Ergebnis gespeichert, damit du Veränderungen siehst – `ecomsec diff` zeigt, was seit dem letzten Scan neu oder verschwunden ist.
 - **Überwachung mit Benachrichtigung:** `ecomsec watch` per cron oder systemd meldet sich nur bei Änderungen – per E-Mail, Slack, Teams, Discord, Mattermost, ntfy, Telegram oder Webhook.
-- **Aktuelle Schwachstellen:** Die Advisory-Datenbank liegt als Datei im Repository, wird wöchentlich von einem Agenten nachgepflegt und lässt sich ohne neues Release per `ecomsec advisories update` holen. Mit `--online` prüft der Scan zusätzlich alle Composer-Pakete (Shopware-Core, Plugins, Symfony, Smarty …) tagesaktuell gegen OSV.dev.
+- **Aktuelle Schwachstellen:** Die Advisory-Datenbank liegt als Datei im Repository, wird wöchentlich von einem Agenten nachgepflegt und lässt sich ohne neues Release per `ecomsec advisories update` holen. Mit `--online` prüft der Scan zusätzlich alle Composer-Pakete (Shopware-Core, Plugins, Symfony, Smarty …) tagesaktuell gegen OSV.dev und bei WordPress Kern und Plugins gegen die Prüfsummen von WordPress.org.
 
 ---
 
@@ -403,8 +409,7 @@ Details zu Werkzeugen, Redaktion, Kosten und Grenzen: [docs/AUDIT.md](docs/AUDIT
 
 <details>
 <summary><b>Verändert der Scan etwas an meinem Shop?</b></summary>
-Nein. <code>ecomsec</code> liest ausschließlich – Dateien, Datenbank (nur SELECT) bzw. Shopify-API (nur GET). Es werden keine Dateien gelöscht, keine Einstellungen geändert und keine Daten an Dritte übertragen – außer an Benachrichtigungskanäle, die du selbst einträgst. Der einzige Schreibzugriff ist das eigene Zustandsverzeichnis (Akzeptanzen, Verlauf, Reports, Baseline), standardmäßig unter <code>~/.local/state/ecomsec</code>.
-Nein. <code>ecomsec</code> liest ausschließlich – Dateien, Datenbank (nur SELECT) bzw. Shopify-API (nur GET). Es werden keine Dateien gelöscht, keine Einstellungen geändert und keine Daten an Dritte übertragen (einzige Ausnahme: das optionale <a href="#-ki-audit-optional">KI-Audit</a>, das du ausdrücklich mit eigenem API-Schlüssel startest). Der einzige Schreibzugriff ist das eigene Zustandsverzeichnis (Akzeptanzen, Verlauf, Baseline), standardmäßig unter <code>~/.local/state/ecomsec</code>.
+Nein. <code>ecomsec</code> liest ausschließlich – Dateien, Datenbank (nur SELECT) bzw. Shopify-API (nur GET). Es werden keine Dateien gelöscht und keine Einstellungen geändert. Nach außen geht nur, was du einschaltest: Meldungen an selbst eingetragene Benachrichtigungskanäle, mit <code>--online</code> Paketnamen und Versionen (OSV.dev, WordPress.org) und beim optionalen <a href="#-ki-audit-optional">KI-Audit</a> die Daten, die du ausdrücklich mit eigenem API-Schlüssel prüfen lässt. Der einzige Schreibzugriff ist das eigene Zustandsverzeichnis (Akzeptanzen, Verlauf, Reports, Baseline), standardmäßig unter <code>~/.local/state/ecomsec</code>.
 </details>
 
 <details>
@@ -414,7 +419,7 @@ Erst prüfen, dann handeln. Die Gruppe „Zuerst prüfen“ in den Handlungsempf
 
 <details>
 <summary><b>Warum werden so viele „geänderte Dateien“ gemeldet?</b></summary>
-Alles, was nach dem Referenzdatum verändert wurde, ist erst einmal verdächtig – auch Updates und Agentur-Arbeiten. Setze das Referenzdatum auf deinen letzten bekannten sauberen Stand (<code>--reference-date 2026-09-01</code>) oder markiere die bekannten Verzeichnisse einmal als unbedenklich. Massenhafte Zeitstempel-Abweichungen durch ein Deployment fasst <code>ecomsec</code> automatisch zu einem Hinweis zusammen.
+Alles, was nach dem Referenzdatum verändert wurde, ist erst einmal verdächtig – auch Updates und Agentur-Arbeiten. Setze das Referenzdatum auf deinen letzten bekannten sauberen Stand (<code>--reference-date 2026-09-01</code>) oder markiere die bekannten Verzeichnisse einmal als unbedenklich. Massenhafte Zeitstempel-Abweichungen durch ein Deployment fasst <code>ecomsec</code> automatisch zu einem Hinweis zusammen. Bei WordPress entfallen mit <code>--online</code> die Meldungen für alle Dateien, die nachweislich dem Original von WordPress.org entsprechen – nach einem Update bleibt nur übrig, was nicht zum offiziellen Paket gehört.
 </details>
 
 <details>
@@ -424,7 +429,7 @@ Zuerst anhand der Shop-Version (5.5.4, 5.6.2, 5.7.2 und ab 5.8 gelten als gepatc
 
 <details>
 <summary><b>Findet das Tool auch neue CVEs für Shopsysteme und Plugins?</b></summary>
-Ja, auf drei Wegen. <b>1.</b> Die eingebaute Advisory-Datenbank (<code>advisories/*.toml</code>) wird wöchentlich automatisch aktualisiert: ein Workflow sucht in NVD und OSV.dev nach neuen Einträgen, ein Claude-Agent recherchiert Versionsbereiche in den Primärquellen und öffnet einen Pull Request, den ein Mensch freigibt. <b>2.</b> <code>ecomsec advisories update</code> lädt den aktuellen Stand, ohne dass du ein neues Release brauchst. <b>3.</b> <code>ecomsec scan --online</code> prüft alle Composer-Pakete deiner Installation (bei Shopware und Magento Core und Erweiterungen, bei JTL die mitgelieferten Bibliotheken) tagesaktuell gegen OSV.dev – dabei verlassen nur Paketnamen und Versionen den Server. Bei WordPress werden die installierten Plugins mit dem WordPress.org-Verzeichnis verglichen (nur der Plugin-Name wird gesendet). Für JTL-Plugins aus dem Extension Store, WordPress-Plugins außerhalb von WooCommerce und Shopify-Apps gibt es keine frei nutzbare Schwachstellen-Datenbank; hier bleibt die Risikobewertung nach Installationsdatum, Herkunft und Berechtigungen. Details: <a href="docs/ADVISORIES.md">docs/ADVISORIES.md</a>.
+Ja, auf drei Wegen. <b>1.</b> Die eingebaute Advisory-Datenbank (<code>advisories/*.toml</code>) wird wöchentlich automatisch aktualisiert: ein Workflow sucht in NVD und OSV.dev nach neuen Einträgen, ein Claude-Agent recherchiert Versionsbereiche in den Primärquellen und öffnet einen Pull Request, den ein Mensch freigibt. <b>2.</b> <code>ecomsec advisories update</code> lädt den aktuellen Stand, ohne dass du ein neues Release brauchst. <b>3.</b> <code>ecomsec scan --online</code> prüft alle Composer-Pakete deiner Installation (bei Shopware und Magento Core und Erweiterungen, bei JTL die mitgelieferten Bibliotheken) tagesaktuell gegen OSV.dev – dabei verlassen nur Paketnamen und Versionen den Server. Bei WordPress werden die installierten Plugins mit dem WordPress.org-Verzeichnis verglichen und Kern- sowie Plugin-Dateien gegen die dort veröffentlichten Prüfsummen geprüft (gesendet werden WordPress-Version und Sprache sowie Slug und Version der Plugins). Für JTL-Plugins aus dem Extension Store, WordPress-Plugins außerhalb von WooCommerce und Shopify-Apps gibt es keine frei nutzbare Schwachstellen-Datenbank; hier bleibt die Risikobewertung nach Installationsdatum, Herkunft und Berechtigungen. Details: <a href="docs/ADVISORIES.md">docs/ADVISORIES.md</a>.
 </details>
 
 <details>
@@ -464,7 +469,7 @@ Gleicher Prüfumfang und gleiche drei Ansichten – aber als eigenständiges Pro
 ecomsec scan      [--root PFAD | --platform shopify --shop … --token …]
                   [--format text|json|html|sarif|junit|markdown] [--output DATEI] [--time-budget 45s]
                   [--reference-date YYYY-MM-DD] [--skip-remote] [--fail-on never|warning|critical]
-                  [--online] [--advisories DIR] [--access-log auto|PFAD]
+                  [--online] [--advisories DIR] [--access-log auto|PFAD] [--threads N]
 ecomsec advisories list | lint [PFAD…] | update [--url BASIS-URL]
 ecomsec watch     [Scan-Optionen] [--notify-on critical|warning|any|always] [--no-notify]
                   [--no-update] [--interval 24h] [--quiet] [--install-systemd | --install-cron [--at HH:MM]]

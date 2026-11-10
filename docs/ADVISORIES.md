@@ -7,7 +7,7 @@ ecomsec kennt drei Quellen für bekannte Schwachstellen:
 | **Eingebettete Dateien** `advisories/<platform>.toml` | Stand des Builds | im Binary, immer aktiv |
 | **Heruntergeladene Dateien** (`ecomsec advisories update`) | Stand von `main` im Repository | `<State-Dir>/advisories/`, bei jedem Scan automatisch gemergt |
 | **OSV.dev** (`ecomsec scan --online`) | tagesaktuell | prüft alle Composer-Pakete (Shopware- und Magento-Core, Erweiterungen, Symfony, Smarty …); sendet nur Paketname + Version |
-| **WordPress.org** (`ecomsec scan --online`, nur WordPress) | tagesaktuell | vergleicht installierte Plugins und WordPress-Core mit der aktuellen Version im WordPress.org-Verzeichnis (veraltet = Warnung); sendet nur den Plugin-Slug |
+| **WordPress.org** (`ecomsec scan --online`, nur WordPress) | tagesaktuell | vergleicht installierte Plugins und WordPress-Core mit der aktuellen Version im WordPress.org-Verzeichnis (veraltet = Warnung) und alle Kern- und Plugin-Dateien mit den dort veröffentlichten Prüfsummen (geändert oder fremd = Befund); sendet WordPress-Version und Sprache sowie Slug und Version der Plugins |
 
 Einträge aus heruntergeladenen oder per `--advisories DIR` angegebenen Dateien überschreiben
 eingebettete Einträge mit derselben `id`.
