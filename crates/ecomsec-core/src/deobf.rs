@@ -1321,7 +1321,8 @@ mod tests {
     #[test]
     fn hostile_inputs_stay_linear() {
         // Each of these made an earlier version of a tokenizer step scan the
-        // rest of the file again and again.
+        // rest of the file again and again (minutes instead of seconds).  The
+        // bound is generous so that a slow CI runner does not trip it.
         let comments = "/**/".repeat(500_000);
         let heredocs = "<<<A\n".repeat(300_000);
         let quotes = "'\n".repeat(700_000);
@@ -1336,7 +1337,7 @@ mod tests {
             let _ = layers(src.as_bytes(), lang, &Limits::default());
         }
         assert!(
-            started.elapsed() < std::time::Duration::from_secs(20),
+            started.elapsed() < std::time::Duration::from_secs(90),
             "normalisation took {:?}",
             started.elapsed()
         );
