@@ -34,6 +34,11 @@ pub struct IocEntrySpec {
     /// Match case-sensitively (regex / exact / prefix as written).
     #[serde(default)]
     pub case_sensitive: bool,
+    /// The name alone proves little (`shell.php`, `test.php`, `x.php` also
+    /// occur in ordinary plugins).  Such an entry only becomes critical in
+    /// an upload directory or together with a content finding in the file.
+    #[serde(default)]
+    pub weak: bool,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

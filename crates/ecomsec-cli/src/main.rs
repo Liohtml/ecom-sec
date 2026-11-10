@@ -171,6 +171,9 @@ struct ScanOptionArgs {
     /// Maximale Dateigröße für die Inhaltsprüfung in Bytes
     #[arg(long)]
     max_file_size: Option<u64>,
+    /// Anzahl der Threads für den Dateiscan (Standard: alle Prozessorkerne)
+    #[arg(long, value_name = "N")]
+    threads: Option<usize>,
     /// Online-Abgleich der Composer-Pakete mit OSV.dev (sendet Paketnamen + Versionen)
     #[arg(long)]
     online: bool,
@@ -428,6 +431,7 @@ fn scan_options(
     if let Some(m) = args.max_file_size.or(cfg.scan.max_file_size) {
         o.max_file_size = m;
     }
+    o.threads = args.threads.or(cfg.scan.threads).filter(|n| *n > 0);
     o.no_persist = dry_run;
     Ok(o)
 }

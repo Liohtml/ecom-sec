@@ -8,7 +8,13 @@
 //! * modified-since-reference-date check with timestamp-manipulation
 //!   heuristics (ctime newer than mtime, future dates),
 //! * content rule matching (YARA-lite) with the class-specific rule subset,
-//! * exposed backup / dump / config-copy detection below the public root.
+//!   on the file as written and on its de-obfuscated layers
+//!   (see [`crate::deobf`]),
+//! * exposed backup / dump / config-copy detection below the public root,
+//! * symbolic links that open the file system outside the shop.
+//!
+//! Files are scanned in parallel batches; results are merged in file order,
+//! so reports and checkpoints do not depend on the number of threads.
 //!
 //! When a time budget is set, the scanner persists a checkpoint (position in
 //! the sorted file list plus findings so far) and the next run continues
@@ -16,19 +22,21 @@
 //! that keeps shared-hosting PHP requests below the gateway timeout.
 
 use super::ScanOptions;
+use crate::deobf;
 use crate::finding::{Category, Finding, Severity};
 use crate::platform::FileScanProfile;
-use crate::rules::RuleSet;
+use crate::rules::{Rule, RuleSet};
 use crate::signatures::IocList;
 use crate::state::StateStore;
 use chrono::{DateTime, Duration as ChronoDuration, NaiveDate, Utc};
+use rayon::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
-use std::time::{Instant, SystemTime};
+use std::time::Instant;
 use walkdir::WalkDir;
 
 /// Progress callback: (files done, files total).
@@ -155,6 +163,17 @@ fn exposed_regex() -> &'static Regex {
     })
 }
 
+/// Bytes read and findings of one file.
+type FileResult = anyhow::Result<(u64, Vec<Finding>)>;
+
+/// Files handed to the worker threads at once.  The time budget is checked
+/// between batches.
+const BATCH_SIZE: usize = 128;
+
+/// Oversized files are checked at both ends: droppers prepend or append
+/// their code, padding in between must not hide it.
+const TAIL_BYTES: u64 = 256 * 1024;
+
 pub struct FileScanner<'a> {
     profile: &'a FileScanProfile,
     rules: &'a RuleSet,
@@ -178,9 +197,10 @@ impl<'a> FileScanner<'a> {
     }
 
     /// Enumerate all files in deterministic order.
-    fn enumerate(&self) -> (Vec<PathBuf>, Vec<String>) {
+    fn enumerate(&self) -> (Vec<PathBuf>, Vec<PathBuf>, Vec<String>) {
         let root = &self.profile.root;
         let mut files = Vec::new();
+        let mut links = Vec::new();
         let mut limitations = Vec::new();
         let walker = WalkDir::new(root)
             .follow_links(false)
@@ -196,6 +216,7 @@ impl<'a> FileScanner<'a> {
         for entry in walker {
             match entry {
                 Ok(e) if e.file_type().is_file() => files.push(e.path().to_path_buf()),
+                Ok(e) if e.file_type().is_symlink() => links.push(e.path().to_path_buf()),
                 Ok(_) => {}
                 Err(e) => {
                     let msg = format!("nicht lesbar: {e}");
@@ -205,7 +226,57 @@ impl<'a> FileScanner<'a> {
                 }
             }
         }
-        (files, limitations)
+        (files, links, limitations)
+    }
+
+    /// Symbolic links are not followed.  Two patterns are reported: a link
+    /// to a directory that contains the shop (`sym -> /`, the classic way to
+    /// read other accounts on shared hosting) and links that leave the shop
+    /// from an upload directory.
+    fn symlink_findings(&self, links: &[PathBuf]) -> Vec<Finding> {
+        let root = &self.profile.root;
+        let canonical_root = fs::canonicalize(root).unwrap_or_else(|_| root.clone());
+        let mut findings = Vec::new();
+        for link in links {
+            let Ok(target) = fs::canonicalize(link) else {
+                continue;
+            };
+            if target.starts_with(&canonical_root) {
+                continue;
+            }
+            let rel = crate::util::relative_display(root, link);
+            let encloses_shop = canonical_root.starts_with(&target);
+            let in_upload = under_any(&rel, &self.profile.upload_dirs);
+            if !encloses_shop && !in_upload {
+                continue;
+            }
+            findings.push(
+                Finding::file(
+                    if encloses_shop {
+                        Severity::Critical
+                    } else {
+                        Severity::Warning
+                    },
+                    Category::SuspiciousPattern,
+                    "symlink_outside_root",
+                    root,
+                    link,
+                    if encloses_shop {
+                        "Symbolischer Link öffnet das Dateisystem oberhalb des Shops"
+                    } else {
+                        "Symbolischer Link aus einem Upload-Verzeichnis nach außen"
+                    },
+                )
+                .with_description(
+                    "Über einen solchen Link liefert der Webserver Dateien außerhalb des Shops aus \
+                     (Konfigurationsdateien, andere Kundenverzeichnisse). Angreifer legen ihn nach \
+                     einem Einbruch an, um auf Shared Hosting weitere Zugangsdaten zu lesen. Link \
+                     entfernen, wenn er nicht bewusst angelegt wurde.",
+                )
+                .with_evidence(format!("{rel} → {}", target.display())),
+            );
+        }
+        findings
     }
 
     pub fn run(
@@ -215,7 +286,7 @@ impl<'a> FileScanner<'a> {
     ) -> anyhow::Result<FileScanResult> {
         let started = Instant::now();
         let root_key = self.profile.root.to_string_lossy().to_string();
-        let (files, enum_limitations) = self.enumerate();
+        let (files, links, enum_limitations) = self.enumerate();
         let total = files.len();
 
         let mut cp = match state.checkpoint::<Checkpoint>() {
@@ -251,6 +322,9 @@ impl<'a> FileScanner<'a> {
             .and_utc();
         let now = Utc::now();
         let mut complete = true;
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(self.options.threads.unwrap_or(0))
+            .build()?;
 
         while cp.next_index < total {
             if let Some(budget) = self.options.time_budget {
@@ -259,29 +333,54 @@ impl<'a> FileScanner<'a> {
                     break;
                 }
             }
-            let path = &files[cp.next_index];
-            cp.next_index += 1;
-            cp.files_scanned += 1;
-            if let Some(p) = &progress {
-                if cp.next_index % 250 == 0 || cp.next_index == total {
-                    p(cp.next_index, total);
-                }
-            }
-            match self.scan_file(path, reference, now) {
-                Ok((bytes, mut findings)) => {
-                    cp.bytes_scanned += bytes;
-                    cp.findings.append(&mut findings);
-                }
-                Err(e) => {
-                    if cp.limitations.len() < 50 {
-                        cp.limitations.push(format!("{}: {e}", path.display()));
+            let end = (cp.next_index + BATCH_SIZE).min(total);
+            let batch = &files[cp.next_index..end];
+            // Workers stop picking up files once the budget is used up; the
+            // files scanned up to the first skipped one count.
+            let budget = self.options.time_budget;
+            let results: Vec<Option<FileResult>> = pool.install(|| {
+                batch
+                    .par_iter()
+                    .map(|path| {
+                        if budget.is_some_and(|b| started.elapsed() >= b) {
+                            return None;
+                        }
+                        Some(self.scan_file(path, reference, now))
+                    })
+                    .collect()
+            });
+            let mut done = 0usize;
+            for (path, result) in batch.iter().zip(results) {
+                let Some(result) = result else {
+                    complete = false;
+                    break;
+                };
+                done += 1;
+                cp.files_scanned += 1;
+                match result {
+                    Ok((bytes, mut findings)) => {
+                        cp.bytes_scanned += bytes;
+                        cp.findings.append(&mut findings);
+                    }
+                    Err(e) => {
+                        if cp.limitations.len() < 50 {
+                            cp.limitations.push(format!("{}: {e}", path.display()));
+                        }
                     }
                 }
+            }
+            cp.next_index += done;
+            if !complete {
+                break;
+            }
+            if let Some(p) = &progress {
+                p(cp.next_index, total);
             }
         }
 
         if complete {
             state.clear_checkpoint()?;
+            cp.findings.extend(self.symlink_findings(&links));
             collapse_deployment_noise(&mut cp.findings, cp.files_scanned);
         } else {
             state.save_checkpoint(&cp)?;
@@ -297,12 +396,7 @@ impl<'a> FileScanner<'a> {
     }
 
     /// Scan one file; returns bytes read and findings.
-    fn scan_file(
-        &self,
-        path: &Path,
-        reference: DateTime<Utc>,
-        now: DateTime<Utc>,
-    ) -> anyhow::Result<(u64, Vec<Finding>)> {
+    fn scan_file(&self, path: &Path, reference: DateTime<Utc>, now: DateTime<Utc>) -> FileResult {
         let root = &self.profile.root;
         let rel = crate::util::relative_display(root, path);
         let class = classify(path, &rel, self.profile);
@@ -313,6 +407,8 @@ impl<'a> FileScanner<'a> {
         let in_generated = under_any(&rel, &self.profile.generated_dirs);
         let mut findings = Vec::new();
         let mut bytes_read = 0u64;
+        // Index of a finding for a generic IOC name, rated after the content scan.
+        let mut weak_ioc: Option<usize> = None;
 
         // ----------------------------------------------------------- IOC names
         let in_core = under_any(&rel, &self.profile.core_dirs)
@@ -326,6 +422,7 @@ impl<'a> FileScanner<'a> {
             if let Some(ioc) = self.iocs.lookup(name) {
                 // A name alone is weak evidence inside vendor-supplied code
                 // (`Text/Diff/Engine/shell.php`), strong evidence in uploads.
+                // Generic names are rated again once the content is known.
                 let severity = if in_upload && ioc.spec.severity == Severity::Warning {
                     Severity::Critical
                 } else if in_core && ioc.spec.severity == Severity::Critical {
@@ -349,6 +446,9 @@ impl<'a> FileScanner<'a> {
                 .with_evidence(format!("{} ({})", name, crate::util::human_size(size)));
                 if let Some(r) = &ioc.spec.reference {
                     f = f.with_evidence(r.clone());
+                }
+                if ioc.spec.weak && !in_upload {
+                    weak_ioc = Some(findings.len());
                 }
                 findings.push(f);
             }
@@ -455,35 +555,25 @@ impl<'a> FileScanner<'a> {
             let in_excluded_public = under_any(&pub_rel, &self.profile.generated_dirs);
             if !in_excluded_public && exposed_regex().is_match(name) && class != FileClass::Php {
                 let lower = name.to_ascii_lowercase();
-                let severity = if lower.contains(".sql")
-                    || lower.contains("dump")
-                    || lower.starts_with(".env")
-                    || lower.ends_with(".pem")
-                    || lower.ends_with(".key")
-                    || lower.ends_with(".ppk")
-                {
-                    Severity::Critical
-                } else if size < 1024 && lower.ends_with(".zip") {
-                    Severity::Info
-                } else {
-                    Severity::Warning
-                };
-                findings.push(
-                    Finding::file(
-                        severity,
-                        Category::ExposedFile,
-                        "exposed_file",
-                        root,
-                        path,
-                        "Backup-, Dump-, Schlüssel- oder Konfigurationskopie im Webroot",
-                    )
-                    .with_description(
-                        "Die Datei liegt unterhalb des öffentlich erreichbaren Verzeichnisses und kann je \
-                         nach Webserver-Konfiguration direkt heruntergeladen werden. Dumps und \
-                         Konfigurationskopien enthalten häufig Zugangsdaten.",
-                    )
-                    .with_evidence(format!("{} ({})", pub_rel, crate::util::human_size(size))),
-                );
+                let severity = exposed_severity(path, &lower, size);
+                if let Some(severity) = severity {
+                    findings.push(
+                        Finding::file(
+                            severity,
+                            Category::ExposedFile,
+                            "exposed_file",
+                            root,
+                            path,
+                            "Backup-, Dump-, Schlüssel- oder Konfigurationskopie im Webroot",
+                        )
+                        .with_description(
+                            "Die Datei liegt unterhalb des öffentlich erreichbaren Verzeichnisses und kann je \
+                             nach Webserver-Konfiguration direkt heruntergeladen werden. Dumps und \
+                             Konfigurationskopien enthalten häufig Zugangsdaten.",
+                        )
+                        .with_evidence(format!("{} ({})", pub_rel, crate::util::human_size(size))),
+                    );
+                }
             }
         }
 
@@ -496,78 +586,255 @@ impl<'a> FileScanner<'a> {
             FileClass::Js => Some("js"),
             FileClass::Log => Some("log"),
             FileClass::Image => Some("image"),
-            FileClass::Archive | FileClass::Other => None,
+            FileClass::Other => Some("other"),
+            FileClass::Archive => None,
         };
-        if let Some(cls) = content_class {
+        if content_class.is_some() {
             let limit = match class {
-                FileClass::Image => (2 * 1024 * 1024).min(self.options.max_file_size),
+                FileClass::Image | FileClass::Other => {
+                    (2 * 1024 * 1024).min(self.options.max_file_size)
+                }
                 FileClass::Log => 64 * 1024 * 1024,
                 _ => self.options.max_file_size,
             };
-            if size > limit && class != FileClass::Log {
-                if class == FileClass::Php {
-                    findings.push(
-                        Finding::file(
-                            Severity::Info,
-                            Category::ScanLimitation,
-                            "file_too_large",
-                            root,
-                            path,
-                            "Datei zu groß für die Inhaltsprüfung",
-                        )
-                        .with_evidence(crate::util::human_size(size)),
-                    );
-                }
-            } else {
-                let data = read_limited(path, size, limit)?;
-                bytes_read = data.len() as u64;
-                for hit in self.rules.scan(cls, &data) {
-                    let spec = &hit.rule.spec;
-                    let mut severity = spec.severity;
-                    if in_generated
-                        && severity == Severity::Warning
-                        && spec.category == Category::SuspiciousPattern
-                    {
-                        // Compiled templates legitimately contain odd PHP.
-                        severity = Severity::Info;
-                    }
-                    let mut f = Finding::file(
-                        severity,
-                        spec.category,
-                        spec.name.clone(),
+            let chunks = read_chunks(path, size, limit, class)?;
+            if size > limit && class == FileClass::Php {
+                findings.push(
+                    Finding::file(
+                        Severity::Info,
+                        Category::ScanLimitation,
+                        "file_too_large",
                         root,
                         path,
-                        spec.description.to_string(),
+                        "Große Datei: nur Anfang und Ende inhaltlich geprüft",
                     )
-                    .with_description(format!(
-                        "Regel `{}`{}: {}",
-                        spec.name,
-                        if spec.tags.is_empty() {
-                            String::new()
-                        } else {
-                            format!(" [{}]", spec.tags.join(", "))
-                        },
-                        spec.description
-                    ));
-                    let mut seen = std::collections::HashSet::new();
-                    for ex in hit
-                        .excerpts
-                        .iter()
-                        .filter(|e| seen.insert((*e).clone()))
-                        .take(3)
-                    {
-                        f = f.with_evidence(ex.clone());
-                    }
-                    if let Some(r) = &spec.reference {
-                        f = f.with_evidence(r.clone());
-                    }
-                    findings.push(f);
+                    .with_evidence(crate::util::human_size(size)),
+                );
+            }
+            bytes_read += chunks.iter().map(|c| c.len() as u64).sum::<u64>();
+            let hits = content_hits(self.rules, class, &chunks);
+            for ContentHit {
+                rule,
+                excerpts,
+                chain,
+            } in hits
+            {
+                let spec = &rule.spec;
+                let mut severity = spec.severity;
+                if in_generated
+                    && severity == Severity::Warning
+                    && spec.category == Category::SuspiciousPattern
+                {
+                    // Compiled templates legitimately contain odd PHP.
+                    severity = Severity::Info;
                 }
+                let mut f = Finding::file(
+                    severity,
+                    spec.category,
+                    spec.name.clone(),
+                    root,
+                    path,
+                    match &chain {
+                        Some(_) => {
+                            format!("{} (erst nach Entschleierung sichtbar)", spec.description)
+                        }
+                        None => spec.description.to_string(),
+                    },
+                )
+                .with_description(format!(
+                    "Regel `{}`{}: {}{}",
+                    spec.name,
+                    if spec.tags.is_empty() {
+                        String::new()
+                    } else {
+                        format!(" [{}]", spec.tags.join(", "))
+                    },
+                    spec.description,
+                    match &chain {
+                        Some(c) => format!(
+                            " Der Treffer liegt nicht im Klartext der Datei, sondern in einer \
+                             entschleierten Schicht ({c}) – der Code wurde gezielt vor einer \
+                             Textsuche versteckt."
+                        ),
+                        None => String::new(),
+                    }
+                ));
+                let mut seen = std::collections::HashSet::new();
+                for ex in excerpts
+                    .iter()
+                    .filter(|e| seen.insert((*e).clone()))
+                    .take(3)
+                {
+                    f = f.with_evidence(match &chain {
+                        Some(c) => format!("[{c}] {ex}"),
+                        None => ex.clone(),
+                    });
+                }
+                if let Some(r) = &spec.reference {
+                    f = f.with_evidence(r.clone());
+                }
+                findings.push(f);
+            }
+        }
+
+        // ----------------------------------------------------------- correlation
+        if let Some(idx) = weak_ioc {
+            let corroborated = findings.iter().any(|f| {
+                f.severity >= Severity::Warning
+                    && matches!(
+                        f.category,
+                        Category::SuspiciousPattern
+                            | Category::ExploitPayload
+                            | Category::CodeInUploadDir
+                            | Category::ThirdPartyInjection
+                    )
+            });
+            let top_level = !rel.contains('/');
+            let f = &mut findings[idx];
+            if corroborated {
+                f.severity = Severity::Critical;
+                f.description
+                    .push_str(" Der Inhalt der Datei löst zusätzlich eine Inhaltsregel aus.");
+            } else if top_level {
+                f.severity = f.severity.min(Severity::Warning);
+            } else {
+                // `shell.php`, `test.php`, `x.php` deep inside a plugin whose
+                // content matches no rule, not even after de-obfuscation.
+                f.severity = Severity::Info;
+                f.description.push_str(
+                    " Der Inhalt löst keine Inhaltsregel aus; der Name allein ist ein schwacher Hinweis.",
+                );
             }
         }
 
         Ok((bytes_read, findings))
     }
+}
+
+/// A content rule that matched a file.
+#[derive(Debug, Clone)]
+pub struct ContentHit<'r> {
+    pub rule: &'r Rule,
+    pub excerpts: Vec<String>,
+    /// De-obfuscation steps that made the match visible; `None` when the
+    /// rule matches the file as written.
+    pub chain: Option<String>,
+}
+
+/// Apply the rules of `class` to the content of one file: first as written,
+/// then to every de-obfuscated layer (PHP and JavaScript).  Each rule is
+/// reported once, preferring the match in the original text.
+pub fn content_hits<'r>(
+    rules: &'r RuleSet,
+    class: FileClass,
+    chunks: &[Vec<u8>],
+) -> Vec<ContentHit<'r>> {
+    let cls = class.as_str();
+    let lang = match class {
+        FileClass::Php => Some(deobf::Lang::Php),
+        FileClass::Js => Some(deobf::Lang::Js),
+        _ => None,
+    };
+    let limits = deobf::Limits::default();
+    let mut hits = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for data in chunks {
+        for m in rules.scan(cls, data) {
+            if seen.insert(m.rule.name()) {
+                hits.push(ContentHit {
+                    rule: m.rule,
+                    excerpts: m.excerpts,
+                    chain: None,
+                });
+            }
+        }
+        let Some(lang) = lang else { continue };
+        for layer in deobf::layers(data, lang, &limits) {
+            let classes: &[&str] = if layer.decoded {
+                &[cls, "decoded"]
+            } else {
+                &[cls]
+            };
+            for m in rules.scan_classes(classes, &layer.data) {
+                if seen.insert(m.rule.name()) {
+                    hits.push(ContentHit {
+                        rule: m.rule,
+                        excerpts: m.excerpts,
+                        chain: Some(layer.chain.clone()),
+                    });
+                }
+            }
+        }
+    }
+    hits
+}
+
+fn sql_dump_regex() -> &'static regex::bytes::Regex {
+    static RE: OnceLock<regex::bytes::Regex> = OnceLock::new();
+    RE.get_or_init(|| {
+        regex::bytes::Regex::new(
+            r"(?i-u)INSERT\s+(IGNORE\s+)?INTO|^COPY\s+\S+.*FROM\s+stdin|(MySQL|MariaDB|phpMyAdmin SQL|PostgreSQL database|SQLite) dump|^-- (Host|Server version):",
+        )
+        .expect("valid regex")
+    })
+}
+
+/// Rate a file whose name looks like a backup, dump or key.  `None` means
+/// the content shows it is public material (CA bundle, public key).
+fn exposed_severity(path: &Path, lower: &str, size: u64) -> Option<Severity> {
+    let head = || read_head(path, 256 * 1024).unwrap_or_default();
+    if lower.ends_with(".pem") || lower.ends_with(".key") {
+        let data = head();
+        let is_pem = contains_bytes(&data, b"-----BEGIN ");
+        if contains_bytes(&data, b"PRIVATE KEY-----") {
+            return Some(Severity::Critical);
+        }
+        // Certificates and public keys are meant to be handed out.
+        return if is_pem {
+            None
+        } else {
+            Some(Severity::Warning)
+        };
+    }
+    if lower.ends_with(".sql") {
+        // A schema shipped with a plugin holds no data; a dump does.
+        let data = head();
+        let named_dump = ["dump", "backup", "sicherung", "export", "database"]
+            .iter()
+            .any(|w| lower.contains(w));
+        return Some(
+            if named_dump || size > 1024 * 1024 || sql_dump_regex().is_match(&data) {
+                Severity::Critical
+            } else {
+                Severity::Info
+            },
+        );
+    }
+    Some(
+        if lower.contains(".sql")
+            || lower.contains("dump")
+            || lower.starts_with(".env")
+            || lower.ends_with(".ppk")
+            || lower.ends_with(".p12")
+            || lower.ends_with(".pfx")
+        {
+            Severity::Critical
+        } else if size < 1024 && lower.ends_with(".zip") {
+            Severity::Info
+        } else {
+            Severity::Warning
+        },
+    )
+}
+
+fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
+    haystack.windows(needle.len()).any(|w| w == needle)
+}
+
+fn read_head(path: &Path, max: u64) -> std::io::Result<Vec<u8>> {
+    let mut buf = Vec::new();
+    fs::File::open(path)?.take(max).read_to_end(&mut buf)?;
+    Ok(buf)
 }
 
 /// A fresh deployment (rsync -t, unpacking a release archive) after the
@@ -612,16 +879,31 @@ fn collapse_deployment_noise(findings: &mut Vec<Finding>, files_scanned: u64) {
     );
 }
 
-/// Read a file fully, or – for oversized logs – only its tail.
-fn read_limited(path: &Path, size: u64, limit: u64) -> std::io::Result<Vec<u8>> {
+/// Read the content to scan: the whole file, the tail of an oversized log,
+/// or the beginning and the end of any other oversized file.
+fn read_chunks(
+    path: &Path,
+    size: u64,
+    limit: u64,
+    class: FileClass,
+) -> std::io::Result<Vec<Vec<u8>>> {
     if size <= limit {
-        return fs::read(path);
+        return Ok(vec![fs::read(path)?]);
     }
     let mut f = fs::File::open(path)?;
-    f.seek(SeekFrom::Start(size - limit))?;
-    let mut buf = Vec::with_capacity(limit as usize);
-    f.read_to_end(&mut buf)?;
-    Ok(buf)
+    if class == FileClass::Log {
+        f.seek(SeekFrom::Start(size - limit))?;
+        let mut buf = Vec::with_capacity(limit as usize);
+        f.read_to_end(&mut buf)?;
+        return Ok(vec![buf]);
+    }
+    let tail = TAIL_BYTES.min(limit);
+    let mut head = Vec::new();
+    (&mut f).take(limit).read_to_end(&mut head)?;
+    f.seek(SeekFrom::Start(size - tail))?;
+    let mut end = Vec::with_capacity(tail as usize);
+    f.read_to_end(&mut end)?;
+    Ok(vec![head, end])
 }
 
 #[cfg(unix)]
@@ -635,11 +917,6 @@ fn ctime_of(meta: &fs::Metadata) -> Option<DateTime<Utc>> {
 #[cfg(not(unix))]
 fn ctime_of(meta: &fs::Metadata) -> Option<DateTime<Utc>> {
     meta.created().ok().map(DateTime::<Utc>::from)
-}
-
-#[allow(dead_code)]
-fn system_time_to_utc(t: SystemTime) -> DateTime<Utc> {
-    DateTime::<Utc>::from(t)
 }
 
 #[cfg(test)]

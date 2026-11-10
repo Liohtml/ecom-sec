@@ -527,6 +527,9 @@ fn schedule_command(cli: &Cli, ctx: &Context_, args: &WatchArgs) -> anyhow::Resu
     if let Some(m) = o.max_file_size {
         cmd.extend(["--max-file-size".into(), m.to_string()]);
     }
+    if let Some(n) = o.threads {
+        cmd.extend(["--threads".into(), n.to_string()]);
+    }
     for d in &o.advisory_dirs {
         cmd.extend(["--advisories".into(), absolute(d).display().to_string()]);
     }

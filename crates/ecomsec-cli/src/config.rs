@@ -64,6 +64,8 @@ pub struct ScanSection {
     #[serde(default)]
     pub rule_dirs: Vec<PathBuf>,
     pub max_file_size: Option<u64>,
+    /// Worker threads for the file scan (default: all cores).
+    pub threads: Option<usize>,
     #[serde(default)]
     pub advisory_dirs: Vec<PathBuf>,
     #[serde(default)]

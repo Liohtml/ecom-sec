@@ -25,6 +25,7 @@ pub mod access_log;
 pub mod advisories;
 pub mod baseline;
 pub mod db;
+pub mod deobf;
 pub mod diff;
 pub mod engine;
 pub mod finding;

@@ -64,6 +64,9 @@ pub struct ScanOptions {
     /// directories or `auto`).
     #[serde(default)]
     pub access_logs: Vec<PathBuf>,
+    /// Worker threads for the file scan; `None` uses all cores.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub threads: Option<usize>,
 }
 
 impl Default for ScanOptions {
@@ -82,6 +85,7 @@ impl Default for ScanOptions {
             advisory_dirs: Vec::new(),
             online: false,
             access_logs: Vec::new(),
+            threads: None,
         }
     }
 }
