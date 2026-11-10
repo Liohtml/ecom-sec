@@ -23,8 +23,13 @@ env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
+  deny:
+    name: cargo-deny
+    uses: ./.github/workflows/deny.yml
+
   build:
     name: Build ${{ matrix.target }}
+    needs: deny
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -46,15 +51,16 @@ jobs:
             os: windows-latest
             builder: cargo
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: ${{ inputs.tag || github.ref }}
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
+          toolchain: stable
           targets: ${{ matrix.target }}
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2
         with:
           key: ${{ matrix.target }}
 
@@ -113,7 +119,7 @@ jobs:
           "$exe" --version
           "$exe" platforms
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: dist-${{ matrix.target }}
           path: dist/${{ steps.package.outputs.asset }}
@@ -125,8 +131,15 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          persist-credentials: false
+
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           pattern: dist-*
           path: dist
@@ -137,6 +150,46 @@ jobs:
           cd dist
           sha256sum ecomsec-* > SHA256SUMS
           cat SHA256SUMS
+
+      - name: minisign installieren
+        run: sh scripts/install-minisign.sh "${RUNNER_TEMP}/bin"
+
+      - name: SHA256SUMS signieren
+        env:
+          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+        run: |
+          set -euo pipefail
+          if grep -q PLACEHOLDER distrib/minisign.pub; then
+            echo "::error::distrib/minisign.pub ist noch der Platzhalter. Eigenen minisign-Schlüssel erzeugen, Public Key einchecken und Secret MINISIGN_SECRET_KEY setzen. Siehe docs/CI.md."
+            exit 1
+          fi
+          if [ -z "${MINISIGN_SECRET_KEY}" ]; then
+            echo "::error::Secret MINISIGN_SECRET_KEY fehlt. Siehe docs/CI.md."
+            exit 1
+          fi
+          umask 077
+          key="${RUNNER_TEMP}/minisign.key"
+          trap 'rm -f "$key"' EXIT
+          printf '%s' "$MINISIGN_SECRET_KEY" > "$key"
+          # minisign liest zeilenweise; ein fehlendes Newline am Ende ergänzen.
+          if [ "$(tail -c1 "$key" | wc -l)" -eq 0 ]; then
+            echo >> "$key"
+          fi
+          export PATH="${RUNNER_TEMP}/bin:${PATH}"
+          cd dist
+          # Stdin zu, damit ein verschlüsselter Schlüssel nicht auf eine Passwortabfrage wartet.
+          minisign -S -s "$key" -m SHA256SUMS -x SHA256SUMS.minisig \
+            -c "ecomsec ${RELEASE_TAG} SHA256SUMS" < /dev/null
+          minisign -Vm SHA256SUMS -p "${GITHUB_WORKSPACE}/distrib/minisign.pub" -x SHA256SUMS.minisig
+          rm -f "$key"
+
+      - name: Build-Provenance
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3
+        with:
+          subject-path: |
+            dist/ecomsec-*
+            dist/SHA256SUMS
+            dist/SHA256SUMS.minisig
 
       - name: Create release
         env:
@@ -149,7 +202,8 @@ jobs:
           und Windows sowie ein Container-Image unter `ghcr.io/${{ github.repository }}`. Installation:
           `curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/install.sh | sh` –
           bestehende Installationen aktualisieren sich mit `ecomsec self-update`. Alle Pakete lassen sich über
-          `SHA256SUMS` prüfen.
+          `SHA256SUMS` und `SHA256SUMS.minisig` prüfen; die Build-Provenance mit
+          `gh attestation verify <paket> --repo ${{ github.repository }}`.
 
           EOF
           prerelease=""
@@ -194,11 +248,11 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           ref: ${{ inputs.tag || github.ref }}
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
         with:
           pattern: dist-*-unknown-linux-musl
           path: dist
@@ -218,16 +272,16 @@ jobs:
           file docker-bin/*/ecomsec
           docker-bin/amd64/ecomsec --version
 
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
           # GHCR requires lower-case image names.
           images: ghcr.io/${{ github.repository }}
@@ -241,7 +295,7 @@ jobs:
             org.opencontainers.image.title=ecomsec
             org.opencontainers.image.description=Read-only Kompromittierungs-Check für JTL-Shop 5, Shopware 6, WooCommerce, Magento 2 und Shopify
 
-      - uses: docker/build-push-action@v7
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0bc # v7
         with:
           context: .
           file: docker/Dockerfile.release

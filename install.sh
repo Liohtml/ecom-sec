@@ -1,6 +1,7 @@
 #!/bin/sh
 # ecomsec installer – downloads the matching release binary from GitHub,
-# verifies its SHA-256 checksum and installs it.
+# verifies the minisign signature of SHA256SUMS and then the SHA-256
+# checksum, and installs the binary. A missing or invalid signature aborts.
 #
 #   curl -fsSL https://raw.githubusercontent.com/liohtml/ecom-sec/main/install.sh | sh
 #   curl -fsSL …/install.sh | sh -s -- --version v0.2.0 --dir ~/bin
@@ -13,9 +14,16 @@
 #   ECOMSEC_DOWNLOAD_BASE  base URL of the release assets (mirrors/tests;
 #                          default: https://github.com/$REPO/releases/download)
 #
-# POSIX sh; needs curl or wget, tar and sha256sum/shasum/openssl.
+# POSIX sh; needs curl or wget, tar, sha256sum/shasum/openssl, and either
+# minisign or python3 together with openssl (for the signature check).
 
 set -eu
+
+# Public key from distrib/minisign.pub (key id 3B76037FD551923F). Keep the
+# three in sync (scripts/check-minisign-pubkey.sh). The installer refuses
+# to run while MINISIGN_PUB_IS_PLACEHOLDER=1.
+MINISIGN_PUB_IS_PLACEHOLDER=0
+MINISIGN_PUB='RWQ/klHVfwN2O3cvbvoiSvkvYdudzeGLcY7cUA3FESnY3oM6V82YJcua'
 
 REPO="${ECOMSEC_REPO:-liohtml/ecom-sec}"
 VERSION="${ECOMSEC_VERSION:-latest}"
@@ -73,6 +81,102 @@ else
 fi
 command -v tar >/dev/null 2>&1 || err "tar wird benötigt."
 
+# Verify a minisign signature of $1 against $2 (the .minisig file).
+# Prefer the minisign binary; otherwise python3 + openssl implement the
+# same check (prehashed BLAKE2b-512 or legacy raw Ed25519, plus the
+# trusted comment). There is no path that skips the check.
+verify_minisign() {
+    file=$1
+    sig=$2
+    if [ "${MINISIGN_PUB_IS_PLACEHOLDER:-0}" = "1" ]; then
+        err "Dieser Installer enthält noch keinen minisign-Schlüssel (Platzhalter in distrib/minisign.pub). Installation abgebrochen."
+    fi
+    if [ ! -s "$sig" ]; then
+        err "Signaturdatei fehlt oder ist leer – Installation abgebrochen."
+    fi
+    if command -v minisign >/dev/null 2>&1; then
+        if ! minisign -Vm "$file" -x "$sig" -P "$MINISIGN_PUB" >/dev/null 2>&1; then
+            err "Signatur von SHA256SUMS ist ungültig – Installation abgebrochen."
+        fi
+        return 0
+    fi
+    if command -v python3 >/dev/null 2>&1 && command -v openssl >/dev/null 2>&1; then
+        if ! python3 - "$MINISIGN_PUB" "$sig" "$file" <<'PY'
+import base64, hashlib, os, subprocess, sys, tempfile
+
+def fail():
+    sys.exit(1)
+
+def b64(text):
+    compact = "".join(text.split())
+    compact += "=" * ((4 - len(compact) % 4) % 4)
+    try:
+        return base64.b64decode(compact, validate=True)
+    except Exception:
+        fail()
+
+pub_b64, sig_path, msg_path = sys.argv[1:]
+raw_pk = b64(pub_b64)
+if len(raw_pk) != 42 or raw_pk[:2] != b"Ed":
+    fail()
+key_id, pk = raw_pk[2:10], raw_pk[10:42]
+try:
+    text = open(sig_path, "r", encoding="utf-8").read().replace("\r\n", "\n").replace("\r", "\n")
+except OSError:
+    fail()
+lines = [ln for ln in text.split("\n") if ln != ""]
+if len(lines) != 4 or not lines[0].startswith("untrusted comment: ") or not lines[2].startswith("trusted comment: "):
+    fail()
+sig_struct = b64(lines[1])
+if len(sig_struct) != 74 or sig_struct[2:10] != key_id:
+    fail()
+alg, sig = sig_struct[:2], sig_struct[10:74]
+global_sig = b64(lines[3])
+if len(global_sig) != 64:
+    fail()
+trusted = lines[2][len("trusted comment: "):]
+try:
+    msg = open(msg_path, "rb").read()
+except OSError:
+    fail()
+if alg == b"ED":
+    signed = hashlib.blake2b(msg, digest_size=64).digest()
+elif alg == b"Ed":
+    signed = msg
+else:
+    fail()
+
+def ed25519_ok(message, signature):
+    der = bytes.fromhex("302a300506032b6570032100") + pk
+    pem = "-----BEGIN PUBLIC KEY-----\n" + base64.b64encode(der).decode("ascii") + "\n-----END PUBLIC KEY-----\n"
+    with tempfile.TemporaryDirectory() as tmp:
+        pem_path = os.path.join(tmp, "pub.pem")
+        msg_path = os.path.join(tmp, "msg")
+        sig_path = os.path.join(tmp, "sig")
+        with open(pem_path, "w", encoding="ascii") as fh:
+            fh.write(pem)
+        with open(msg_path, "wb") as fh:
+            fh.write(message)
+        with open(sig_path, "wb") as fh:
+            fh.write(signature)
+        result = subprocess.run(
+            ["openssl", "pkeyutl", "-verify", "-pubin", "-inkey", pem_path, "-rawin", "-in", msg_path, "-sigfile", sig_path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return result.returncode == 0
+
+if not ed25519_ok(signed, sig) or not ed25519_ok(sig + trusted.encode("utf-8"), global_sig):
+    fail()
+PY
+        then
+            err "Signatur von SHA256SUMS ist ungültig – Installation abgebrochen."
+        fi
+        return 0
+    fi
+    err "Zur Prüfung der Release-Signatur wird minisign oder python3 zusammen mit openssl benötigt."
+}
+
 # ------------------------------------------------------------ platform
 os="$(uname -s)"
 arch="$(uname -m)"
@@ -105,9 +209,16 @@ asset="${name}.tar.gz"
 tmp="$(mktemp -d 2>/dev/null || mktemp -d -t ecomsec)"
 trap 'rm -rf "$tmp"' EXIT INT TERM
 
+if [ "${MINISIGN_PUB_IS_PLACEHOLDER:-0}" = "1" ]; then
+    err "Dieser Installer enthält noch keinen minisign-Schlüssel (Platzhalter in distrib/minisign.pub). Installation abgebrochen."
+fi
+
 say "ecomsec ${VERSION} für ${target} wird geladen …"
-fetch "${base}/${VERSION}/${asset}" "${tmp}/${asset}" || err "Download fehlgeschlagen: ${base}/${VERSION}/${asset}"
+fetch "${base}/${VERSION}/SHA256SUMS.minisig" "${tmp}/SHA256SUMS.minisig" || err "SHA256SUMS.minisig konnte nicht geladen werden – Installation abgebrochen."
 fetch "${base}/${VERSION}/SHA256SUMS" "${tmp}/SHA256SUMS" || err "SHA256SUMS konnte nicht geladen werden – Installation abgebrochen."
+verify_minisign "${tmp}/SHA256SUMS" "${tmp}/SHA256SUMS.minisig"
+say "Signatur (minisign) bestätigt."
+fetch "${base}/${VERSION}/${asset}" "${tmp}/${asset}" || err "Download fehlgeschlagen: ${base}/${VERSION}/${asset}"
 
 expected="$(awk -v f="$asset" '$2 == f || $2 == "*" f { print $1; exit }' "${tmp}/SHA256SUMS")"
 [ -n "$expected" ] || err "SHA256SUMS enthält keinen Eintrag für ${asset} – Installation abgebrochen."

@@ -212,11 +212,46 @@ Baseline des Live-Systems.
 
 ```bash
 ecomsec self-update --check   # nur prüfen (Exit-Code 1, wenn ein Update verfügbar ist)
-ecomsec self-update           # neueste Version laden, SHA-256 prüfen, Binary ersetzen
+ecomsec self-update           # neueste Version laden, Signatur und SHA-256 prüfen, Binary ersetzen
 ```
 
 `self-update` fragt `api.github.com` nach dem neuesten Release, lädt das Paket für die laufende
-Plattform sowie `SHA256SUMS`, prüft die Prüfsumme und ersetzt das Binary atomar (Windows: die alte
-Version wird als `ecomsec.exe.old` beiseitegelegt). Bei GitHub-Ratenlimits hilft
-`GITHUB_TOKEN=… ecomsec self-update`. Liegt das Binary in einem Systemverzeichnis, ist `sudo`
-nötig. Neben `--online` und `advisories update` ist dies die einzige Funktion mit Netzwerkzugriff.
+Plattform sowie `SHA256SUMS` und `SHA256SUMS.minisig`, prüft zuerst die minisign-Signatur der
+Prüfsummendatei gegen den eingebetteten öffentlichen Schlüssel und danach die SHA-256-Prüfsumme
+des Archivs. Fehlt die Signatur oder ist sie ungültig, bricht das Update ab. Das Binary wird
+atomar ersetzt (Windows: die alte Version wird als `ecomsec.exe.old` beiseitegelegt). Bei
+GitHub-Ratenlimits hilft `GITHUB_TOKEN=… ecomsec self-update`. Liegt das Binary in einem
+Systemverzeichnis, ist `sudo` nötig. Neben `--online` und `advisories update` ist dies die
+einzige Funktion mit Netzwerkzugriff.
+
+## Release-Signatur
+
+Der Release-Workflow signiert `SHA256SUMS` mit minisign und legt eine Build-Provenance
+(GitHub Artifact Attestation) über die Release-Dateien.
+
+Der öffentliche Schlüssel ist hinterlegt. Dieselbe Schlüsselzeile steht in
+`distrib/minisign.pub`, in `install.sh` (`MINISIGN_PUB`, `MINISIGN_PUB_IS_PLACEHOLDER=0`)
+und im Abschnitt „Signatur prüfen“ der `README.md`. `ecomsec self-update` bettet keinen
+eigenen Schlüssel ein, sondern liest `distrib/minisign.pub` direkt (`include_str!`).
+Schlüssel-ID `3B76037FD551923F`:
+
+```
+untrusted comment: minisign public key 3B76037FD551923F
+RWQ/klHVfwN2O3cvbvoiSvkvYdudzeGLcY7cUA3FESnY3oM6V82YJcua
+```
+
+`scripts/check-minisign-pubkey.sh` prüft, dass die drei Stellen übereinstimmen. Solange die
+erste Zeile von `distrib/minisign.pub` den Hinweis `PLACEHOLDER` enthält, setzen `install.sh`
+und `ecomsec self-update` die Installation aus.
+
+Der private Schlüssel liegt beim Eigentümer des Repositorys und wird als Actions-Secret
+`MINISIGN_SECRET_KEY` hinterlegt (Settings → Secrets and variables → Actions) – der gesamte
+Inhalt von `minisign.key`, niemals im Repository. Der Workflow signiert nur mit diesem
+unverschlüsselten Schlüssel und prüft die Signatur danach gegen `distrib/minisign.pub`.
+
+Nächstes Release (Tag `v*`) erzeugt `SHA256SUMS.minisig` und die Attestation, sobald
+`MINISIGN_SECRET_KEY` gesetzt ist. Prüfen mit:
+
+```bash
+gh attestation verify ecomsec-<version>-<ziel>.tar.gz --repo liohtml/ecom-sec
+```
