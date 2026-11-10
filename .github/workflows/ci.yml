@@ -14,7 +14,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -26,7 +26,7 @@ jobs:
       - name: Crates sind veröffentlichbar (ohne Upload)
         run: cargo package --workspace --locked --no-verify
       - run: cargo build --release
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: ecomsec-linux-x86_64
           path: target/release/ecomsec
@@ -35,7 +35,7 @@ jobs:
     # Same static build as the release pipeline, so release builds are known-good.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
@@ -49,7 +49,7 @@ jobs:
           file target/x86_64-unknown-linux-musl/release/ecomsec
           target/x86_64-unknown-linux-musl/release/ecomsec --version
           target/x86_64-unknown-linux-musl/release/ecomsec platforms
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: ecomsec-linux-x86_64-musl
           path: target/x86_64-unknown-linux-musl/release/ecomsec
@@ -57,7 +57,7 @@ jobs:
   shell:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Lint install.sh
         run: |
           sh -n install.sh

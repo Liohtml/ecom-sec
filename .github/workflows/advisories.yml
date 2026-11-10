@@ -25,8 +25,8 @@ jobs:
       count: ${{ steps.sync.outputs.count }}
       drafts: ${{ steps.sync.outputs.drafts }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Kandidaten suchen (NVD, OSV)
@@ -37,7 +37,7 @@ jobs:
           python3 scripts/advisory_sync.py --days "${{ github.event.inputs.days || '30' }}" | tee sync.md
           echo "### Advisory-Sync" >> "$GITHUB_STEP_SUMMARY"
           cat sync.md >> "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: advisory-candidates
           path: |
@@ -53,10 +53,10 @@ jobs:
     env:
       HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8.0.2
         with:
           name: advisory-candidates
           path: .
