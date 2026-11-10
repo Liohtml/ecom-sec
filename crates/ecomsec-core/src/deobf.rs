@@ -232,6 +232,14 @@ static SPECIAL: [[[bool; 256]; 2]; 2] = [
     [special_table(true, false), special_table(true, true)],
 ];
 
+/// Distance searched around a comment for the neighbouring tokens.
+const LOOKAROUND_BYTES: usize = 256;
+
+/// Heredoc openers without a closing label that are tolerated before the
+/// normaliser stops looking for heredocs in a file (each one costs a scan
+/// to the end of the input).
+const MAX_UNCLOSED_HEREDOCS: u32 = 8;
+
 /// Literals at least this long are candidates for payload decoding.
 const MIN_PAYLOAD_LITERAL: usize = 40;
 
@@ -285,6 +293,8 @@ impl<'a> Normalizer<'a> {
         self.cur = Some(StrTok { content, hidden });
     }
 
+    /// Last non-whitespace byte written, looking back a bounded distance so
+    /// that a file made of comments stays linear.
     fn last_significant(&self) -> Option<u8> {
         if self.cur.is_some() {
             return Some(b'\'');
@@ -292,15 +302,17 @@ impl<'a> Normalizer<'a> {
         self.out
             .iter()
             .rev()
+            .take(LOOKAROUND_BYTES)
             .copied()
             .find(|b| !b.is_ascii_whitespace())
     }
 
-    fn next_significant(&self, mut i: usize) -> Option<u8> {
-        while i < self.data.len() && self.data[i].is_ascii_whitespace() {
-            i += 1;
-        }
-        self.data.get(i).copied()
+    fn next_significant(&self, i: usize) -> Option<u8> {
+        self.data[i.min(self.data.len())..]
+            .iter()
+            .take(LOOKAROUND_BYTES)
+            .copied()
+            .find(|b| !b.is_ascii_whitespace())
     }
 
     /// Comments between tokens of a call are an evasion technique
@@ -329,6 +341,7 @@ impl<'a> Normalizer<'a> {
         let php = self.lang == Lang::Php;
         let mut i = 0usize;
         let mut code = in_code || !php;
+        let mut unclosed_heredocs = 0u32;
         while i < n {
             if !code {
                 // HTML mode: copy verbatim up to the next opening tag.
@@ -418,11 +431,18 @@ impl<'a> Normalizer<'a> {
                 }
                 continue;
             }
-            if php && c == b'<' && d[i..].starts_with(b"<<<") {
-                if let Some((content, next)) = read_heredoc(d, i) {
-                    self.push_str(content, false);
-                    i = next;
-                    continue;
+            if php
+                && c == b'<'
+                && unclosed_heredocs < MAX_UNCLOSED_HEREDOCS
+                && d[i..].starts_with(b"<<<")
+            {
+                match read_heredoc(d, i) {
+                    Some((content, next)) => {
+                        self.push_str(content, false);
+                        i = next;
+                        continue;
+                    }
+                    None => unclosed_heredocs += 1,
                 }
             }
             // ---- single characters built by a call
@@ -1296,6 +1316,30 @@ mod tests {
                 let _ = normalize(&input, lang, true);
             }
         }
+    }
+
+    #[test]
+    fn hostile_inputs_stay_linear() {
+        // Each of these made an earlier version of a tokenizer step scan the
+        // rest of the file again and again.
+        let comments = "/**/".repeat(500_000);
+        let heredocs = "<<<A\n".repeat(300_000);
+        let quotes = "'\n".repeat(700_000);
+        let started = std::time::Instant::now();
+        for (src, lang) in [
+            (format!("<?php {comments}"), Lang::Php),
+            (format!("<?php {heredocs}"), Lang::Php),
+            (format!("<?php {quotes}"), Lang::Php),
+            (quotes.clone(), Lang::Js),
+            (comments.clone(), Lang::Js),
+        ] {
+            let _ = layers(src.as_bytes(), lang, &Limits::default());
+        }
+        assert!(
+            started.elapsed() < std::time::Duration::from_secs(20),
+            "normalisation took {:?}",
+            started.elapsed()
+        );
     }
 
     #[test]

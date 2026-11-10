@@ -199,7 +199,7 @@ der Shop abgeschaltet wird), **Sofortmaßnahmen**, **Kompromittierungs-Prüfung*
 
 - **Risikoakzeptanz:** Befunde einzeln, pro Verzeichnis oder pro Regel als unbedenklich markieren, mit Begründung. Bleibt über alle künftigen Scans erhalten.
 - **Berichte:** Terminal, JSON (für Monitoring), eine einzelne HTML-Datei zum Weitergeben sowie SARIF, JUnit und Markdown für CI und Security-Dashboards.
-- **Shared-Hosting-tauglich:** Mit `--time-budget 45s` scannt `ecomsec` in Etappen und setzt beim nächsten Aufruf fort – kein Timeout, keine Last. `--threads 1` begrenzt den Scan auf einen Prozessorkern.
+- **Shared-Hosting-tauglich:** Mit `--time-budget 45s` scannt `ecomsec` in Etappen und setzt beim nächsten Aufruf fort – kein Timeout, keine Last. `--threads 1` begrenzt den Scan auf einen Prozessorkern und den Arbeitsspeicher (im Referenztest 65 MiB statt 120 MiB bei vier Kernen).
 - **Schnell:** Der Dateiscan nutzt alle Kerne; ein Vorfilter entscheidet in einem Durchlauf pro Datei, welche Regeln überhaupt in Frage kommen. Ein WordPress mit 14 großen Plugins (34.000 Dateien, 490 MB) ist auf vier Kernen in rund drei Sekunden geprüft.
 - **Wenig Fehlalarme:** Generische Dateinamen wie `shell.php` oder `test.php` zählen nur zusammen mit einem Inhaltstreffer oder im Upload-Verzeichnis als kritisch, Regeln für große JavaScript-Bündel verlangen die Merkmale nah beieinander, und Zertifikatsbündel oder Schema-Dateien gelten nicht als offengelegte Geheimnisse. Der Stand wird in der CI gegen ein Korpus aus Angriffstechniken und harmlosen Doppelgängern geprüft ([docs/RULES.md](docs/RULES.md#qualitätssicherung)).
 - **Hell und dunkel:** Dashboard und HTML-Bericht folgen deinem System oder per Klick.
