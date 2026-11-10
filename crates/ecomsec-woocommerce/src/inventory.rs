@@ -799,6 +799,8 @@ fn mode_of(_meta: &std::fs::Metadata) -> u32 {
 pub struct WpOrgClient {
     agent: ureq::Agent,
     base: String,
+    /// Host of the published plugin checksums.
+    downloads: String,
     /// Upper bound of plugin lookups per scan.
     pub max_plugins: usize,
 }
@@ -811,6 +813,11 @@ impl Default for WpOrgClient {
 
 impl WpOrgClient {
     pub fn new(base: &str) -> Self {
+        WpOrgClient::with_bases(base, "https://downloads.wordpress.org")
+    }
+
+    /// Client with explicit API and download hosts (tests use a local server).
+    pub fn with_bases(base: &str, downloads: &str) -> Self {
         let config = ureq::Agent::config_builder()
             .timeout_global(Some(Duration::from_secs(15)))
             .http_status_as_error(false)
@@ -818,8 +825,36 @@ impl WpOrgClient {
         WpOrgClient {
             agent: config.into(),
             base: base.trim_end_matches('/').to_string(),
+            downloads: downloads.trim_end_matches('/').to_string(),
             max_plugins: 150,
         }
+    }
+
+    pub(crate) fn api_base(&self) -> &str {
+        &self.base
+    }
+
+    pub(crate) fn downloads_base(&self) -> &str {
+        &self.downloads
+    }
+
+    /// GET `url`; returns the status code and the body (at most 32 MiB).
+    pub(crate) fn get_text(&self, url: &str) -> anyhow::Result<(u16, String)> {
+        let mut resp = self
+            .agent
+            .get(url)
+            .header(
+                "User-Agent",
+                "ecomsec (+https://github.com/liohtml/ecom-sec)",
+            )
+            .call()?;
+        let status = resp.status().as_u16();
+        let text = resp
+            .body_mut()
+            .with_config()
+            .limit(32 * 1024 * 1024)
+            .read_to_string()?;
+        Ok((status, text))
     }
 
     fn get_json(&self, url: &str) -> anyhow::Result<serde_json::Value> {
@@ -1017,7 +1052,7 @@ pub fn offline_item(plugins: &[Extension]) -> IntegrityItem {
     )
     .with_detail(format!(
         "{} Plugins im Dateisystem. Mit `--online` werden installierte Versionen mit dem \
-         WordPress.org-Verzeichnis verglichen (es wird nur der Plugin-Slug gesendet).",
+         WordPress.org-Verzeichnis verglichen (gesendet werden Slug und Version der Plugins).",
         plugins.len()
     ))
 }

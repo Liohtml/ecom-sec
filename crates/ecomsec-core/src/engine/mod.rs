@@ -322,6 +322,23 @@ impl Engine {
         match platform.integrity(&ctx) {
             Ok(rep) => {
                 integrity.extend(rep.items);
+                let trusted = apply_origin_trust(&mut findings, &rep.verified_files);
+                if trusted > 0 {
+                    integrity.push(
+                        IntegrityItem::new(
+                            "integrity.origin_trust",
+                            "Integrität",
+                            "Befunde in verifizierten Originaldateien",
+                            IntegrityStatus::Ok,
+                            format!("{trusted} entlastet"),
+                        )
+                        .with_detail(
+                            "Diese Dateien stimmen mit den veröffentlichten Prüfsummen des Herstellers \
+                             überein. Zeitstempel-Meldungen dazu entfallen, Mustertreffer sind als \
+                             Hinweis eingestuft.",
+                        ),
+                    );
+                }
                 findings.extend(rep.findings);
                 limitations.extend(rep.limitations);
             }
@@ -463,6 +480,55 @@ impl Engine {
     }
 }
 
+/// Use the vendor's published checksums: a file whose content is proven to
+/// be the original cannot have been tampered with.  Notes about its
+/// timestamps are dropped (the file was merely updated), rule hits in it are
+/// rated as informational.  Returns the number of findings affected.
+fn apply_origin_trust(
+    findings: &mut Vec<Finding>,
+    verified: &std::collections::BTreeSet<String>,
+) -> usize {
+    if verified.is_empty() {
+        return 0;
+    }
+    let before = findings.len();
+    findings.retain(|f| {
+        !(f.source == Source::FileSystem
+            && matches!(
+                f.category,
+                Category::ModifiedSinceReference | Category::TimestampAnomaly
+            )
+            && verified.contains(&f.subject))
+    });
+    let mut changed = before - findings.len();
+    for f in findings.iter_mut() {
+        let heuristic = matches!(
+            f.category,
+            Category::SuspiciousPattern
+                | Category::KnownWebshell
+                | Category::ExploitPayload
+                | Category::ThirdPartyInjection
+                | Category::ExposedFile
+        );
+        if f.source == Source::FileSystem
+            && heuristic
+            && f.severity > Severity::Info
+            && verified.contains(&f.subject)
+        {
+            f.severity = Severity::Info;
+            if !f.description.is_empty() {
+                f.description.push(' ');
+            }
+            f.description.push_str(
+                "Die Datei stimmt mit der vom Hersteller veröffentlichten Prüfsumme überein: \
+                 Der Treffer ist Bestandteil des Originalpakets.",
+            );
+            changed += 1;
+        }
+    }
+    changed
+}
+
 /// Remove exact duplicates (same id), keeping the most severe.
 fn dedupe(findings: &mut Vec<Finding>) {
     findings.sort_by(|a, b| a.id.cmp(&b.id).then(b.severity.cmp(&a.severity)));
@@ -494,4 +560,53 @@ pub fn parse_duration(input: &str) -> Option<Duration> {
             .map(|h| Duration::from_secs_f64(h * 3600.0));
     }
     s.parse::<u64>().ok().map(Duration::from_secs)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn verified_originals_relieve_heuristic_findings() {
+        let root = std::path::Path::new("/shop");
+        let file = |category, rule: &str, rel: &str| {
+            Finding::file(
+                Severity::Critical,
+                category,
+                rule,
+                root,
+                &root.join(rel),
+                "t",
+            )
+        };
+        let mut findings = vec![
+            file(
+                Category::SuspiciousPattern,
+                "php_eval_base64",
+                "vendor/a.php",
+            ),
+            file(
+                Category::ModifiedSinceReference,
+                "modified_since_reference",
+                "vendor/a.php",
+            ),
+            file(
+                Category::SuspiciousPattern,
+                "php_eval_base64",
+                "uploads/b.php",
+            ),
+            file(
+                Category::IntegrityDeviation,
+                "wp_core_file_modified",
+                "vendor/a.php",
+            ),
+        ];
+        let verified = ["vendor/a.php".to_string()].into_iter().collect();
+        assert_eq!(apply_origin_trust(&mut findings, &verified), 2);
+        assert_eq!(findings.len(), 3);
+        assert_eq!(findings[0].severity, Severity::Info);
+        // Unverified files and integrity findings keep their severity.
+        assert_eq!(findings[1].severity, Severity::Critical);
+        assert_eq!(findings[2].severity, Severity::Critical);
+    }
 }
