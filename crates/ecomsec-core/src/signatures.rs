@@ -39,6 +39,10 @@ pub struct IocEntrySpec {
     /// an upload directory or together with a content finding in the file.
     #[serde(default)]
     pub weak: bool,
+    /// Regular expression for names that match but are known to be
+    /// harmless (configuration files of developer tools).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub except: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -58,6 +62,7 @@ enum Matcher {
 pub struct IocEntry {
     pub spec: IocEntrySpec,
     matcher: Matcher,
+    except: Option<Regex>,
 }
 
 impl IocEntry {
@@ -67,11 +72,12 @@ impl IocEntry {
         } else {
             file_name.to_ascii_lowercase()
         };
-        match &self.matcher {
+        let hit = match &self.matcher {
             Matcher::Exact(e) => name == *e,
             Matcher::Prefix(p) => name.starts_with(p.as_str()),
             Matcher::Regex(r) => r.is_match(file_name),
-        }
+        };
+        hit && !self.except.as_ref().is_some_and(|e| e.is_match(file_name))
     }
 }
 
@@ -117,7 +123,21 @@ impl IocList {
             } else {
                 continue;
             };
-            entries.push(IocEntry { spec, matcher });
+            let except = match &spec.except {
+                Some(r) => Some(RegexBuilder::new(r).case_insensitive(!cs).build().map_err(
+                    |source| RuleError::Pattern {
+                        rule: spec.name.clone(),
+                        pattern: r.clone(),
+                        source,
+                    },
+                )?),
+                None => None,
+            };
+            entries.push(IocEntry {
+                spec,
+                matcher,
+                except,
+            });
         }
         Ok(IocList { entries })
     }
@@ -197,6 +217,9 @@ mod tests {
             Severity::Warning
         );
         assert!(iocs.lookup(".php-cs-fixer.dist.php").is_none());
+        // Developer tool configuration shipped in the JTL-Shop web root.
+        assert!(iocs.lookup(".phpstan.php").is_none());
+        assert!(iocs.lookup(".phpstan.dist.php").is_none());
         assert_eq!(
             iocs.lookup(".x.php").unwrap().spec.severity,
             Severity::Critical
@@ -264,5 +287,12 @@ mod tests {
             .any(|h| h.rule.name() == "htaccess_auto_prepend"));
         let ok = b"RewriteEngine On\nRewriteBase /\nRewriteRule ^(.*)$ index.php [L,QSA]\n";
         assert!(rules.scan("htaccess", ok).is_empty());
+        // Comments that mention PHP tags (stock php.ini) are not code.
+        let documented = b"; It's generally recommended that <?php and ?> should be used\nshort_open_tag = Off\n";
+        assert!(rules.scan("ini", documented).is_empty());
+        assert!(rules
+            .scan("htaccess", b"# ok\n<?php eval($_POST[1]); ?>\n")
+            .iter()
+            .any(|h| h.rule.name() == "htaccess_base64_or_eval"));
     }
 }

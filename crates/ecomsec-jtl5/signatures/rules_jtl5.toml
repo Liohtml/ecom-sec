@@ -28,7 +28,9 @@ category = "exploit_payload"
 tags = ["cve-2026-54390", "ssti", "jtl"]
 applies_to = ["php", "template", "log", "js"]
 strings = [
-  { regex = '\{eval\s+var\s*=\s*(\$|["\x27]\{)', nocase = true },
+  # Any variable except `$oBox->getContent()`: the NOVA/Evo templates render
+  # the content of admin-defined boxes this way (box_custom*.tpl).
+  { regex = '\{eval\s+var\s*=\s*(["\x27]\{|\$([\w&&[^o]]|o[\w&&[^B]]|oB[\w&&[^o]]|oBo[\w&&[^x]]|oBox[^-]|oBox-[^>]|oBox->[\w&&[^g]]))', nocase = true },
   { regex = '\{eval\s+var\s*=\s*\$smarty\.capture', nocase = true },
 ]
 
@@ -40,7 +42,9 @@ category = "exploit_payload"
 tags = ["cve-2026-54390", "ssti", "jtl"]
 applies_to = ["php", "template", "log", "js", "htaccess", "ini"]
 strings = [
-  { regex = '\{[^}\n]{0,300}\|\s*(unserialize|file_get_contents|file_put_contents|system|exec|passthru|shell_exec|popen|proc_open|eval|assert|call_user_func|array_map)\b', nocase = true },
+  # A Smarty expression starts with a variable or a quoted value; plain
+  # `{…|assert|…}` also occurs in minified JavaScript (keyword lists).
+  { regex = '\{\s*[$"\x27][^}\n]{0,300}\|\s*(unserialize|file_get_contents|file_put_contents|system|exec|passthru|shell_exec|popen|proc_open|eval|assert|call_user_func|array_map)\b', nocase = true },
   { regex = '\{\$[a-z_][\w.\[\]\x27"$]*\|[\w|:]*(unserialize|file_get_contents)', nocase = true },
 ]
 

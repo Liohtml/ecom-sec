@@ -117,7 +117,9 @@ gewöhnlichen Plugins vorkommen. Sie werden nach Kontext bewertet:
 | tiefer im Verzeichnisbaum, kein Inhaltstreffer | Hinweis |
 
 Namen einer bestimmten Shell-Familie (c99, r57, WSO, b374k), Doppelendungen und versteckte
-PHP-Dateien bleiben unabhängig vom Inhalt kritisch.
+PHP-Dateien bleiben unabhängig vom Inhalt kritisch. Mit `except` (Regex auf den Dateinamen)
+werden bekannte harmlose Namen ausgenommen, etwa `.phpstan.php`, das JTL-Shop im Webroot
+ausliefert; die Inhaltsregeln laufen auf solchen Dateien weiterhin.
 
 ## Testen
 

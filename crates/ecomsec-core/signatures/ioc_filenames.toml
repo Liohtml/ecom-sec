@@ -11,6 +11,7 @@
 # `case_sensitive = true` – match exactly as written (used for generic names that
 #              collide with ordinary PSR-4 class files such as `Uploader.php`;
 #              dropped shells are practically always lower-case)
+# `except`   – regex for names that match the entry but are known tools
 # `weak = true` – a generic name (`shell.php`, `test.php`, `x.php`) that also
 #              occurs in ordinary plugins.  The scanner rates it by context:
 #              critical in an upload directory or when a content rule hits the
@@ -97,6 +98,9 @@ regex = '\.(pht|phtm|php[3-8]|phps|pgif|phar)$'
 name = "Hidden PHP file (dot-file)"
 severity = "critical"
 regex = '^\.[a-z0-9_]{1,10}\.(php|phtml|php[3-8]|phar)$'
+# Configuration of developer tools (JTL-Shop ships `.phpstan.php` in the web
+# root).  Content rules still apply to these files.
+except = '^\.(phpstan|php_cs|phpunit|psalm|rector|ecs|phan)(\.dist)?\.php$'
 
 [[entry]]
 name = "PHP file disguised with trailing whitespace or unusual unicode"

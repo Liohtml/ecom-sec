@@ -177,7 +177,7 @@ ecomsec self-update           # neueste Version laden, Signatur und Prüfsumme p
 ### 2 · Shop-Integrität – ist dein Shop noch deiner?
 
 - **Patch-Status** für CVE-2026-54390: zuerst anhand der Version (5.5.4 / 5.6.2 / 5.7.2 / ab 5.8), sonst anhand der geprüften Datei – das Ergebnis sagt immer, worauf es beruht
-- **Alle JTL-Sicherheitsupdates bis 5.8.2** (Oktober 2026): gespeichertes XSS in der Consent-Statistik (CVE-2026-103904), Wartungsmodus per URL (CVE-2026-103905), Path Traversal, IDOR im Retouren-Modul, XSS in „Passwort vergessen“ und im Backend. Eingespielte Patch-Dateien werden **direkt im Code** erkannt, die Prüfmerkmale stammen aus dem öffentlichen JTL-Quellcode und sind gegen jedes Release von 5.0 bis 5.8.2 getestet
+- **Alle JTL-Sicherheitsupdates bis 5.8.3** (November 2026): Second-Order-SQL-Injection über Backend-Benachrichtigungen (SHOP-10049), Rechteausweitung eingeschränkter Backend-Konten, Wawi-Abgleich und Zahlungsarten-Prüfung im Checkout (5.8.3 – für 5.6 und 5.7 gibt es keinen Fix, nur das Upgrade), gespeichertes XSS in der Consent-Statistik (CVE-2026-103904), Wartungsmodus per URL (CVE-2026-103905), Path Traversal, IDOR im Retouren-Modul, XSS in „Passwort vergessen“ und im Backend. Eingespielte Patch-Dateien werden **direkt im Code** erkannt, die Prüfmerkmale stammen aus dem öffentlichen JTL-Quellcode und sind gegen die Releases von 5.0 bis 5.8.3 getestet
 - **Eingeschleuste Consent-Namen** in der Datenbank (Spur von CVE-2026-103904) samt Bereinigungs-Hinweis
 - **Patch-Status für WordPress, WooCommerce und Magento** inklusive Patch-Level (`2.4.6-p6`) – z. B. CosmicSting, SessionReaper, WP_Query-SQL-Injection, WooCommerce-Store-API
 - **Zahlungs-, URL- und Script-Einstellungen in der Datenbank** (Head-/Footer-Scripts, `siteurl`, Basis-URLs, Webhooks, API-Schlüssel) mit Änderungserkennung zwischen zwei Scans
@@ -424,7 +424,7 @@ Alles, was nach dem Referenzdatum verändert wurde, ist erst einmal verdächtig 
 
 <details>
 <summary><b>Woher weiß ecomsec, ob der CVE-2026-54390-Patch drin ist?</b></summary>
-Zuerst anhand der Shop-Version (5.5.4, 5.6.2, 5.7.2 und ab 5.8 gelten als gepatcht). Bei älteren Versionen, unbekannter Version oder eingespieltem Back-Patch prüft es die Datei, die der offizielle Fix ändert: Maskiert der Mail-Renderer Smarty-Klammern in Platzhaltern (<code>{ldelim}</code>), ist der Fix drin. Für abweichende Back-Patches gibt es eine Rückfallprüfung der Smarty-Mail-Klassen. Genauso arbeiten die Prüfungen für die Updates 5.6.3 bis 5.8.2. Das Ergebnis nennt immer, ob die Version oder die Datei die Grundlage war.
+Zuerst anhand der Shop-Version (5.5.4, 5.6.2, 5.7.2 und ab 5.8 gelten als gepatcht). Bei älteren Versionen, unbekannter Version oder eingespieltem Back-Patch prüft es die Datei, die der offizielle Fix ändert: Maskiert der Mail-Renderer Smarty-Klammern in Platzhaltern (<code>{ldelim}</code>), ist der Fix drin. Für abweichende Back-Patches gibt es eine Rückfallprüfung der Smarty-Mail-Klassen. Genauso arbeiten die Prüfungen für die Updates 5.6.3 bis 5.8.3. Das Ergebnis nennt immer, ob die Version oder die Datei die Grundlage war.
 </details>
 
 <details>

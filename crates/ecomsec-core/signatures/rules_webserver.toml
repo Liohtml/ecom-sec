@@ -64,7 +64,8 @@ category = "webserver_config_manipulation"
 tags = ["htaccess"]
 applies_to = ["htaccess", "ini"]
 strings = [
-  { regex = '<\?php|eval\s*\(|base64_decode\s*\(', nocase = true },
+  # Outside comment lines (`;` in ini files, `#` in .htaccess).
+  { regex = '(?m)^[^;#\n]*(<\?php|eval\s*\(|base64_decode\s*\()', nocase = true },
   { regex = '[A-Za-z0-9+/=]{200,}' },
 ]
 

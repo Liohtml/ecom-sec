@@ -1,11 +1,11 @@
-//! File-based patch evidence for JTL security releases 5.5.4 – 5.8.2 and the
+//! File-based patch evidence for JTL security releases 5.5.4 – 5.8.3 and the
 //! access-log indicators published with them.
 //!
 //! JTL ships the fixes both as releases and as loose patch files for older
 //! branches, so the version number alone does not tell whether a shop is
 //! protected.  Every check below looks at a file the official fix changes and
 //! decides by markers taken from the public code diff
-//! (gitlab.com/jtl-software/jtl-shop/core, tags v5.6.4 → v5.8.2).
+//! (gitlab.com/jtl-software/jtl-shop/core, tags v5.6.4 → v5.8.3).
 
 use ecomsec_core::access_log::LogIndicator;
 use ecomsec_core::finding::Severity;
@@ -96,6 +96,48 @@ fn checks(id: &str) -> &'static [FileCheck] {
                 what: "Suchparameter der Freischaltungen",
             },
         ],
+        // 5.8.3: no fixes for 5.6 / 5.7; markers checked against 5.2.0, 5.4.0,
+        // 5.5.0, 5.6.5, 5.7.5, 5.8.2 (vulnerable) and 5.8.3 (fixed).
+        "JTL-SHOP-10049" => &[FileCheck {
+            rel: "includes/src/Backend/Notification.php",
+            fixed: r"isValidHash",
+            vulnerable: r#"notification_hash IN \('"\s*\.\s*\$hashes->implode"#,
+            what: "Prüfung der Hashes ausgeblendeter Benachrichtigungen",
+        }],
+        "JTL-2026-BACKEND-PRIVESC" => &[
+            FileCheck {
+                rel: "includes/src/Router/Controller/Backend/AdminAccountController.php",
+                fixed: r"errorNoPermissionAdminGroup",
+                vulnerable: r"kAdminlogingruppe\s*=\s*Request::pInt\('kAdminlogingruppe'\)",
+                what: "Schutz der Administratorgruppe in der Benutzerverwaltung",
+            },
+            FileCheck {
+                rel: "includes/src/TwoFA/BackendTwoFA.php",
+                fixed: r"assertCurrentAccountMayManage",
+                vulnerable: r"BackendUserData::getByName\(\$userName,\s*\$db\)",
+                what: "Rechteprüfung bei der 2FA-Verwaltung von Administratoren",
+            },
+        ],
+        "JTL-2026-WAWI-SYNC" => &[
+            FileCheck {
+                rel: "includes/src/dbeS/Sync/ImageUpload.php",
+                fixed: r"ALLOWED_MIME_TYPES",
+                vulnerable: r"\\?copy\(\$tmpfile",
+                what: "Typprüfung im Wawi-Bildabgleich",
+            },
+            FileCheck {
+                rel: "includes/src/dbeS/Sync/AbstractSync.php",
+                fixed: r"excludeParams",
+                vulnerable: r"NOT IN \('\s*\.\s*\\?implode\(', ',\s*\$excludeValues\)",
+                what: "Parameter beim Löschen im Wawi-Abgleich",
+            },
+        ],
+        "JTL-2026-CHECKOUT-PAYMENT" => &[FileCheck {
+            rel: "includes/src/Router/Controller/CheckoutController.php",
+            fixed: r"customerGroupAllowedForPaymentMethod",
+            vulnerable: r"function\s+paymentMethodIsValid",
+            what: "Prüfung von Aktivierung und Kundengruppe der Zahlungsart",
+        }],
         _ => &[],
     }
 }
@@ -355,6 +397,130 @@ mod tests {
             evidence("CVE-2026-54390", &reader(&[(rel, v562)]))
                 .unwrap()
                 .patched
+        );
+    }
+
+    // Excerpts of JTL-Shop 5.8.2 (vulnerable) and 5.8.3 (fixed).
+    const NOTIF_582: &str = r#"$this->db->query(
+                "DELETE FROM tnotificationsignore
+                    WHERE notification_hash IN ('" . $hashes->implode('notification_hash', "', '") . "')"
+            );"#;
+    const NOTIF_583: &str = r#"public static function isValidHash(string $hash): bool
+                    AND notification_hash IN (' . \implode(', ', $placeholders) . ')',"#;
+    const SYNC_582: &str =
+        r#"AND ' . $excludeKey . ' NOT IN (' . \implode(', ', $excludeValues) . ')' : '');"#;
+    const SYNC_583: &str = r#"$excludeParams = []; AND `' . $excludeKey . '` NOT IN (:'"#;
+    const IMG_582: &str =
+        r#"if (\copy($tmpfile, \PFAD_ROOT . \PFAD_MEDIA_IMAGE_STORAGE . $item->cPfad)) {"#;
+    const IMG_583: &str = r#"private const array ALLOWED_MIME_TYPES = [ 'jpg' => 'image/jpeg' ];
+            if (\copy($tmpfile, \PFAD_ROOT . \PFAD_MEDIA_IMAGE_STORAGE . $item->cPfad)) {"#;
+
+    #[test]
+    fn release_583_markers() {
+        let notif = "includes/src/Backend/Notification.php";
+        assert!(
+            !evidence("JTL-SHOP-10049", &reader(&[(notif, NOTIF_582)]))
+                .unwrap()
+                .patched
+        );
+        assert!(
+            evidence("JTL-SHOP-10049", &reader(&[(notif, NOTIF_583)]))
+                .unwrap()
+                .patched
+        );
+
+        let sync = "includes/src/dbeS/Sync/AbstractSync.php";
+        let img = "includes/src/dbeS/Sync/ImageUpload.php";
+        let fixed = reader(&[(sync, SYNC_583), (img, IMG_583)]);
+        assert!(evidence("JTL-2026-WAWI-SYNC", &fixed).unwrap().patched);
+        // Half of the patch is not enough.
+        let partial = reader(&[(sync, SYNC_583), (img, IMG_582)]);
+        let e = evidence("JTL-2026-WAWI-SYNC", &partial).unwrap();
+        assert!(!e.patched && e.checked == img);
+        assert!(
+            !evidence("JTL-2026-WAWI-SYNC", &reader(&[(sync, SYNC_582)]))
+                .unwrap()
+                .patched
+        );
+
+        let ctl = "includes/src/Router/Controller/Backend/AdminAccountController.php";
+        let tfa = "includes/src/TwoFA/BackendTwoFA.php";
+        let old = reader(&[
+            (
+                ctl,
+                "$tmpAcc->kAdminlogingruppe = Request::pInt('kAdminlogingruppe');",
+            ),
+            (
+                tfa,
+                "$twoFA = new self($db, BackendUserData::getByName($userName, $db));",
+            ),
+        ]);
+        assert!(!evidence("JTL-2026-BACKEND-PRIVESC", &old).unwrap().patched);
+        let new = reader(&[
+            (ctl, "$tmpAcc->kAdminlogingruppe = Request::pInt('kAdminlogingruppe'); $this->addError(__('errorNoPermissionAdminGroup'));"),
+            (tfa, "$twoFA = new self($db, BackendUserData::getByName($userName, $db)); self::assertCurrentAccountMayManage($twoFA->getUserData());"),
+        ]);
+        assert!(evidence("JTL-2026-BACKEND-PRIVESC", &new).unwrap().patched);
+
+        let co = "includes/src/Router/Controller/CheckoutController.php";
+        assert!(
+            !evidence(
+                "JTL-2026-CHECKOUT-PAYMENT",
+                &reader(&[(co, "public function paymentMethodIsValid(")])
+            )
+            .unwrap()
+            .patched
+        );
+        assert!(evidence("JTL-2026-CHECKOUT-PAYMENT", &reader(&[(co, "public function paymentMethodIsValid( Helper::customerGroupAllowedForPaymentMethod(")])).unwrap().patched);
+    }
+
+    /// Payloads of CVE-2026-54390 keep matching, stock JTL files do not.
+    #[test]
+    fn ssti_rules_spare_stock_templates() {
+        let rules = ecomsec_core::rules::RuleSet::from_toml(
+            "jtl5",
+            include_str!("../signatures/rules_jtl5.toml"),
+        )
+        .unwrap();
+        let names = |class: &str, data: &[u8]| {
+            rules
+                .scan(class, data)
+                .iter()
+                .map(|h| h.rule.name().to_string())
+                .collect::<Vec<_>>()
+        };
+        for payload in [
+            &b"vorname={capture name=a}x{/capture}{eval var=$smarty.capture.a}"[..],
+            b"{eval var=\"{system('id')}\"}",
+            b"{eval var=$oBoxContent}",
+        ] {
+            assert!(
+                names("log", payload).contains(&"jtl_ssti_eval_tag_with_var".to_string()),
+                "{}",
+                String::from_utf8_lossy(payload)
+            );
+        }
+        for payload in [
+            &b"{$smarty.capture.a|unserialize}"[..],
+            b"{\"/etc/passwd\"|file_get_contents}",
+        ] {
+            assert!(names("template", payload)
+                .contains(&"jtl_smarty_dangerous_modifier_chain".to_string()));
+        }
+        // templates/NOVA/boxes/box_custom.tpl (5.0 – 5.8.3)
+        let nova =
+            b"<div class=\"box-content-wrapper\">\n    {eval var=$oBox->getContent()}\n</div>";
+        assert!(
+            names("template", nova).is_empty(),
+            "{:?}",
+            names("template", nova)
+        );
+        // includes/libs/tinymce/js/tinymce/plugins/codesample/plugin.min.js
+        let tinymce = b"function(e){var t=/\\b(?:abstract|assert|boolean|break|byte|case)\\b/}";
+        assert!(
+            names("js", tinymce).is_empty(),
+            "{:?}",
+            names("js", tinymce)
         );
     }
 
