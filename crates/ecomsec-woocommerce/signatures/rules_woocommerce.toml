@@ -15,6 +15,7 @@ condition = "all"
 tags = ["wordpress", "backdoor", "admin"]
 reference = "https://blog.sucuri.net/2023/03/hidden-administrator-users-in-wordpress.html"
 applies_to = ["php"]
+within = 900
 strings = [
   { regex = '\b(wp_create_user|wp_insert_user|wp_update_user|update_user_meta|add_user_meta)\s*\(', nocase = true },
   { regex = '(set_role\s*\(\s*[\x27"]administrator|[\x27"]role[\x27"]\s*=>\s*[\x27"]administrator|capabilities[^;]{0,80}administrator|add_role\s*\([^;]{0,80}administrator)', nocase = true },
@@ -23,16 +24,16 @@ strings = [
 
 [[rule]]
 name = "wp_hidden_admin_filter"
-description = "Administrator-Konto wird per pre_user_query/views_users aus der Benutzerliste ausgeblendet"
+description = "Administrator-Konto wird per pre_user_query aus der Benutzerliste ausgeblendet"
 severity = "critical"
 category = "suspicious_pattern"
-condition = "2"
+condition = "all"
 tags = ["wordpress", "backdoor", "admin"]
 applies_to = ["php"]
 strings = [
-  { regex = 'add_action\s*\(\s*[\x27"]pre_user_query[\x27"]', nocase = true },
+  { regex = 'add_(action|filter)\s*\(\s*[\x27"]pre_user_query[\x27"]', nocase = true },
+  # The query is rewritten to leave out one account.
   { regex = 'query_where\s*=\s*str_replace|query_where\s*\.=\s*[\x27"][^\x27"]{0,40}(user_login|ID)\s*(!=|<>|NOT\s+IN)', nocase = true },
-  { regex = 'add_filter\s*\(\s*[\x27"]views_users[\x27"]', nocase = true },
 ]
 
 [[rule]]
@@ -43,6 +44,7 @@ category = "suspicious_pattern"
 condition = "all"
 tags = ["wordpress", "backdoor", "auth-bypass"]
 applies_to = ["php"]
+within = 900
 strings = [
   # Request parameter checked shortly before the cookie is set (no login form in between).
   { regex = '(?s)\$_(GET|POST|REQUEST|COOKIE|SERVER\s*\[\s*[\x27"]HTTP_)[^\n]{0,120}.{0,300}?\bwp_set_auth_cookie\s*\(', nocase = true },
@@ -151,6 +153,7 @@ condition = "all"
 tags = ["woocommerce", "skimmer", "magecart"]
 reference = "https://sansec.io/research"
 applies_to = ["js", "template", "php"]
+within = 3000
 strings = [
   # Checkout or card field context …
   { regex = '(form\.checkout|form\[name=[\x27"]?checkout|#place_order|checkout_place_order|#billing_(email|phone|first_name|address_1)|card[-_]?number|cc[-_]?(number|num|exp)|#stripe-card|wc-stripe-elements)', nocase = true },
@@ -169,6 +172,7 @@ category = "third_party_injection"
 condition = "all"
 tags = ["woocommerce", "skimmer"]
 applies_to = ["js", "template", "php"]
+within = 2500
 strings = [
   { regex = '(insertAdjacentHTML|innerHTML\s*[+]?=|\.append\s*\(|\.prepend\s*\(|\.before\s*\()', nocase = true },
   { regex = '(name|id)\s*=\s*\\?[\x27"](cc_?number|card_?number|cardnum|ccnum|cc_cvv|cvv2?|cc_exp)', nocase = true },
@@ -198,6 +202,7 @@ category = "suspicious_pattern"
 condition = "all"
 tags = ["wordpress", "exfiltration"]
 applies_to = ["php"]
+within = 700
 strings = [
   { regex = '(DB_PASSWORD|file_get_contents\s*\([^)]{0,80}wp-config\.php)', nocase = false },
   { regex = '\b(wp_mail|mail|wp_remote_post|curl_exec|fsockopen|file_get_contents\s*\(\s*[\x27"]https?://)', nocase = true },

@@ -6,9 +6,11 @@
 ┌──────────────┐    ┌─────────────────────────────────────────────┐
 │ ecomsec-cli  │───▶│ ecomsec-core                                │
 │ CLI / Web UI │    │  Engine ─▶ FileScanner (IOC, Regeln,        │
-│ Text/JSON/   │    │            Zeitstempel, Uploads, Exposed)   │
-│ HTML-Report  │    │         ─▶ Advisories (Version + Evidence)  │
-└──────────────┘    │         ─▶ Platform::integrity()            │
+│ Text/JSON/   │    │            Entschleierung, Zeitstempel,     │
+│ HTML-Report  │    │            Uploads, Exposed, Symlinks)      │
+└──────────────┘    │         ─▶ Advisories (Version + Evidence)  │
+        │           │         ─▶ Platform::integrity()            │
+        │           │         ─▶ Herkunftsprüfung (verified_files)│
         │           │         ─▶ Platform::additional_checks()    │
         ▼           │         ─▶ Baseline-Diff                    │
 ┌──────────────┐    │         ─▶ Risikoakzeptanz, Empfehlungen    │
@@ -31,8 +33,36 @@
 | `ecomsec-osv` | Composer-Inventar und OSV.dev-Abgleich (`--online`) |
 | `ecomsec-cli` | Kommandozeile, Web-Dashboard, Berichte |
 
-Alles ist synchron und read-only. Die Engine kennt keine Plattform-Details; alles
+Alles ist read-only. Die Engine kennt keine Plattform-Details; alles
 Plattformspezifische kommt über den Trait `ecomsec_core::Platform`.
+
+## Dateiscan
+
+`engine::file_scan::FileScanner` listet die Dateien in fester Reihenfolge auf und prüft sie in
+Batches von 128 parallel (rayon, `--threads`). Die Ergebnisse werden in Dateireihenfolge
+zusammengeführt, Report und Checkpoint hängen also nicht von der Zahl der Threads ab. Das
+Zeitbudget wird zwischen den Batches und vor jeder Datei geprüft; gezählt werden die Dateien
+bis zur ersten übersprungenen.
+
+Pro Datei: IOC-Name → Upload-Prüfung → Zeitstempel → offengelegte Dateien (mit Blick in den
+Inhalt: privater Schlüssel? Dump oder nur Schema?) → Inhaltsregeln → Korrelation (generische
+IOC-Namen werden erst mit Inhaltstreffer kritisch). Die Inhaltsregeln laufen über
+`file_scan::content_hits`: Regeln auf dem Rohtext, danach auf den Schichten aus
+`ecomsec_core::deobf` (normalisierter Quelltext, entpackte Nutzlasten). `RuleSet` hält je
+Dateiklasse einen Vorfilter (`RegexSet`), der in einem Durchlauf entscheidet, welche Regeln
+einzeln ausgewertet werden. Format und Grenzen: [RULES.md](RULES.md).
+
+## Herkunftsprüfung
+
+`IntegrityReport::verified_files` nennt Dateien (relativ zum Webroot), deren Inhalt mit einer
+vom Hersteller veröffentlichten Prüfsumme übereinstimmt. Die Engine entfernt für diese Dateien
+die Zeitstempel-Meldungen und stuft Mustertreffer als Hinweis ein
+(`engine::apply_origin_trust`); die Zeile „Befunde in verifizierten Originaldateien“ nennt die
+Anzahl. Befunde der Kategorie `integrity_deviation` bleiben unberührt. Bisher liefert der
+WordPress-Adapter diese Liste (`ecomsec_woocommerce::origin`, nur mit `--online`): Kern über
+`api.wordpress.org/core/checksums`, Plugins über `downloads.wordpress.org/plugin-checksums`.
+Für Composer-basierte Systeme veröffentlichen die Hersteller keine Prüfsummen je Datei; dort
+bleibt die eigene Baseline (`ecomsec baseline create`).
 
 ## Der Trait `Platform`
 
@@ -69,7 +99,7 @@ Report auf: eine Agenten-Schleife über die Messages-API (Trait `LlmClient`, in 
 `ScriptedClient`), nur lesende Werkzeuge mit Redaktion und Grenzen, Ergebnisse als
 `Finding::review` und `audit-*.json`.
 
-`PlatformContext` liefert Referenzdatum, `skip_remote`, `online` (OSV-Abgleich erlaubt; das Crate
+`PlatformContext` liefert Referenzdatum, `skip_remote`, `online` (OSV-Abgleich und WordPress.org-Prüfsummen erlaubt; das Crate
 `ecomsec-osv` liefert `check_root`/`offline_item` für Composer-Inventare) und den `StateStore` für Snapshots
 (`ctx.state.snapshot("key")` / `save_snapshot`), mit denen Änderungen zwischen Scans erkannt werden
 (neue Admin-Konten, geänderte Zahlungsempfänger, neue Script-Tags …).

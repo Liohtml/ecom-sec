@@ -14,7 +14,7 @@
 //!   searched for the SSTI payload,
 //! * customer / contact records containing template syntax,
 //! * plugins and cron jobs added after the reference date,
-//! * file evidence for the security releases 5.6.3 – 5.8.2 (consent XSS,
+//! * file evidence for the security releases 5.6.3 – 5.8.3 (consent XSS,
 //!   safe-mode toggle, path traversal, RMA IDOR …), injected consent names in
 //!   `consent_statistics` and the matching access-log indicators.
 

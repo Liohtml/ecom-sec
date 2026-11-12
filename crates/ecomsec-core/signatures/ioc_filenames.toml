@@ -11,6 +11,11 @@
 # `case_sensitive = true` – match exactly as written (used for generic names that
 #              collide with ordinary PSR-4 class files such as `Uploader.php`;
 #              dropped shells are practically always lower-case)
+# `except`   – regex for names that match the entry but are known tools
+# `weak = true` – a generic name (`shell.php`, `test.php`, `x.php`) that also
+#              occurs in ordinary plugins.  The scanner rates it by context:
+#              critical in an upload directory or when a content rule hits the
+#              same file, a warning directly in the web root, otherwise info.
 
 [[entry]]
 name = "c99 / c100 shell family"
@@ -37,30 +42,35 @@ regex = '^b374k[a-z0-9_.-]*\.(php|phtml|php[3-8]|phar|inc)$'
 name = "China Chopper style one-liner"
 severity = "critical"
 case_sensitive = true
+weak = true
 regex = '^(chopper|caidao|cmd[0-9]*|cmdx?|shell[0-9]*|sh3ll|webshell[0-9]*|backdoor[0-9]*|bd[0-9]*)\.(php|phtml|php[3-8]|phar|inc|asp|aspx|jsp)$'
 
 [[entry]]
 name = "Known PHP shell names (alfa, indoxploit, filesman, mini, bypass, …)"
 severity = "critical"
 case_sensitive = true
+weak = true
 regex = '^(alfa|alfav?[0-9]*|alfashell|indoxploit|idx|filesman|filemanager|mini|minishell|bypass|symlink|sym|marijuana|php-backdoor|phpjackal|locus7s|dq|dqshell|lol|haxor|hacker|hacked|pwn|pwned|exploit|xshell|zshell|k2ll33d|uploader|up|upl|upload_?shell|moon|fx29|fx|antichat|safe0ver|ghost|gh0st|dark|darkshell|priv8|priv|madspot|wh|weevely|wshell|p0wny|p0wnyshell|pwnyshell|tiny|tinyshell|rev|revshell|reverse|connect|back|bind|bindshell|nc|netcat|spy|r00t|root|rootkit|0byt3|byp4ss|shell_cmd|cmdshell|phpspy|phpshell|cyber|cyberwarfare|ssh|telnet|cgitelnet|cgi-telnet|anonsec|anon|sqli|sqlshell|dbshell|mysql_shell|adminer-?[0-9.]*)\.(php|php[3-8]|phar)$'
 
 [[entry]]
 name = "Single-character / numeric PHP file in web root (typical dropper name)"
 severity = "warning"
 case_sensitive = true
+weak = true
 regex = '^([a-z]|[0-9]{1,2}|[a-z][0-9])\.(php|phtml|php[3-8]|phar)$'
 
 [[entry]]
 name = "Disguised error page shell (404.php, 403.php, 500.php …)"
 severity = "info"
 case_sensitive = true
+weak = true
 regex = '^(40[0-9]|50[0-9]|error|errors|err)\.(php|phtml|php[3-8]|phar)$'
 
 [[entry]]
 name = "Diagnostic file left on the server (phpinfo, info, test)"
 severity = "warning"
 case_sensitive = true
+weak = true
 regex = '^(phpinfo|php_info|pinfo|info|test|tests|testing|debug|phptest|test[0-9]+)\.(php|php[3-8])$'
 
 [[entry]]
@@ -81,12 +91,16 @@ regex = '\.(php|phtml|php[3-8]|phar|pht)\.(jpe?g|png|gif|webp|svg|bmp|ico|pdf)$'
 [[entry]]
 name = "Rare executable PHP extension (phtml, php7, phar, pht, pgif)"
 severity = "warning"
+weak = true
 regex = '\.(pht|phtm|php[3-8]|phps|pgif|phar)$'
 
 [[entry]]
 name = "Hidden PHP file (dot-file)"
 severity = "critical"
 regex = '^\.[a-z0-9_]{1,10}\.(php|phtml|php[3-8]|phar)$'
+# Configuration of developer tools (JTL-Shop ships `.phpstan.php` in the web
+# root).  Content rules still apply to these files.
+except = '^\.(phpstan|php_cs|phpunit|psalm|rector|ecs|phan)(\.dist)?\.php$'
 
 [[entry]]
 name = "PHP file disguised with trailing whitespace or unusual unicode"

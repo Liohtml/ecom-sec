@@ -22,6 +22,7 @@
 mod config;
 mod db_checks;
 mod inventory;
+pub mod origin;
 pub mod php_serial;
 
 pub use config::WpConfig;
@@ -287,14 +288,18 @@ impl Platform for WooCommerce {
         inventory::inventory_checks(&self.root, &plugins, &themes, ctx, &mut report);
         inventory::permission_checks(&self.root, &self.config, &mut report);
         if ctx.online {
-            inventory::online_checks(
+            let client = inventory::WpOrgClient::default();
+            inventory::online_checks(&plugins, self.version.as_ref(), &client, &mut report);
+            origin::verify(
+                &self.root,
+                self.version.as_ref().map(|v| v.to_string()).as_deref(),
                 &plugins,
-                self.version.as_ref(),
-                &inventory::WpOrgClient::default(),
+                &client,
                 &mut report,
             );
         } else {
             report.items.push(inventory::offline_item(&plugins));
+            report.items.extend(origin::offline_items());
         }
         if ctx.skip_remote {
             report

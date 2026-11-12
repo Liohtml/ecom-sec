@@ -16,6 +16,8 @@ exclude = []
 rule_dirs = []
 # Maximale Dateigröße für die Inhaltsprüfung (Bytes)
 # max_file_size = 8388608
+# threads = 2                # Standard: alle Prozessorkerne
+# threads = 2                # Standard: alle Prozessorkerne
 # Composer-Pakete bei jedem Scan gegen OSV.dev prüfen (sendet Paketname + Version)
 online = false
 # Zusätzliche Advisory-Verzeichnisse (*.toml); heruntergeladene (advisories update) werden immer geladen

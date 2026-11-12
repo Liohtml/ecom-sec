@@ -2,7 +2,13 @@
 # detection guidance and from recurring obfuscation techniques seen in PHP
 # malware.  Each rule lists its strings; the `condition` says how many of them
 # must hit.  `applies_to` restricts the file class (`php`, `htaccess`,
-# `template`, `js`, `log`, `any`).
+# `template`, `js`, `log`, `image`, `other`, `any`).  `within = N` requires the
+# strings inside one window of N bytes.
+#
+# PHP and JavaScript are additionally scanned after de-obfuscation.  In those
+# layers a string that was assembled from fragments, escapes or decoder calls
+# carries the prefix `/*@hidden*/`; the class `decoded` selects payloads that
+# were unpacked from Base64/deflate wrappers.
 
 # ---------------------------------------------------------------- eval chains
 
@@ -44,8 +50,10 @@ description = "preg_replace mit /e-Modifier führt Eingaben aus (Backdoor-Idiom 
 severity = "critical"
 tags = ["webshell", "obfuscation"]
 strings = [
-  { regex = 'preg_replace\s*\(\s*[\x27"][^\x27"]*/[a-z]*e[a-z]*[\x27"]', nocase = true },
-  { regex = 'preg_replace\s*\(\s*"/\.\*?/e"', nocase = true },
+  # Pattern literal with the same quote on both sides, a delimiter and a
+  # modifier group that contains `e`.
+  { regex = 'preg_replace\s*\(\s*\x27([/#~@!|%])[^\x27\n]*([/#~@!|%])[imsxuADSUXJ]*e[imsxuADSUXJ]*\x27\s*,' },
+  { regex = 'preg_replace\s*\(\s*"([/#~@!|%])[^"\n]*([/#~@!|%])[imsxuADSUXJ]*e[imsxuADSUXJ]*"\s*,' },
 ]
 
 [[rule]]
@@ -54,6 +62,7 @@ description = "Variable Funktion aus Request-Daten oder dekodierten Strings aufg
 severity = "critical"
 tags = ["webshell", "obfuscation"]
 condition = "all"
+within = 800
 strings = [
   { regex = '\$[a-z_][a-z0-9_]*\s*=\s*(base64_decode|str_rot13|strrev|gzinflate|hex2bin)\s*\(\s*(\$_(GET|POST|REQUEST|COOKIE|SERVER)\s*\[|[\x27"][A-Za-z0-9+/=]{16,}[\x27"])', nocase = true },
   { regex = '\$[a-z_][a-z0-9_]*\s*\(\s*(\$[a-z_][a-z0-9_]*|\$_(GET|POST|REQUEST|COOKIE)\s*\[)', nocase = true },
@@ -190,6 +199,7 @@ description = "Backdoor-Schleuse: Passwort-/User-Agent-Prüfung gefolgt von eval
 severity = "critical"
 tags = ["webshell"]
 condition = "all"
+within = 1200
 strings = [
   { regex = '(md5|sha1|crc32)\s*\(\s*\$_(GET|POST|REQUEST|COOKIE|SERVER)\s*\[', nocase = true },
   { regex = '\b(eval|assert|system|passthru|shell_exec)\s*\(', nocase = true },
@@ -264,9 +274,10 @@ severity = "critical"
 tags = ["skimmer", "magecart"]
 applies_to = ["js", "template"]
 condition = "all"
+within = 1500
 strings = [
   { regex = '(cc_?number|card_?number|cardnumber|cvv2?\b|cvc2?\b|ccexp|cc_?exp(iry|_?date|_?month|_?year)|card_?exp(iry|_?date|_?month|_?year)|exp_?month|exp_?year)', nocase = true },
-  { regex = '((btoa|encodeURIComponent)\s*\(\s*(JSON\.stringify|unescape|btoa)|new\s+Image\(\)\.src\s*=|navigator\.sendBeacon\s*\(|\.src\s*=\s*["\x27`]https?://[^"\x27`]{1,120}\?[a-z0-9_]{1,20}=["\x27`]\s*\+\s*(btoa|encodeURIComponent|window\.btoa))', nocase = true },
+  { regex = '((btoa|encodeURIComponent)\s*\(\s*(JSON\.stringify|unescape|btoa)|new\s+Image\(\)\.src\s*=|navigator\.sendBeacon\s*\(|new\s+WebSocket\s*\(\s*(atob\s*\(|["\x27`]wss?://)|\.src\s*=\s*["\x27`]https?://[^"\x27`]{1,120}\?[a-z0-9_]{1,20}=["\x27`]\s*\+\s*(btoa|encodeURIComponent|window\.btoa))', nocase = true },
   { regex = '(document\.(querySelectorAll|getElementsByTagName|getElementById|querySelector)\s*\(|\.value\b|serialize\s*\()', nocase = true },
 ]
 
@@ -277,6 +288,7 @@ severity = "warning"
 tags = ["skimmer", "magecart"]
 applies_to = ["js", "template"]
 condition = "4"
+within = 3000
 strings = [
   { regex = '(cc_?number|cardnumber|card_number|cvv|cvc|expiry|exp_?date|ccexp)', nocase = true },
   { regex = '(btoa|atob)\s*\(\s*(JSON\.stringify|unescape|encodeURIComponent)', nocase = true },
@@ -296,4 +308,190 @@ strings = [
   { regex = 'new\s+Function\s*\(\s*(atob|unescape)\s*\(', nocase = true },
   { regex = '(\\x[2-7][0-9a-f]){12,}', nocase = true },
   { regex = 'String\.fromCharCode\((\s*\d{1,3}\s*,){20,}' },
+]
+
+# ---------------------------------------------------------------- hidden names
+#
+# These rules match the marker that the de-obfuscation step puts in front of
+# strings assembled from fragments (`'sys'.'tem'`), escapes (`"\x73ystem"`),
+# `chr()` chains or decoder calls (`strrev('metsys')`).
+
+[[rule]]
+name = "php_hidden_function_name"
+description = "Name einer Ausführungsfunktion aus Fragmenten, Escapes oder Dekodier-Aufrufen zusammengesetzt"
+severity = "critical"
+tags = ["webshell", "obfuscation", "deobfuscated"]
+strings = [
+  { regex = '/\*@hidden\*/\x27\\?(assert|system|exec|shell_exec|passthru|popen|proc_open|pcntl_exec|create_function)\x27', nocase = true },
+]
+
+[[rule]]
+name = "php_hidden_superglobal"
+description = "Superglobale ($_POST, $_REQUEST, $GLOBALS …) über einen zusammengesetzten Namen angesprochen"
+severity = "critical"
+tags = ["webshell", "obfuscation", "deobfuscated"]
+strings = [
+  { regex = '/\*@hidden\*/\x27(_GET|_POST|_REQUEST|_COOKIE|_SERVER|_FILES|GLOBALS)\x27' },
+]
+
+[[rule]]
+name = "php_hidden_decoder_name"
+description = "Name einer Dekodier- oder Schreibfunktion aus Fragmenten zusammengesetzt (Umgehung von Textsuchen)"
+severity = "warning"
+tags = ["obfuscation", "deobfuscated"]
+strings = [
+  { regex = '/\*@hidden\*/\x27\\?(eval|base64_decode|gzinflate|gzuncompress|gzdecode|str_rot13|strrev|hex2bin|call_user_func(_array)?|file_put_contents|move_uploaded_file|preg_replace)\x27', nocase = true },
+]
+
+[[rule]]
+name = "encoded_payload_executes_code"
+description = "Kodierte Nutzlast enthält ausführbaren Code (Befehlsausführung, Request-Eingaben, weitere Dekodierstufen)"
+severity = "critical"
+tags = ["webshell", "obfuscation", "deobfuscated"]
+applies_to = ["decoded"]
+condition = "2"
+within = 4000
+strings = [
+  { regex = '<\?php[\s(]', nocase = true },
+  { regex = '\b(eval|assert|create_function)\s*\(', nocase = true },
+  { regex = '\$_(GET|POST|REQUEST|COOKIE|FILES)\s*\[|\$_SERVER\s*\[\s*[\x27"]HTTP_' },
+  { regex = '\b(system|shell_exec|passthru|proc_open|popen|pcntl_exec)\s*\(', nocase = true },
+  { regex = '\b(file_put_contents|fwrite|move_uploaded_file)\s*\(', nocase = true },
+  { regex = '\b(gzinflate|gzuncompress|str_rot13)\s*\(\s*base64_decode\s*\(', nocase = true },
+]
+
+[[rule]]
+name = "js_encoded_payload_loader"
+description = "Kodierte JavaScript-Nutzlast lädt fremden Code nach oder sendet Formulardaten"
+severity = "critical"
+category = "third_party_injection"
+tags = ["skimmer", "obfuscation", "deobfuscated"]
+applies_to = ["decoded"]
+condition = "3"
+within = 1500
+strings = [
+  { regex = 'createElement\s*\(\s*[\x27"`]script[\x27"`]', nocase = true },
+  { regex = '\.src\s*=|\.appendChild\s*\(|insertBefore\s*\(' },
+  { regex = '\b(fetch|XMLHttpRequest|WebSocket)\b|navigator\.sendBeacon|new\s+Image\b' },
+  { regex = 'document\.cookie|localStorage|querySelector(All)?\s*\(\s*[\x27"`](input|form|select)|\.value\b' },
+  { regex = '[\x27"`](https?:)?//[a-z0-9.-]+\.[a-z]{2,}[/\x27"`?:]|[\x27"`]wss?://', nocase = true },
+]
+
+[[rule]]
+name = "js_hidden_loader"
+description = "JavaScript setzt eval/atob/fromCharCode oder eine Lade-Adresse aus Fragmenten bzw. Escapes zusammen"
+severity = "warning"
+tags = ["obfuscation", "js", "deobfuscated"]
+applies_to = ["js", "template"]
+condition = "all"
+within = 1200
+strings = [
+  { regex = '/\*@hidden\*/\x27((https?:)?//[a-z0-9.-]+\.[a-z]{2,}|wss?://|eval\x27|atob\x27|fromCharCode\x27)', nocase = true },
+  { regex = 'createElement|\.src\s*=|\bfetch\s*\(|sendBeacon|WebSocket|XMLHttpRequest|new\s+Function|\[\s*/\*@hidden\*/' },
+]
+
+# ---------------------------------------------------------------- execution paths
+
+[[rule]]
+name = "php_callback_exec_input"
+description = "Callback-Funktion erhält ihren Funktionsnamen aus Request-Daten (call_user_func, array_map, usort …)"
+severity = "critical"
+tags = ["webshell"]
+strings = [
+  { regex = '\b(call_user_func(_array)?|array_map|register_shutdown_function|register_tick_function|ob_start)\s*\(\s*(@\s*)?\$_(GET|POST|REQUEST|COOKIE)\s*\[', nocase = true },
+  { regex = '\b(array_filter|array_walk|usort|uasort|uksort)\s*\([^;(){},]{1,80},\s*(@\s*)?\$_(GET|POST|REQUEST|COOKIE)\s*\[', nocase = true },
+  { regex = 'new\s+ReflectionFunction\s*\(\s*\$_(GET|POST|REQUEST|COOKIE)\s*\[', nocase = true },
+]
+
+[[rule]]
+name = "php_exec_decoded_request_input"
+description = "Request-Daten oder HTTP-Header werden dekodiert und ausgeführt"
+severity = "critical"
+tags = ["webshell"]
+strings = [
+  { regex = '\b(eval|assert|system|passthru|shell_exec|exec|popen|proc_open|create_function)\s*\(\s*(@\s*)?((base64_decode|gzinflate|gzuncompress|str_rot13|strrev|hex2bin|urldecode|rawurldecode|stripslashes|trim)\s*\(\s*)+(\$_(GET|POST|REQUEST|COOKIE)\s*\[|\$_SERVER\s*\[\s*[\x27"]HTTP_|getallheaders\s*\(|apache_request_headers\s*\()', nocase = true },
+  { regex = '\b(eval|assert|system|passthru|shell_exec|popen|proc_open)\s*\(\s*(@\s*)?(\$_SERVER\s*\[\s*[\x27"]HTTP_|getallheaders\s*\(\s*\)\s*\[|apache_request_headers\s*\(\s*\)\s*\[)', nocase = true },
+  { regex = '\b(eval|assert|include|require|include_once|require_once)\s*\(?\s*(@\s*)?((base64_decode|gzinflate|stripslashes)\s*\(\s*)*file_get_contents\s*\(\s*[\x27"]php://input', nocase = true },
+]
+
+[[rule]]
+name = "php_backtick_exec_input"
+description = "Shell-Ausführung über Backticks mit Request-Daten"
+severity = "critical"
+tags = ["webshell"]
+strings = [
+  { regex = '(=|\becho|\bprint|\breturn|\()\s*`[^`\n]{0,80}\$_(GET|POST|REQUEST|COOKIE)\s*\[[^`\n]{0,80}`\s*[;)]', nocase = true },
+]
+
+[[rule]]
+name = "php_nonalpha_webshell"
+description = "PHP ohne Buchstaben: Funktionsnamen per XOR, Bit-Negation oder Inkrement erzeugt"
+severity = "critical"
+tags = ["webshell", "obfuscation"]
+strings = [
+  { regex = '(\$_+\s*\+\+\s*;\s*){4,}' },
+  { regex = '[\x27"][^\x27"\w\s]{2,12}[\x27"]\s*\^\s*[\x27"][^\x27"\w\s]{2,12}[\x27"]' },
+  { regex = '~\s*\(?\s*[\x27"][\x80-\xff]{4,}[\x27"]' },
+  { regex = '~\s*\(?\s*"(\\x[89a-f][0-9a-f]){4,}"', nocase = true },
+]
+
+[[rule]]
+name = "php_extract_request_exec"
+description = "extract() auf Request-Daten direkt vor einem Aufruf über eine Variable"
+severity = "warning"
+tags = ["webshell"]
+condition = "all"
+within = 200
+strings = [
+  { regex = '\bextract\s*\(\s*\$_(REQUEST|GET|POST|COOKIE)\b', nocase = true },
+  { regex = '[;{}]\s*@?\$[a-z_][a-z0-9_]*\s*\(\s*\$[a-z_]', nocase = true },
+]
+
+[[rule]]
+name = "php_disable_functions_bypass"
+description = "Umgehung von disable_functions (LD_PRELOAD über mail(), FFI)"
+severity = "critical"
+tags = ["webshell", "privilege"]
+strings = [
+  { regex = 'putenv\s*\(\s*[\x27"]LD_PRELOAD=', nocase = true },
+  { regex = 'FFI::cdef\s*\([^;]{0,300}\b(system|popen|execve?)\b', nocase = true },
+]
+
+[[rule]]
+name = "php_phpinfo_only"
+description = "Datei besteht nur aus phpinfo() – legt Pfade, Module und Umgebungsvariablen offen"
+severity = "warning"
+category = "exposed_file"
+tags = ["diagnostic"]
+strings = [
+  { regex = '^(\xef\xbb\xbf)?\s*<\?(php)?\s*(@\s*)?phpinfo\s*\(\s*(-1|INFO_ALL)?\s*\)\s*;?\s*(\?>)?\s*$', nocase = true },
+]
+
+# ---------------------------------------------------------------- PHP in other files
+
+[[rule]]
+name = "php_code_in_image"
+description = "Bilddatei enthält ausführbaren PHP-Code (wird per include oder Handler-Trick gestartet)"
+severity = "critical"
+category = "code_in_upload_dir"
+tags = ["webshell", "polyglot", "loader"]
+reference = "https://blog.sucuri.net/2021/02/malware-hiding-in-fake-ico-files.html"
+applies_to = ["image"]
+condition = "all"
+within = 4000
+strings = [
+  { regex = '<\?(php[\s(]|=\s*[$@])', nocase = true },
+  { regex = '\b(eval|assert|base64_decode|gzinflate|str_rot13|create_function|system|shell_exec|passthru)\s*\(|\$GLOBALS\s*\[|\$_(GET|POST|REQUEST|COOKIE)\s*\[', nocase = true },
+]
+
+[[rule]]
+name = "php_file_with_foreign_extension"
+description = "Datei ohne PHP-Endung beginnt mit PHP-Code und führt dekodierte Daten oder Request-Eingaben aus"
+severity = "critical"
+tags = ["webshell", "loader"]
+applies_to = ["other"]
+condition = "all"
+strings = [
+  { regex = '^(\xef\xbb\xbf)?\s*<\?(php[\s(]|=)', nocase = true },
+  { regex = '\b(eval|assert|create_function|system|shell_exec|passthru|proc_open)\s*\(\s*(@\s*)?(\$_(GET|POST|REQUEST|COOKIE)|base64_decode|gzinflate|gzuncompress|str_rot13|\$[a-z_]\w*\s*\()', nocase = true },
 ]

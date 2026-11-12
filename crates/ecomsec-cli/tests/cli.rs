@@ -150,12 +150,13 @@ fn patched_version_is_reported_as_patched() {
     write(
         &root,
         "includes/defines.php",
-        b"<?php\nconst APPLICATION_VERSION = '5.8.2';\n",
+        b"<?php\nconst APPLICATION_VERSION = '5.8.3';\n",
     );
     backdate(&root);
     let report = scan_json(&root, &state, &[]);
     assert_eq!(advisory(&report, "CVE-2026-54390")["state"], "patched");
     assert_eq!(advisory(&report, "CVE-2026-103904")["state"], "patched");
+    assert_eq!(advisory(&report, "JTL-SHOP-10049")["state"], "patched");
     assert!(!rules_of(&report)
         .iter()
         .any(|(r, _)| r.starts_with("advisory_")));
@@ -276,7 +277,7 @@ fn acceptance_persists_across_scans_and_changes_verdict() {
     write(
         &root,
         "includes/defines.php",
-        b"<?php\nconst APPLICATION_VERSION = '5.8.2';\n",
+        b"<?php\nconst APPLICATION_VERSION = '5.8.3';\n",
     );
     backdate(&root);
     let report = scan_json(&root, &state, &[]);
@@ -1499,4 +1500,32 @@ fn sbom_is_refused_for_shopify() {
         .unwrap();
     assert_eq!(out.status.code(), Some(10));
     assert!(String::from_utf8_lossy(&out.stderr).contains("kein Composer-Inventar"));
+}
+
+/// 5.8.3 fixed issues that JTL did not back-port: 5.7.5 stays vulnerable
+/// (version and code), only the upgrade to 5.8.3 helps.
+#[test]
+fn release_583_fixes_are_not_backported_to_575() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    write(
+        &root,
+        "includes/defines.php",
+        b"<?php\nconst APPLICATION_VERSION = '5.7.5';\n",
+    );
+    write(
+        &root,
+        "includes/src/Backend/Notification.php",
+        b"<?php\n$this->db->query(\"DELETE FROM tnotificationsignore WHERE notification_hash IN ('\" . $hashes->implode('notification_hash', \"', '\") . \"')\");\n",
+    );
+    backdate(&root);
+    let report = scan_json(&root, &state, &[]);
+    let adv = advisory(&report, "JTL-SHOP-10049");
+    assert_eq!(adv["state"], "vulnerable");
+    assert!(adv["basis"].as_str().unwrap().contains("Notification.php"));
+    assert!(rules_of(&report)
+        .iter()
+        .any(|(r, _)| r == "advisory_jtl-shop-10049"));
 }

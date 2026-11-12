@@ -7,7 +7,7 @@ ecomsec kennt drei Quellen für bekannte Schwachstellen:
 | **Eingebettete Dateien** `advisories/<platform>.toml` | Stand des Builds | im Binary, immer aktiv |
 | **Heruntergeladene Dateien** (`ecomsec advisories update`) | Stand von `main` im Repository | `<State-Dir>/advisories/`, bei jedem Scan automatisch gemergt |
 | **OSV.dev** (`ecomsec scan --online`) | tagesaktuell | prüft alle Composer-Pakete (Shopware- und Magento-Core, Erweiterungen, Symfony, Smarty …); sendet nur Paketname + Version |
-| **WordPress.org** (`ecomsec scan --online`, nur WordPress) | tagesaktuell | vergleicht installierte Plugins und WordPress-Core mit der aktuellen Version im WordPress.org-Verzeichnis (veraltet = Warnung); sendet nur den Plugin-Slug |
+| **WordPress.org** (`ecomsec scan --online`, nur WordPress) | tagesaktuell | vergleicht installierte Plugins und WordPress-Core mit der aktuellen Version im WordPress.org-Verzeichnis (veraltet = Warnung) und alle Kern- und Plugin-Dateien mit den dort veröffentlichten Prüfsummen (geändert oder fremd = Befund); sendet WordPress-Version und Sprache sowie Slug und Version der Plugins |
 
 Einträge aus heruntergeladenen oder per `--advisories DIR` angegebenen Dateien überschreiben
 eingebettete Einträge mit derselben `id`.
@@ -72,8 +72,8 @@ Engine den Plattform-Adapter nach einem dateibasierten Nachweis (z. B. Back-Patc
 Die Versionsnummer allein reicht bei JTL-Shop nicht: JTL verteilt Fixes für ältere Zweige auch als
 lose Patch-Dateien. Liegt die Version im betroffenen Bereich oder ist sie unbekannt, prüft der
 JTL-Adapter deshalb die Dateien, die der offizielle Fix ändert. Die Merkmale stammen aus dem
-öffentlichen Quellcode (`gitlab.com/jtl-software/jtl-shop/core`) und sind gegen jedes Release von
-5.0.0 bis 5.8.2 getestet:
+öffentlichen Quellcode (`gitlab.com/jtl-software/jtl-shop/core`) und sind gegen die Releases von
+5.0.0 bis 5.8.3 getestet:
 
 | Advisory | Geprüfte Datei(en) | Merkmal des Fixes |
 |---|---|---|
@@ -84,6 +84,15 @@ JTL-Adapter deshalb die Dateien, die der offizielle Fix ändert. Die Merkmale st
 | JTL-SHOP-9886 | `includes/src/RMA/Services/RMAReturnAddressService.php` | Besitzprüfung über `$customerID` |
 | JTL-2026-PWRESET-XSS | `includes/src/Router/Controller/ForgotPasswordController.php` | `Text::filterXSS($email)` |
 | JTL-2026-ADMIN-XSS | `tpl_inc/bewertung_editieren.tpl`, `ActivationController.php` | `htmlentities` / `filterXSS` |
+| JTL-SHOP-10049 | `includes/src/Backend/Notification.php` | `isValidHash()`, Platzhalter im `DELETE` |
+| JTL-2026-BACKEND-PRIVESC | `AdminAccountController.php`, `TwoFA/BackendTwoFA.php` | `errorNoPermissionAdminGroup`, `assertCurrentAccountMayManage()` |
+| JTL-2026-WAWI-SYNC | `dbeS/Sync/ImageUpload.php`, `dbeS/Sync/AbstractSync.php` | `ALLOWED_MIME_TYPES`, gebundene Ausschlusswerte |
+| JTL-2026-CHECKOUT-PAYMENT | `includes/src/Router/Controller/CheckoutController.php` | `customerGroupAllowedForPaymentMethod()` |
+
+Die Fixes aus 5.8.3 hat JTL nicht für 5.6 und 5.7 veröffentlicht. Diese Linien gelten deshalb als
+verwundbar, bis der Code den Fix zeigt oder der Shop auf 5.8.3 aktualisiert ist. JTL nennt in der
+Ankündigung nur SHOP-10049 beim Namen; die übrigen drei Einträge sind aus dem Code-Diff
+5.8.2 → 5.8.3 abgeleitet und tragen deshalb eigene IDs.
 
 Ein nur teilweise eingespielter Patch zählt als verwundbar.
 

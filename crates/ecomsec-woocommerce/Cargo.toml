@@ -21,6 +21,10 @@ log.workspace = true
 mysql.workspace = true
 ureq.workspace = true
 walkdir.workspace = true
+rayon.workspace = true
+sha2.workspace = true
+md-5.workspace = true
+hex.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

@@ -281,7 +281,8 @@ oder per Klick im Dashboard) – sie lösen nie wieder etwas aus. Für Chat-Kan�
 <summary><b>Was wird über das Netz gesendet?</b></summary>
 Der Shop selbst wird nie verändert. Nach außen gehen nur: der Abruf der Advisory-Dateien von GitHub
 (abschaltbar mit <code>--no-update</code>), bei <code>--online</code> Paketnamen und Versionen an
-OSV.dev, und die Meldungen an die von dir eingetragenen Kanäle. Die Meldungen enthalten Befund-Titel,
+OSV.dev und – bei WordPress – Version, Sprache sowie Slug und Version der Plugins an WordPress.org,
+und die Meldungen an die von dir eingetragenen Kanäle. Die Meldungen enthalten Befund-Titel,
 Pfade relativ zum Shop und kurze Beweisausschnitte – wähle die Kanäle entsprechend.
 </details>
 

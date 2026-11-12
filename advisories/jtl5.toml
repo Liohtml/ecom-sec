@@ -8,6 +8,58 @@
 # Pflege: wöchentlicher Workflow .github/workflows/advisories.yml + Review.
 
 [[advisory]]
+id = "JTL-SHOP-10049"
+platform = "jtl5"
+title = "Second-Order-SQL-Injection über Backend-Benachrichtigungen (jedes Backend-Konto)"
+severity = "critical"
+affected = [">=5.0.0 <5.8.3"]
+fixed_in = ["5.8.3"]
+backpatch_note = "Das Ausblenden einer Backend-Benachrichtigung speichert einen beliebigen Wert als Hash, der beim nächsten Aufbau der Benachrichtigungen ungefiltert in ein DELETE eingesetzt wird. Ausnutzbar mit jedem angemeldeten Backend-Konto, unabhängig von dessen Rechten. Für 5.6 und 5.7 hat JTL keinen Fix veröffentlicht: Update auf 5.8.3. Ein eingespielter Fix wird an Notification::isValidHash erkannt."
+reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+published = 2026-11-04
+tags = ["sqli", "authenticated", "backend"]
+source = "JTL-Forum (Release 5.8.3), Code-Diff 5.8.2 → 5.8.3"
+
+[[advisory]]
+id = "JTL-2026-BACKEND-PRIVESC"
+platform = "jtl5"
+title = "Rechteausweitung: eingeschränkte Backend-Konten können Administratoren anlegen, ändern und deren 2FA verwalten"
+severity = "critical"
+affected = [">=5.2.0 <5.8.3"]
+fixed_in = ["5.8.3"]
+backpatch_note = "Ein Backend-Konto mit Zugriff auf die Benutzerverwaltung, aber ohne Administratorgruppe, konnte Konten der Administratorgruppe zuordnen, Administratoren löschen und die Zwei-Faktor-Geheimnisse von Administratoren abrufen oder neu setzen. Als Administrator stehen Plugin- und Template-Upload und damit Codeausführung offen. Kein Fix für 5.6 und 5.7: Update auf 5.8.3. Nachweis an AdminAccountController.php und BackendTwoFA.php. Admin-Konten und Gruppenzugehörigkeit prüfen."
+reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+published = 2026-11-04
+tags = ["privilege-escalation", "authenticated", "2fa", "backend"]
+source = "JTL-Forum (Release 5.8.3, „mehrere Security Fixes mit severity high“), Code-Diff 5.8.2 → 5.8.3"
+
+[[advisory]]
+id = "JTL-2026-WAWI-SYNC"
+platform = "jtl5"
+title = "Wawi-Abgleich: beliebige Dateien über den Bildabgleich, SQL-Injection beim Löschen"
+severity = "warning"
+affected = [">=5.0.0 <5.8.3"]
+fixed_in = ["5.8.3"]
+backpatch_note = "Der dbeS-Bildabgleich übernahm Dateien ohne Prüfung von Endung und Inhalt, das Löschen von Datensätzen setzte Ausschlusswerte ungefiltert in SQL ein. Beides setzt gültige Wawi-Sync-Zugangsdaten voraus. Kein Fix für 5.6 und 5.7: Update auf 5.8.3 und Sync-Passwort ändern, falls es Dritten bekannt sein könnte. Nachweis an ImageUpload.php und AbstractSync.php."
+reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+published = 2026-11-04
+tags = ["file-upload", "sqli", "authenticated", "dbes"]
+source = "Code-Diff 5.8.2 → 5.8.3 (Release 5.8.3)"
+
+[[advisory]]
+id = "JTL-2026-CHECKOUT-PAYMENT"
+platform = "jtl5"
+title = "Checkout akzeptiert deaktivierte oder für die Kundengruppe gesperrte Zahlungsarten"
+severity = "warning"
+affected = [">=5.2.0 <5.8.3"]
+fixed_in = ["5.8.3"]
+backpatch_note = "Eine Bestellung ließ sich mit einer Zahlungsart abschließen, die deaktiviert oder für die Kundengruppe nicht freigegeben ist (z. B. Kauf auf Rechnung für Neukunden). Kein Fix für 5.6 und 5.7: Update auf 5.8.3. Bestellungen mit unerwarteten Zahlungsarten prüfen."
+reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+published = 2026-11-04
+tags = ["business-logic", "checkout", "payment"]
+source = "Code-Diff 5.8.2 → 5.8.3 (Release 5.8.3)"
+
+[[advisory]]
 id = "CVE-2026-54390"
 platform = "jtl5"
 title = "Unauthentifizierte Smarty Template Injection (SSTI) mit RCE ab 5.4.0"

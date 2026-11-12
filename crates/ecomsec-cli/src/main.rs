@@ -171,7 +171,10 @@ struct ScanOptionArgs {
     /// Maximale Dateigröße für die Inhaltsprüfung in Bytes
     #[arg(long)]
     max_file_size: Option<u64>,
-    /// Online-Abgleich der Composer-Pakete mit OSV.dev (sendet Paketnamen + Versionen)
+    /// Anzahl der Threads für den Dateiscan (Standard: alle Prozessorkerne)
+    #[arg(long, value_name = "N")]
+    threads: Option<usize>,
+    /// Online-Abgleich: Composer-Pakete mit OSV.dev, WordPress-Kern und -Plugins mit den Prüfsummen von WordPress.org (sendet Paketnamen/Slugs + Versionen)
     #[arg(long)]
     online: bool,
     /// Zusätzliches Advisory-Verzeichnis (*.toml), mehrfach möglich
@@ -428,6 +431,7 @@ fn scan_options(
     if let Some(m) = args.max_file_size.or(cfg.scan.max_file_size) {
         o.max_file_size = m;
     }
+    o.threads = args.threads.or(cfg.scan.threads).filter(|n| *n > 0);
     o.no_persist = dry_run;
     Ok(o)
 }

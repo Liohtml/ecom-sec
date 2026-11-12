@@ -256,6 +256,11 @@ pub struct IntegrityReport {
     pub findings: Vec<Finding>,
     /// Checks that could not be executed (and why).
     pub limitations: Vec<String>,
+    /// Files (relative to the web root) whose content matches the checksum
+    /// published by the vendor.  The engine rates heuristic findings in
+    /// these files as informational: the code is the original.
+    #[serde(default, skip_serializing_if = "std::collections::BTreeSet::is_empty")]
+    pub verified_files: std::collections::BTreeSet<String>,
 }
 
 impl IntegrityReport {
@@ -263,6 +268,7 @@ impl IntegrityReport {
         self.items.extend(other.items);
         self.findings.extend(other.findings);
         self.limitations.extend(other.limitations);
+        self.verified_files.extend(other.verified_files);
     }
 }
 
