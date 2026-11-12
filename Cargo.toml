@@ -43,11 +43,11 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive", "env"] }
 anyhow = "1"
 thiserror = "2"
-sha2 = "0.10"
-md-5 = "0.10"
+sha2 = "0.11"
+md-5 = "0.11"
 hex = "0.4"
-toml = "0.8"
-mysql = { version = "26", default-features = false, features = ["minimal", "default-rust"] }
+toml = "1.2"
+mysql = { version = "28", default-features = false, features = ["minimal", "default-rust"] }
 ureq = { version = "3", features = ["json"] }
 axum = "0.8"
 tokio = { version = "1", features = ["full"] }
@@ -57,13 +57,13 @@ log = "0.4"
 env_logger = "0.11"
 lettre = { version = "0.11", default-features = false, features = ["smtp-transport", "builder", "hostname", "rustls-tls"] }
 ctrlc = "3"
-base64 = "0.22"
+base64 = "0.23"
 # terminal width for the text report
 terminal_size = "0.4"
 # self-update: release archives (.tar.gz for Unix, .zip for Windows)
 flate2 = "1"
 tar = { version = "0.4", default-features = false }
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 
 [profile.release]
 lto = "thin"
