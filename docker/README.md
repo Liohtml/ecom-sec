@@ -58,7 +58,7 @@ docker compose run --rm scan
 docker compose up -d dashboard
 ```
 
-Image-Tags: `latest` (letztes stabiles Release), `0.1` (Minor-Linie), `0.1.1` (exakte Version).
+Image-Tags: `latest` (letztes stabiles Release), `0.2` (Minor-Linie), `0.2.0` (exakte Version).
 Das Image gibt es für `linux/amd64` und `linux/arm64`; `docker pull` wählt automatisch die passende Variante.
 
 Hinweise:
