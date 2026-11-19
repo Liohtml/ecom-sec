@@ -96,17 +96,27 @@ Skript-Zeichen sind kritisch.
 
 ## Automatische Pflege
 
-Der Workflow `.github/workflows/advisories.yml` läuft wöchentlich (und per Hand):
+Der Workflow `.github/workflows/advisories.yml` läuft täglich um 05:37 UTC (06:37 CET;
+in der Sommerzeit 07:37 CEST) und per Hand. Ein dreitägiges Überlappungsfenster deckt verzögerte
+NVD-Änderungen und vorübergehende Rate-Limits ab; bekannte IDs werden erneut ausgefiltert.
+Nur neue Kandidaten öffnen einen PR; ein leerer Lauf erzeugt keinen Branch:
 
 1. **Sync** – `scripts/advisory_sync.py` fragt die NVD-API (Stichworte und CPEs für JTL-Shop,
    Shopware, Shopify-Apps, `cpe:2.3:a:wordpress:wordpress`, `cpe:2.3:a:woocommerce:woocommerce`,
    `cpe:2.3:a:adobe:magento`, `cpe:2.3:a:magento:magento`, `cpe:2.3:a:adobe:commerce`) und OSV.dev
    (Shopware-Composer-Pakete, `magento/product-community-edition`, `magento/magento2-base`,
    `magento/framework` – Framework-Versionen 103.0.N werden auf 2.4.N abgebildet) nach Einträgen
-   ab, die in den letzten 30 Tagen angelegt oder geändert wurden. Treffer auf den WooCommerce-CPE
+   ab, die im Abfragefenster angelegt oder geändert wurden. CISA KEV liefert zusätzlich ein
+   Priorisierungsflag samt Aufnahmedatum. Bei mehreren Quellen werden Alias-, Referenz- und Versionsdaten
+   zusammengeführt; die Quellliste bleibt erhalten. Treffer auf den WooCommerce-CPE
    erhalten im Entwurf `component = "WooCommerce"`. Bekannte IDs (`advisories/*.toml`, `aliases`)
    und `advisories/ignored.toml` werden ausgefiltert. Ergebnis: `advisories/candidates.json`
-   und Entwürfe unter `advisories/drafts/` (`draft = true`, daher inaktiv).
+   und Entwürfe unter `advisories/drafts/` (`draft = true`, daher inaktiv). `candidates.json` enthält
+   den vollständigen UTC-Zeitraum, Quellenstatus, KEV-Verfügbarkeit und Fehlerliste. Ein Ausfall einer
+   NVD-/OSV-Abfrage macht den Lauf unvollständig und sichtbar rot (`--require-all-sources`) –
+   ein solcher Lauf ist kein Beweis, dass es keine neuen Advisories gibt. Ein isolierter KEV-Ausfall
+   markiert nur die Priorisierung als unbekannt; er verhindert keine vollständigen NVD-/OSV-Kandidaten. Kleinere redigierte
+   NVD-/OSV-Fixtures prüfen Parser, Aliase, KEV und dieses Fehlerverhalten ohne Netzwerk.
 2. **Agent** – mit hinterlegtem Secret `ANTHROPIC_API_KEY` recherchiert ein Claude-Code-Agent
    jeden Kandidaten in den Primärquellen, ergänzt Versionsbereiche und behobene Versionen,
    trägt passende Einträge in `advisories/<platform>.toml` ein, nicht zutreffende in
@@ -119,6 +129,17 @@ erreichen die Einträge die Nutzer – per `ecomsec advisories update` sofort, p
 Binary.
 
 Benötigte Secrets: `ANTHROPIC_API_KEY` (Agent), optional `NVD_API_KEY` (höheres Rate-Limit).
+Empfohlen für den täglichen Lauf: ein frei beantragbarer NVD-Key. Die bisherige manuelle Review- und
+Merge-Freigabe bleibt erhalten.
+
+### Heruntergeladener Stand und Freshness
+
+`ecomsec advisories update` validiert heruntergeladene TOML-Dateien, bevor sie atomar ersetzt werden.
+Mit `If-None-Match` werden bekannte ETags geprüft; eine unveränderte Antwort (HTTP 304) ersetzt die
+Datei nicht und aktualisiert lediglich den Revalidierungsnachweis. `<State-Dir>/advisories/update-metadata.json` speichert UTC-Fetchzeit, ETag, Last-Modified,
+Anzahl und letztes erfolgreiches Revalidieren pro Datei. Das ist ein Abrufnachweis und **kein**
+Vollständigkeits- oder Aktualitätsversprechen der Herstellerdaten. `advisories list` zeigt weiterhin
+alle aktiven bzw. inaktiven Einträge; bei verdächtig altem Stand Metadatei und Download prüfen.
 
 ## Grenzen
 

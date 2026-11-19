@@ -1,0 +1,16 @@
+{
+  "vulns": [{
+    "id": "GHSA-xxxx-yyyy-zzzz",
+    "aliases": ["CVE-2099-0001"],
+    "modified": "2099-01-03T11:00:00Z",
+    "published": "2099-01-02T10:00:00Z",
+    "summary": "Example Shopware advisory fixture",
+    "details": "Offline test data; not a real vulnerability.",
+    "affected": [{
+      "package": {"name": "shopware/core", "ecosystem": "Packagist"},
+      "ranges": [{"type": "ECOSYSTEM", "events": [{"introduced": "6.5.0.0"}, {"fixed": "6.5.8.0"}]}]
+    }],
+    "references": [{"url": "https://example.invalid/vendor"}],
+    "severity": [{"type": "CVSS_V3", "score": "CVSS:3.1/AV:N"}]
+  }]
+}

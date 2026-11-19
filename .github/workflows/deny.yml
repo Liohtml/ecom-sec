@@ -2,14 +2,14 @@ name: cargo-deny
 
 # Dependency audit (advisories, licenses, bans, sources). Blocking on pull
 # requests and on main; the release workflow calls this before it builds.
-# A weekly schedule catches advisories published after the last push.
+# A daily schedule catches advisories published after the last push.
 
 on:
   pull_request:
   push:
     branches: [main]
   schedule:
-    - cron: "30 5 * * 3" # Mittwoch 05:30 UTC
+    - cron: "30 5 * * *" # täglich 05:30 UTC
   workflow_call:
 
 permissions:

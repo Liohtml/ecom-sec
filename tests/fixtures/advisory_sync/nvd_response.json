@@ -1,0 +1,19 @@
+{
+  "totalResults": 1,
+  "vulnerabilities": [{
+    "cve": {
+      "id": "CVE-2099-0001",
+      "published": "2099-01-02T10:00:00.000",
+      "lastModified": "2099-01-03T10:00:00.000",
+      "descriptions": [{"lang": "en", "value": "Example Shopware advisory fixture"}],
+      "metrics": {"cvssMetricV31": [{"cvssData": {"baseScore": 8.1, "vectorString": "CVSS:3.1/AV:N"}}]},
+      "configurations": [{"nodes": [{"cpeMatch": [{
+        "vulnerable": true,
+        "criteria": "cpe:2.3:a:shopware:shopware:6.5.0.0:*:*:*:*:*:*:*",
+        "versionStartIncluding": "6.5.0.0",
+        "versionEndExcluding": "6.5.8.0"
+      }]}]}],
+      "references": [{"url": "https://example.invalid/advisory"}]
+    }
+  }]
+}
