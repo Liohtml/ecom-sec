@@ -72,8 +72,12 @@ Engine den Plattform-Adapter nach einem dateibasierten Nachweis (z. B. Back-Patc
 Die Versionsnummer allein reicht bei JTL-Shop nicht: JTL verteilt Fixes für ältere Zweige auch als
 lose Patch-Dateien. Liegt die Version im betroffenen Bereich oder ist sie unbekannt, prüft der
 JTL-Adapter deshalb die Dateien, die der offizielle Fix ändert. Die Merkmale stammen aus dem
-öffentlichen Quellcode (`gitlab.com/jtl-software/jtl-shop/core`) und sind gegen die Releases von
-5.0.0 bis 5.8.3 getestet:
+öffentlichen Quellcode. Seit November 2026 veröffentlicht JTL Patch- und Sicherheits-Releases nicht
+mehr auf GitLab (`gitlab.com/jtl-software/jtl-shop/core`), sondern nur als Pakete unter
+`build.jtl-shop.de` und als Hotfix-Diffs zu den Sicherheitshinweisen. Die Merkmale für 12.11. und
+24.11.2026 sind gegen beide Seiten jedes Hotfix-Diffs (5.0.0 bis 5.8.4) und gegen die Pakete 5.5.5,
+5.5.6, 5.6.6, 5.6.7, 5.7.6, 5.7.7, 5.8.4 und 5.8.5 getestet, die älteren gegen die GitLab-Tags bis
+5.8.3:
 
 | Advisory | Geprüfte Datei(en) | Merkmal des Fixes |
 |---|---|---|
@@ -88,11 +92,30 @@ JTL-Adapter deshalb die Dateien, die der offizielle Fix ändert. Die Merkmale st
 | JTL-2026-BACKEND-PRIVESC | `AdminAccountController.php`, `TwoFA/BackendTwoFA.php` | `errorNoPermissionAdminGroup`, `assertCurrentAccountMayManage()` |
 | JTL-2026-WAWI-SYNC | `dbeS/Sync/ImageUpload.php`, `dbeS/Sync/AbstractSync.php` | `ALLOWED_MIME_TYPES`, gebundene Ausschlusswerte |
 | JTL-2026-CHECKOUT-PAYMENT | `includes/src/Router/Controller/CheckoutController.php` | `customerGroupAllowedForPaymentMethod()` |
+| CVE-2026-22308 | `includes/src/OPC/Service.php` | `PreviewToken::isValid` |
+| CVE-2026-22309 | `includes/src/Crawler/Controller.php` | `sanitizeCrawlerText()` |
+| CVE-2026-22310 | `Redirect/Services/ValidationService.php` | `UNSAFE_404_SOURCE_PATTERN` |
+| CVE-2026-22311 | `includes/src/dbeS/FailedLoginLimiter.php` | `registerFailure()` |
+| CVE-2026-123058 | `includes/src/Installation/VueInstaller.php` | `AlreadyInstalledException` |
+| CVE-2026-125060 | `includes/src/Router/Controller/CheckoutController.php` | `DeliveryAddressOwnership` |
+| JTL-2026-ADMIN-PWRESET | `Router/Controller/Backend/PasswordController.php` | `getAdminIDByResetPasswordHash()` |
+| JTL-2026-DBES-CATEGORY-SQLI | `includes/src/dbeS/Sync/Categories.php` | gebundene IDs (`buildIntList`) |
+| JTL-2026-BACKEND-RIGHTS-584 | `IOController.php`, `AdminAccountController.php` | `guardedRegister()`, `deleteAvatarFile()` |
+| CVE-2026-133938 | `AdminAccountController.php` | Token-Prüfung in `actionQuickChangeLanguage()` |
+| CVE-2026-133939 | `admin/opc/tpl/startmenu.tpl` | `escape:'javascript'` |
+| CVE-2026-133940 | `export/backup/.htaccess` | `<FilesMatch ".*">` mit Sperre (wirkt nur unter Apache) |
+| CVE-2026-133941 | `includes/src/Country/Manager.php` | `getSortOrder()` |
 
-Die Fixes aus 5.8.3 hat JTL nicht für 5.6 und 5.7 veröffentlicht. Diese Linien gelten deshalb als
-verwundbar, bis der Code den Fix zeigt oder der Shop auf 5.8.3 aktualisiert ist. JTL nennt in der
-Ankündigung nur SHOP-10049 beim Namen; die übrigen drei Einträge sind aus dem Code-Diff
-5.8.2 → 5.8.3 abgeleitet und tragen deshalb eigene IDs.
+Was JTL zurückportiert hat und was nicht, ist am Code der Pakete geprüft: SHOP-10049 und der
+Wawi-Fix aus 5.8.3 sind seit 5.7.6, 5.6.6 und 5.5.5 drin; die Rechteausweitung in der
+Benutzerverwaltung (JTL-2026-BACKEND-PRIVESC) und die Zahlungsarten-Prüfung
+(JTL-2026-CHECKOUT-PAYMENT) gibt es nur ab 5.8.3. In 5.5.x fehlen außerdem die Oktober-Fixes
+(CVE-2026-103904, CVE-2026-103905, Path Traversal). JTL nennt einige Fixes ohne Hinweis oder
+Ticket; diese tragen eigene IDs (`JTL-2026-…`), die Quelle steht im Eintrag.
+
+Die Prüfung offengelegter Dateien berücksichtigt `.htaccess`-Sperren in der Reihenfolge, die
+Apache anwendet (Verzeichnis, danach `<Files>`/`<FilesMatch>` von außen nach innen). Gesperrte
+Dateien werden als Hinweis gemeldet, weil die Sperre unter nginx nicht greift.
 
 Ein nur teilweise eingespielter Patch zählt als verwundbar.
 

@@ -5,13 +5,10 @@
 [advisories]
 yanked = "deny"
 ignore = [
-    # zip 2.4 only fixes these in 9.0.0. self-update never calls ZipArchive::extract
-    # (or the stream extract API): it opens entries with by_index, rejects paths
-    # without enclosed_name, and reads the ecomsec binary into memory.
-    { id = "RUSTSEC-2026-0367", reason = "extract() wird nicht verwendet; SUID/SGID-Bits aus ZIP-Attributen werden nicht übernommen." },
-    { id = "RUSTSEC-2026-0368", reason = "extract() wird nicht verwendet; es werden keine Symlinks aus dem Archiv angelegt." },
-    { id = "RUSTSEC-2026-0369", reason = "extract() wird nicht verwendet; keine Rechtevergabe über Symlink-Ziele." },
-    { id = "RUSTSEC-2026-0429", reason = "extract() wird nicht verwendet; die deklarierte Symlink-Größe wird nicht als Pufferkapazität benutzt." },
+    # Unmaintained, not vulnerable: no known flaw in chrono 0.4.45. The types are
+    # part of the report schema (timestamps in JSON), so the move to jiff is a
+    # separate change with its own compatibility tests.
+    { id = "RUSTSEC-2026-0543", reason = "chrono ist nicht mehr gepflegt, aber ohne bekannte Schwachstelle; Wechsel auf jiff als eigene Änderung." },
 ]
 
 [licenses]

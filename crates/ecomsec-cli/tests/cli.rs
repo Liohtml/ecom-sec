@@ -150,7 +150,7 @@ fn patched_version_is_reported_as_patched() {
     write(
         &root,
         "includes/defines.php",
-        b"<?php\nconst APPLICATION_VERSION = '5.8.3';\n",
+        b"<?php\nconst APPLICATION_VERSION = '5.8.5';\n",
     );
     backdate(&root);
     let report = scan_json(&root, &state, &[]);
@@ -277,7 +277,7 @@ fn acceptance_persists_across_scans_and_changes_verdict() {
     write(
         &root,
         "includes/defines.php",
-        b"<?php\nconst APPLICATION_VERSION = '5.8.3';\n",
+        b"<?php\nconst APPLICATION_VERSION = '5.8.5';\n",
     );
     backdate(&root);
     let report = scan_json(&root, &state, &[]);

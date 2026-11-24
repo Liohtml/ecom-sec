@@ -24,7 +24,7 @@
   <a href="https://crates.io/crates/ecomsec"><img alt="Downloads" src="https://img.shields.io/crates/d/ecomsec?label=Downloads"></a>
   <img alt="Kostenlos" src="https://img.shields.io/badge/Preis-kostenfrei-2ea44f">
   <img alt="Lizenz MIT" src="https://img.shields.io/badge/Lizenz-MIT-blue">
-  <img alt="Rust" src="https://img.shields.io/badge/Rust-1.80%2B-orange">
+  <img alt="Rust" src="https://img.shields.io/badge/Rust-1.89%2B-orange">
   <img alt="Read-only" src="https://img.shields.io/badge/Zugriff-nur%20lesend-informational">
   <img alt="Plattformen" src="https://img.shields.io/badge/JTL--Shop%205%20%C2%B7%20Shopware%206%20%C2%B7%20WooCommerce%20%C2%B7%20Magento%202%20%C2%B7%20Shopify-unterst%C3%BCtzt-6f42c1">
 </p>
@@ -177,7 +177,8 @@ ecomsec self-update           # neueste Version laden, Signatur und Prüfsumme p
 ### 2 · Shop-Integrität – ist dein Shop noch deiner?
 
 - **Patch-Status** für CVE-2026-54390: zuerst anhand der Version (5.5.4 / 5.6.2 / 5.7.2 / ab 5.8), sonst anhand der geprüften Datei – das Ergebnis sagt immer, worauf es beruht
-- **Alle JTL-Sicherheitsupdates bis 5.8.3** (November 2026): Second-Order-SQL-Injection über Backend-Benachrichtigungen (SHOP-10049), Rechteausweitung eingeschränkter Backend-Konten, Wawi-Abgleich und Zahlungsarten-Prüfung im Checkout (5.8.3 – für 5.6 und 5.7 gibt es keinen Fix, nur das Upgrade), gespeichertes XSS in der Consent-Statistik (CVE-2026-103904), Wartungsmodus per URL (CVE-2026-103905), Path Traversal, IDOR im Retouren-Modul, XSS in „Passwort vergessen“ und im Backend. Eingespielte Patch-Dateien werden **direkt im Code** erkannt, die Prüfmerkmale stammen aus dem öffentlichen JTL-Quellcode und sind gegen die Releases von 5.0 bis 5.8.3 getestet
+- **Alle JTL-Sicherheitsupdates bis 5.8.5 / 5.7.7 / 5.6.7 / 5.5.6** (24.11.2026): Backend-Sprachumschaltung ohne Token, XSS in Länderverwaltung und OPC-Startmenü, abrufbare Sicherungen in `export/backup` (24.11.), OPC-Vorschaumodus, Crawler- und 404-XSS, Web-Installer ohne Sperre, Lieferadressen-IDOR, Admin-Übernahme über „Passwort zurücksetzen“ (12.11.), SQL-Injection über Backend-Benachrichtigungen (SHOP-10049) und alle älteren Lücken. Eingespielte Patch-Dateien werden **direkt im Code** erkannt; die Prüfmerkmale sind gegen beide Seiten der offiziellen Hotfix-Diffs für jede Version von 5.0.0 bis 5.8.4 und gegen die offiziellen Pakete getestet. Der Scan sagt auch, was JTL **nicht** zurückportiert hat: Rechteausweitung und Zahlungsarten-Prüfung sind nur ab 5.8.3 behoben, die Oktober-Fixes fehlen in 5.5.x ganz
+- **Spuren der November-Lücken:** ungültige Admin-Sprachwerte, HTML/Skript in 404-Weiterleitungen und Crawler-Einträgen (mit Datenbankzugang), Sicherungsdateien in `export/backup` mit Bewertung der `.htaccess`-Sperre, ein liegengebliebenes `install/`-Verzeichnis und die Anfragemuster aus den JTL-Hinweisen in den Access-Logs
 - **Eingeschleuste Consent-Namen** in der Datenbank (Spur von CVE-2026-103904) samt Bereinigungs-Hinweis
 - **Patch-Status für WordPress, WooCommerce und Magento** inklusive Patch-Level (`2.4.6-p6`) – z. B. CosmicSting, SessionReaper, WP_Query-SQL-Injection, WooCommerce-Store-API
 - **Zahlungs-, URL- und Script-Einstellungen in der Datenbank** (Head-/Footer-Scripts, `siteurl`, Basis-URLs, Webhooks, API-Schlüssel) mit Änderungserkennung zwischen zwei Scans
@@ -459,7 +460,7 @@ Gleicher Prüfumfang und gleiche drei Ansichten – aber als eigenständiges Pro
 - Linux, macOS oder Windows (64-bit); Lesezugriff auf das Shop-Verzeichnis
 - Für Datenbank-Prüfungen: MySQL/MariaDB-Zugang wie in der Shop-Konfiguration hinterlegt
 - Für Shopify: Admin-API-Token mit Lese-Scopes (`read_script_tags`, `read_themes`, `read_apps`, `read_users`)
-- Zum Selbstbauen: Rust ab 1.80
+- Zum Selbstbauen: Rust ab 1.89
 
 ---
 

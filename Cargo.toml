@@ -19,7 +19,7 @@ edition = "2021"
 license = "MIT"
 repository = "https://github.com/liohtml/ecom-sec"
 homepage = "https://github.com/liohtml/ecom-sec"
-rust-version = "1.80"
+rust-version = "1.89"
 keywords = ["security", "ecommerce", "malware", "scanner", "cve"]
 categories = ["command-line-utilities", "web-programming"]
 
@@ -63,7 +63,7 @@ terminal_size = "0.4"
 # self-update: release archives (.tar.gz for Unix, .zip for Windows)
 flate2 = "1"
 tar = { version = "0.4", default-features = false }
-zip = { version = "2", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 
 [profile.release]
 lto = "thin"
