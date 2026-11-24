@@ -14,12 +14,13 @@
 //!   searched for the SSTI payload,
 //! * customer / contact records containing template syntax,
 //! * plugins and cron jobs added after the reference date,
-//! * file evidence for the security releases 5.6.3 – 5.8.3 (consent XSS,
+//! * file evidence for the security releases 5.6.3 – 5.8.5 (consent XSS,
 //!   safe-mode toggle, path traversal, RMA IDOR …), injected consent names in
 //!   `consent_statistics` and the matching access-log indicators.
 
 mod config;
 mod db_checks;
+mod exposure;
 mod fixes;
 
 pub use config::JtlConfig;
@@ -353,6 +354,7 @@ impl Platform for Jtl5 {
             .with_detail(format!("Quelle: {}", self.version_source)),
         );
         config::permission_checks(&self.root, &mut report);
+        exposure::checks(&self.root, &mut report);
         dependency_check(&self.root, ctx, &mut report);
         if ctx.skip_remote {
             report

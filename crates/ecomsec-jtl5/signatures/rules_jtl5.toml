@@ -70,9 +70,10 @@ tags = ["cve-2026-54390", "jtl"]
 condition = "2"
 applies_to = ["php"]
 strings = [
-  { regex = 'Smarty_Internal_Template|\$_smarty_tpl', nocase = false },
-  { regex = '\beval\s*\(', nocase = true },
-  { regex = 'smarty_modifier_(unserialize|file_get_contents)|\b(unserialize|file_get_contents)\s*\(\s*\$_smarty_tpl', nocase = true },
+  # The header Smarty writes into every compiled file (with a real date).
+  # The Smarty library contains the format string with %s and does not match.
+  { regex = '^<\?php\s*/\*\s*Smarty version [0-9][^,\n]{0,20}, created on \d{4}-\d{2}-\d{2}', nocase = false },
+  { regex = '\beval\s*\(|smarty_modifier_(unserialize|file_get_contents)|\b(unserialize|file_get_contents)\s*\(\s*\$_smarty_tpl', nocase = true },
 ]
 
 [[rule]]

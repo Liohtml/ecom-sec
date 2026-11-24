@@ -33,6 +33,8 @@ pub fn run(jtl: &Jtl5, conn: &mut Conn, ctx: &PlatformContext, report: &mut Inte
         ("E-Mail-Historie", mail_history),
         ("Kundendaten", customer_records),
         ("Consent-Statistik", consent_statistics),
+        ("Admin-Sprache", admin_language_values),
+        ("Weiterleitungen und Crawler", stored_markup_traces),
     ];
     for (name, step) in steps {
         if let Err(e) = step(jtl, conn, ctx, report) {
@@ -956,6 +958,159 @@ fn consent_statistics(
         .with_detail(
             "Abgleich consent_statistics.eventName gegen tconsent.itemID (erste 24 Zeichen)",
         ),
+    );
+    Ok(())
+}
+
+/// CVE-2026-133938: the backend language switch stored any value without a
+/// token check in `tadminlogin.language`; it was printed unescaped in the
+/// backend.  The pattern is the indicator query from the JTL advisory.
+fn admin_language_values(
+    _jtl: &Jtl5,
+    conn: &mut Conn,
+    _ctx: &PlatformContext,
+    report: &mut IntegrityReport,
+) -> anyhow::Result<()> {
+    if !table_exists(conn, "tadminlogin")?
+        || !columns(conn, "tadminlogin")?.contains(&"language".to_string())
+    {
+        return Ok(());
+    }
+    let rows = query_rows(
+        conn,
+        "SELECT kAdminlogin, cLogin, language FROM tadminlogin \
+         WHERE language IS NOT NULL AND language <> '' \
+           AND language NOT REGEXP '^[A-Za-z]{2}(-[A-Za-z]{2})?$' LIMIT 200",
+    )?;
+    for row in &rows {
+        let (id, login, value) = (
+            col(row, "kAdminlogin"),
+            col(row, "cLogin"),
+            col(row, "language"),
+        );
+        report.findings.push(
+            Finding::new(
+                if looks_like_markup(value) {
+                    Severity::Critical
+                } else {
+                    Severity::Warning
+                },
+                Category::AttackTrace,
+                Source::Database,
+                "jtl5_admin_language_injection",
+                format!("tadminlogin:{id}"),
+                format!("Ungültige Backend-Sprache beim Admin-Konto {login}"),
+            )
+            .with_description(
+                "tadminlogin.language enthält keinen Sprachcode wie de-DE. Über die Backend-Sprachumschaltung ohne \
+                 Token (CVE-2026-133938) lässt sich hier Skriptcode ablegen, der im Backend mit den Rechten dieses \
+                 Kontos läuft. Shop auf 5.8.5 / 5.7.7 / 5.6.7 / 5.5.6 aktualisieren oder den Patch vom 24.11.2026 \
+                 einspielen, den Wert auf de-DE zurücksetzen, Passwort und Sitzungen des Kontos erneuern und \
+                 Änderungen an Konten, Plugins und Templates seit dem Zeitpunkt prüfen.",
+            )
+            .with_evidence(format!("language = {:?}", excerpt(value, 80)))
+            .with_evidence(format!(
+                "Bereinigung (nach Backup): UPDATE tadminlogin SET language = 'de-DE' WHERE kAdminlogin = {};",
+                id.parse::<u64>().unwrap_or(0)
+            )),
+        );
+    }
+    report.items.push(
+        IntegrityItem::new(
+            "admin.language_injection",
+            "Patch-Status",
+            "Backend-Sprache der Admin-Konten (CVE-2026-133938)",
+            if rows.is_empty() {
+                IntegrityStatus::Ok
+            } else {
+                IntegrityStatus::Critical
+            },
+            format!("{} ungültige Werte", rows.len()),
+        )
+        .with_detail("Abgleich tadminlogin.language gegen das Muster xx bzw. xx-XX"),
+    );
+    Ok(())
+}
+
+/// CVE-2026-22309 / CVE-2026-22310: crawler user agents and 404 URLs were
+/// stored as sent and printed unescaped in the backend.  Markup in these
+/// columns is a stored XSS payload waiting for an administrator.
+fn stored_markup_traces(
+    _jtl: &Jtl5,
+    conn: &mut Conn,
+    _ctx: &PlatformContext,
+    report: &mut IntegrityReport,
+) -> anyhow::Result<()> {
+    const MARKUP: &str = "REGEXP '[<>\"]|javascript:|onerror|onload'";
+    let sources: [(&str, &str, &str, &str, &str); 3] = [
+        (
+            "tredirect",
+            "kRedirect",
+            "cFromUrl",
+            "CVE-2026-22310",
+            "404-Weiterleitung (Quell-URL)",
+        ),
+        (
+            "tbesucherbot",
+            "kBesucherBot",
+            "cUserAgent",
+            "CVE-2026-22309",
+            "Crawler (User-Agent)",
+        ),
+        (
+            "tbesucherbot",
+            "kBesucherBot",
+            "cName",
+            "CVE-2026-22309",
+            "Crawler (Name)",
+        ),
+    ];
+    let mut hits = 0usize;
+    for (table, key, column, advisory, label) in sources {
+        if !table_exists(conn, table)?
+            || !columns(conn, table)?.contains(&column.to_ascii_lowercase())
+        {
+            continue;
+        }
+        let rows = query_rows(
+            conn,
+            &format!("SELECT {key} AS id, {column} AS value FROM {table} WHERE {column} {MARKUP} LIMIT 50"),
+        )?;
+        for row in &rows {
+            hits += 1;
+            let (id, value) = (col(row, "id"), col(row, "value"));
+            report.findings.push(
+                Finding::new(
+                    Severity::Critical,
+                    Category::AttackTrace,
+                    Source::Database,
+                    "jtl5_stored_backend_xss",
+                    format!("{table}:{id}:{column}"),
+                    format!("HTML/Skript in gespeicherter {label}"),
+                )
+                .with_description(format!(
+                    "{table}.{column} enthält HTML- oder Skript-Zeichen. Ungepatchte Shops geben den Wert im Backend \
+                     ungefiltert aus ({advisory}); der Code läuft, sobald ein Administrator die Übersicht öffnet. \
+                     Auf 5.8.4 bzw. 5.7.6 / 5.6.6 / 5.5.5 oder neuer aktualisieren, den Eintrag nach einem Backup \
+                     löschen und Admin-Konten, Plugins und Templates seit dem Auftreten prüfen."
+                ))
+                .with_evidence(format!("{column} = {:?}", excerpt(value, 120))),
+            );
+        }
+    }
+    report.items.push(
+        IntegrityItem::new(
+            "backend.stored_xss",
+            "Patch-Status",
+            "Weiterleitungen und Crawler: gespeichertes HTML/Skript (CVE-2026-22309, CVE-2026-22310)",
+            if hits > 0 {
+                IntegrityStatus::Critical
+            } else {
+                IntegrityStatus::Ok
+            },
+            format!("{hits} Einträge"),
+        )
+        .with_detail("tredirect.cFromUrl, tbesucherbot.cUserAgent und tbesucherbot.cName"),
     );
     Ok(())
 }

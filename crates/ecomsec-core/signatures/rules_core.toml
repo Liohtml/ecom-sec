@@ -160,6 +160,9 @@ description = "Shell-Funktionskombination: Befehlsausführung plus Upload/Bearbe
 severity = "critical"
 tags = ["webshell"]
 condition = "3"
+# Shell panels keep these calls close together; file-manager libraries such
+# as elFinder use them hundreds of kilobytes apart.
+within = 4000
 strings = [
   { regex = '\b(system|passthru|shell_exec|exec|popen|proc_open)\s*\(', nocase = true },
   { regex = 'move_uploaded_file\s*\(', nocase = true },

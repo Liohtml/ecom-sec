@@ -560,23 +560,37 @@ impl<'a> FileScanner<'a> {
             if !in_excluded_public && exposed_regex().is_match(name) && class != FileClass::Php {
                 let lower = name.to_ascii_lowercase();
                 let severity = exposed_severity(path, &lower, size);
-                if let Some(severity) = severity {
-                    findings.push(
-                        Finding::file(
-                            severity,
-                            Category::ExposedFile,
-                            "exposed_file",
-                            root,
-                            path,
-                            "Backup-, Dump-, Schlüssel- oder Konfigurationskopie im Webroot",
-                        )
-                        .with_description(
-                            "Die Datei liegt unterhalb des öffentlich erreichbaren Verzeichnisses und kann je \
-                             nach Webserver-Konfiguration direkt heruntergeladen werden. Dumps und \
-                             Konfigurationskopien enthalten häufig Zugangsdaten.",
-                        )
-                        .with_evidence(format!("{} ({})", pub_rel, crate::util::human_size(size))),
-                    );
+                if let Some(mut severity) = severity {
+                    let denied_by = htaccess_denies(path, self.profile.public_root());
+                    if denied_by.is_some() {
+                        severity = Severity::Info;
+                    }
+                    let mut f = Finding::file(
+                        severity,
+                        Category::ExposedFile,
+                        "exposed_file",
+                        root,
+                        path,
+                        "Backup-, Dump-, Schlüssel- oder Konfigurationskopie im Webroot",
+                    )
+                    .with_description(match &denied_by {
+                        None => "Die Datei liegt unterhalb des öffentlich erreichbaren Verzeichnisses und kann je \
+                                 nach Webserver-Konfiguration direkt heruntergeladen werden. Dumps und \
+                                 Konfigurationskopien enthalten häufig Zugangsdaten."
+                            .to_string(),
+                        Some(_) => "Die Datei liegt im Webroot, eine .htaccess sperrt den Abruf aber. Das gilt nur \
+                                    unter Apache: Unter nginx oder hinter einem nginx-Proxy muss der Server die \
+                                    Datei selbst sperren."
+                            .to_string(),
+                    })
+                    .with_evidence(format!("{} ({})", pub_rel, crate::util::human_size(size)));
+                    if let Some(h) = denied_by {
+                        f = f.with_evidence(format!(
+                            "gesperrt durch {}",
+                            crate::util::relative_display(root, &h)
+                        ));
+                    }
+                    findings.push(f);
                 }
             }
         }
@@ -787,6 +801,82 @@ fn exposed_severity(path: &Path, lower: &str, size: u64) -> Option<Severity> {
             Severity::Warning
         },
     )
+}
+
+/// The `.htaccess` that denies access to `file` below `stop`, following the
+/// Apache merge order (simplified to the access directives):
+///
+/// 1. directory level: the deepest `.htaccess` with a top-level
+///    `Require all denied` / `Deny from all` (or `granted`) decides,
+/// 2. `<Files>` / `<FilesMatch>` sections are applied afterwards, from the
+///    outermost to the innermost directory and in file order, and override
+///    the directory level – a `FilesMatch` that grants `.gz` in `export/`
+///    therefore also opens `export/backup/` (CVE-2026-133940 in JTL-Shop).
+pub fn htaccess_denies(file: &Path, stop: &Path) -> Option<PathBuf> {
+    let name = file.file_name()?.to_str()?;
+    let mut chain = Vec::new();
+    let mut dir = file.parent()?;
+    loop {
+        let candidate = dir.join(".htaccess");
+        if let Ok(text) = fs::read_to_string(&candidate) {
+            chain.push((candidate, text));
+        }
+        if dir == stop || !dir.starts_with(stop) {
+            break;
+        }
+        dir = dir.parent()?;
+    }
+    // chain: innermost first.
+    let mut decision: Option<(bool, &PathBuf)> = chain.iter().find_map(|(path, text)| {
+        access_of(&htaccess_sections().replace_all(text, "")).map(|d| (d, path))
+    });
+    for (path, text) in chain.iter().rev() {
+        for caps in htaccess_sections().captures_iter(text) {
+            if section_matches(&caps[1], caps[2].trim(), name) {
+                if let Some(access) = access_of(&caps[3]) {
+                    decision = Some((access, path));
+                }
+            }
+        }
+    }
+    match decision {
+        Some((true, path)) => Some(path.clone()),
+        _ => None,
+    }
+}
+
+fn htaccess_sections() -> &'static Regex {
+    static SECTION: OnceLock<Regex> = OnceLock::new();
+    SECTION.get_or_init(|| {
+        Regex::new(r#"(?is)<(Files|FilesMatch)\s+"?([^">]+?)"?\s*>(.*?)</(?:Files|FilesMatch)\s*>"#)
+            .expect("valid regex")
+    })
+}
+
+fn section_matches(kind: &str, pattern: &str, name: &str) -> bool {
+    if kind.eq_ignore_ascii_case("FilesMatch") {
+        Regex::new(pattern)
+            .map(|r| r.is_match(name))
+            .unwrap_or(false)
+    } else {
+        let glob = regex::escape(pattern)
+            .replace(r"\*", ".*")
+            .replace(r"\?", ".");
+        Regex::new(&format!("^{glob}$"))
+            .map(|r| r.is_match(name))
+            .unwrap_or(false)
+    }
+}
+
+fn access_of(block: &str) -> Option<bool> {
+    let lower = block.to_ascii_lowercase();
+    let denied = lower.contains("require all denied") || lower.contains("deny from all");
+    let granted = lower.contains("require all granted") || lower.contains("allow from all");
+    match (denied, granted) {
+        (true, false) => Some(true),
+        (false, true) => Some(false),
+        _ => None,
+    }
 }
 
 fn contains_bytes(haystack: &[u8], needle: &[u8]) -> bool {
@@ -1034,6 +1124,56 @@ mod tests {
         assert!(second.complete);
         assert_eq!(second.files_scanned, 40);
         assert!(state.checkpoint::<Checkpoint>().is_none());
+    }
+
+    #[test]
+    fn htaccess_follows_apache_merge_order() {
+        let tmp = tempfile::tempdir().unwrap();
+        let root = tmp.path();
+        // includes/.htaccess and install/.htaccess of JTL-Shop 5.8.5
+        write(root, "includes/.htaccess", b"<FilesMatch \"\\.(php|phtml|phar|sql|xml|json|log|tpl|lock)$\">\n    <IfModule mod_authz_core.c>\n        Require all denied\n    </IfModule>\n</FilesMatch>");
+        let schema = write(root, "includes/vendor/lib/schema.sql", b"CREATE TABLE x;");
+        assert!(htaccess_denies(&schema, root).is_some());
+        let png = write(root, "includes/vendor/lib/logo.png", b"x");
+        assert!(htaccess_denies(&png, root).is_none());
+        write(
+            root,
+            "install/.htaccess",
+            b"<Files *.sql>\n    Require all denied\n</Files>",
+        );
+        let initial = write(
+            root,
+            "install/initial_schema.sql",
+            b"INSERT INTO x VALUES (1);",
+        );
+        assert!(htaccess_denies(&initial, root).is_some());
+        let dump = write(root, "public/dump.sql", b"INSERT INTO x VALUES (1);");
+        assert!(htaccess_denies(&dump, root).is_none());
+
+        // CVE-2026-133940: export/.htaccess grants .gz, export/backup/.htaccess
+        // only denies at directory level – the parent section wins.
+        write(root, "export/.htaccess", b"Require all denied\n<FilesMatch \"\\.(txt|csv|xml|gz|zip)$\">\n    Require all granted\n</FilesMatch>");
+        write(
+            root,
+            "export/backup/.htaccess",
+            b"<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>",
+        );
+        let backup = write(root, "export/backup/20261101_sql_ab12_backup.sql.gz", b"x");
+        assert!(
+            htaccess_denies(&backup, root).is_none(),
+            "vulnerable layout must stay reachable"
+        );
+        let feed = write(root, "export/feed.csv", b"x");
+        assert!(htaccess_denies(&feed, root).is_none());
+        let other = write(root, "export/notes.sql", b"x");
+        assert!(htaccess_denies(&other, root).is_some());
+        // The hotfix adds a FilesMatch ".*" deny in export/backup.
+        write(
+            root,
+            "export/backup/.htaccess",
+            b"Require all denied\n<FilesMatch \".*\">\n    Require all denied\n</FilesMatch>",
+        );
+        assert!(htaccess_denies(&backup, root).is_some());
     }
 
     #[test]

@@ -8,17 +8,196 @@
 # Pflege: wöchentlicher Workflow .github/workflows/advisories.yml + Review.
 
 [[advisory]]
+id = "CVE-2026-133938"
+platform = "jtl5"
+title = "Backend-Sprachumschaltung ohne Token: Skriptcode im Backend (CSRF + gespeichertes XSS)"
+severity = "critical"
+score = 9.3
+affected = [">=5.2.3 <5.5.6", ">=5.6.0 <5.6.7", ">=5.7.0 <5.7.7", ">=5.8.0 <5.8.5"]
+fixed_in = ["5.5.6", "5.6.7", "5.7.7", "5.8.5"]
+backpatch_note = "Die Aktion quick_change_language übernimmt per GET ohne Token einen beliebigen Wert in tadminlogin.language, der im Backend ungefiltert ausgegeben wird. Ein Administrator muss nur eine präparierte Seite öffnen. Für 5.2.3–5.4 gibt es nur die Patch-Dateien vom 24.11.2026. Nachweis an AdminAccountController.php (Token-Prüfung); mit Datenbankzugang meldet der Scan ungültige Sprachwerte."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-backend-sprachumschaltung_xss/"
+published = 2026-11-24
+tags = ["csrf", "xss", "backend", "cwe-352", "cwe-79"]
+source = "JTL Security Advisory 24.11.2026, Hotfix-Diffs 5.0.0–5.8.4 und Pakete 5.5.6/5.6.7/5.7.7/5.8.5 geprüft"
+
+[[advisory]]
+id = "CVE-2026-133939"
+platform = "jtl5"
+title = "Reflektiertes XSS im OPC-Startmenü"
+severity = "critical"
+score = 9.3
+affected = [">=5.0.0 <5.5.6", ">=5.6.0 <5.6.7", ">=5.7.0 <5.7.7", ">=5.8.0 <5.8.5"]
+fixed_in = ["5.5.6", "5.6.7", "5.7.7", "5.8.5"]
+backpatch_note = "Suchbegriff, Seitenkennung und Adressen wurden im OPC-Startmenü ungefiltert in JavaScript ausgegeben; ein Klick eines angemeldeten Backend-Nutzers auf einen präparierten Link genügt. Seit Einführung des OPC betroffen, für 5.0–5.4 nur Patch-Dateien. Nachweis an admin/opc/tpl/startmenu.tpl."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-opc-startmenue_xss/"
+published = 2026-11-24
+tags = ["xss", "opc", "backend"]
+source = "JTL Security Advisory 24.11.2026, Hotfix-Diffs 5.0.0–5.8.4 und Pakete 5.5.6/5.6.7/5.7.7/5.8.5 geprüft"
+
+[[advisory]]
+id = "CVE-2026-133940"
+platform = "jtl5"
+title = "Sicherungsdateien in export/backup ohne Anmeldung abrufbar"
+severity = "critical"
+score = 8.2
+affected = [">=5.0.0 <5.5.6", ">=5.6.0 <5.6.7", ">=5.7.0 <5.7.7", ">=5.8.0 <5.8.5"]
+fixed_in = ["5.5.6", "5.6.7", "5.7.7", "5.8.5"]
+backpatch_note = "export/.htaccess erlaubt .gz und .zip unterhalb von export/, export/backup hob das nicht auf: Datenbank- und Dateisicherungen (inkl. Konfiguration mit Zugangsdaten) waren abrufbar, sofern der Dateiname bekannt oder erratbar ist (bis 5.5.5 nur ein Zeitstempel). Der Fix wirkt nur unter Apache; nginx braucht eine eigene Sperre. Nachweis an export/backup/.htaccess; der Scan listet vorhandene Sicherungen."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-sicherungsdateien-export_backup_abrufbar/"
+published = 2026-11-24
+tags = ["exposed-file", "unauthenticated", "backup", "gdpr"]
+source = "JTL Security Advisory 24.11.2026, Hotfix-Diffs 5.0.0–5.8.4 und Pakete 5.5.6/5.6.7/5.7.7/5.8.5 geprüft"
+
+[[advisory]]
+id = "CVE-2026-133941"
+platform = "jtl5"
+title = "Reflektiertes XSS in der Länderverwaltung (activeSortOrder)"
+severity = "critical"
+score = 9.3
+affected = [">=5.6.0 <5.6.7", ">=5.7.0 <5.7.7", ">=5.8.0 <5.8.5"]
+fixed_in = ["5.6.7", "5.7.7", "5.8.5"]
+backpatch_note = "Der Parameter activeSortOrder unter /admin/countries wurde ungeprüft in JavaScript und Formularfelder übernommen; ein Klick eines Backend-Nutzers mit Zugriff auf die Länderverwaltung genügt. Vor 5.6.0 nicht betroffen. Nachweis an includes/src/Country/Manager.php."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-backend-laenderverwaltung_xss/"
+published = 2026-11-24
+tags = ["xss", "backend"]
+source = "JTL Security Advisory 24.11.2026, Hotfix-Diffs 5.0.0–5.8.4 und Pakete 5.5.6/5.6.7/5.7.7/5.8.5 geprüft"
+
+[[advisory]]
+id = "CVE-2026-22308"
+platform = "jtl5"
+title = "Reflektiertes XSS über den OPC-Vorschaumodus (ohne Anmeldung)"
+severity = "critical"
+score = 9.3
+affected = [">=5.0.0 <5.5.5", ">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.4"]
+fixed_in = ["5.5.5", "5.6.6", "5.7.6", "5.8.4"]
+backpatch_note = "Der Parameter opcPreviewMode schaltete per GET für jeden Besucher die OPC-Vorschau ein, die Seitendaten aus der Anfrage ungefiltert rendert. Ein präparierter Link genügt. Für 5.0–5.4 gibt es nur die Patch-Dateien vom 12.11.2026. Nachweis an includes/src/OPC/Service.php (PreviewToken)."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-opc-vorschaumodus_xss/"
+published = 2026-11-12
+tags = ["xss", "opc", "unauthenticated"]
+source = "JTL Security Advisory 12.11.2026, Hotfix-Diffs 5.0.0–5.8.3 und Pakete 5.5.5/5.6.6/5.7.6/5.8.4 geprüft"
+
+[[advisory]]
+id = "CVE-2026-22309"
+platform = "jtl5"
+title = "Gespeichertes XSS über den Crawler-User-Agent"
+severity = "critical"
+score = 9.3
+affected = [">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.4"]
+fixed_in = ["5.6.6", "5.7.6", "5.8.4"]
+backpatch_note = "Ein präparierter User-Agent wird ohne Anmeldung in tbesucherbot gespeichert und in Statistiken, Dashboard-Widget, Crawler-Bearbeitung und Sitemap-Export ungefiltert ausgegeben. 5.5 und älter nicht betroffen. Nachweis an includes/src/Crawler/Controller.php; mit Datenbankzugang meldet der Scan gespeicherte Payloads."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-crawler-user-agent_xss/"
+published = 2026-11-12
+tags = ["stored-xss", "unauthenticated", "backend"]
+source = "JTL Security Advisory 12.11.2026, Hotfix-Diffs 5.0.0–5.8.3 und Pakete 5.5.5/5.6.6/5.7.6/5.8.4 geprüft"
+
+[[advisory]]
+id = "CVE-2026-22310"
+platform = "jtl5"
+title = "Gespeichertes XSS über 404-Weiterleitungen"
+severity = "critical"
+score = 8.0
+affected = [">=5.0.0 <5.5.5", ">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.4"]
+fixed_in = ["5.5.5", "5.6.6", "5.7.6", "5.8.4"]
+backpatch_note = "Ist „404-Fehler speichern“ (redirect_save_404) aktiv, landen aufgerufene URLs ungefiltert in tredirect.cFromUrl und werden im Bearbeitungsformular der Weiterleitungen ausgegeben. Für 5.0–5.4 kein Patch. Nachweis an Redirect/Services/ValidationService.php; mit Datenbankzugang meldet der Scan gespeicherte Payloads."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-404-weiterleitungen_xss/"
+published = 2026-11-12
+tags = ["stored-xss", "unauthenticated", "backend"]
+source = "JTL Security Advisory 12.11.2026, Hotfix-Diffs 5.0.0–5.8.3 und Pakete 5.5.5/5.6.6/5.7.6/5.8.4 geprüft"
+
+[[advisory]]
+id = "CVE-2026-22311"
+platform = "jtl5"
+title = "Wawi-Abgleich lässt sich über X-Forwarded-For sperren"
+severity = "warning"
+score = 7.5
+affected = [">=5.8.0 <5.8.4"]
+fixed_in = ["5.8.4"]
+backpatch_note = "Die Sperre nach fünf Fehlversuchen am /dbeS/-Abgleich hing an der ersten X-Forwarded-For-Angabe, die jeder Aufrufer setzen kann: Der echte Abgleich ließ sich so ohne Anmeldung blockieren (Bestellungen werden nicht abgeholt). Nur 5.8. Nach dem Update Proxy-Adressen in TRUSTED_PROXY_IPS eintragen. Nachweis an dbeS/FailedLoginLimiter.php."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-wawi-synchronisation_sperrung/"
+published = 2026-11-12
+tags = ["dos", "unauthenticated", "dbes"]
+source = "JTL Security Advisory 12.11.2026, Hotfix-Diffs 5.0.0–5.8.3 und Pakete 5.5.5/5.6.6/5.7.6/5.8.4 geprüft"
+
+[[advisory]]
+id = "CVE-2026-123058"
+platform = "jtl5"
+title = "Web-Installer sperrt sich nach der Installation nicht"
+severity = "critical"
+score = 9.0
+affected = [">=5.0.0 <5.5.5", ">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.4"]
+fixed_in = ["5.5.5", "5.6.6", "5.7.6", "5.8.4"]
+backpatch_note = "Solange install/ erreichbar ist, nimmt der Installer fremde Datenbank-Zugangsdaten an, legt Admin- und Sync-Konten an und überschreibt die Konfiguration – ohne Anmeldung. Das Update löscht ein vorhandenes install/-Verzeichnis nicht: sofort entfernen. Nachweis an Installation/VueInstaller.php; der Scan meldet ein vorhandenes install/-Verzeichnis."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-web-installer_nicht_gesperrt/"
+published = 2026-11-12
+tags = ["missing-authentication", "unauthenticated", "installer"]
+source = "JTL Security Advisory 12.11.2026, Hotfix-Diffs 5.0.0–5.8.3 und Pakete 5.5.5/5.6.6/5.7.6/5.8.4 geprüft"
+
+[[advisory]]
+id = "CVE-2026-125060"
+platform = "jtl5"
+title = "IDOR im Bestellprozess: fremde Lieferadressen in eigene Bestellungen übernehmbar"
+severity = "critical"
+score = 8.2
+affected = [">=5.2.0 <5.5.5", ">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.4"]
+fixed_in = ["5.5.5", "5.6.6", "5.7.6", "5.8.4"]
+backpatch_note = "Die Lieferadressen-ID aus dem Formular wurde ohne Besitzprüfung in die Bestellung übernommen; mit einem Kundenkonto oder einer Gastbestellung ließen sich so fremde gespeicherte Adressen auslesen. 5.0/5.1 nicht betroffen, 5.2–5.4 ohne Patch. Bestellungen mit fremder Lieferadresse prüfen (Abfrage im Hinweis) und eine Meldung nach DSGVO Art. 33 erwägen. Nachweis an CheckoutController.php."
+reference = "https://www.jtl-software.com/de/security/sicherheitshinweis-lieferadressen-bestellprozess/"
+published = 2026-11-12
+tags = ["idor", "data-leak", "gdpr"]
+source = "JTL Security Advisory 12.11.2026, Hotfix-Diffs 5.0.0–5.8.3 und Pakete 5.5.5/5.6.6/5.7.6/5.8.4 geprüft"
+
+[[advisory]]
+id = "JTL-2026-ADMIN-PWRESET"
+platform = "jtl5"
+title = "Übernahme von Admin-Konten über „Passwort zurücksetzen“"
+severity = "critical"
+affected = [">=5.2.0 <5.5.5", ">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.4"]
+fixed_in = ["5.5.5", "5.6.6", "5.7.6", "5.8.4"]
+backpatch_note = "Beim Setzen eines neuen Backend-Passworts wurde das Konto über die mitgesendete E-Mail-Adresse statt über den Reset-Link bestimmt. JTL nennt den Fix in 5.8.4, 5.7.6, 5.6.6 und 5.5.5 ohne eigenen Hinweis. Nachweis an Router/Controller/Backend/PasswordController.php. Admin-Konten, Passwortänderungen und Anmeldungen prüfen."
+reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+published = 2026-11-12
+tags = ["account-takeover", "unauthenticated", "backend"]
+source = "JTL-Forum (Release 5.8.4, „Übernahme von Admin-Konten über Passwort-zurücksetzen“), Code-Diff 5.8.3 → 5.8.4, Pakete 5.5.5/5.6.6/5.7.6 geprüft"
+
+[[advisory]]
+id = "JTL-2026-DBES-CATEGORY-SQLI"
+platform = "jtl5"
+title = "SQL-Injection im dbeS-Kategorie-Abgleich"
+severity = "warning"
+affected = [">=5.0.0 <5.5.5", ">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.4"]
+fixed_in = ["5.5.5", "5.6.6", "5.7.6", "5.8.4"]
+backpatch_note = "Beim Kategorie-Abgleich wurden Attribut-IDs ungebunden in ein DELETE eingesetzt. Setzt gültige Wawi-Sync-Zugangsdaten voraus. JTL nennt den Fix in 5.8.4, 5.7.6, 5.6.6 und 5.5.5 ohne eigenen Hinweis. Nachweis an dbeS/Sync/Categories.php."
+reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+published = 2026-11-12
+tags = ["sqli", "authenticated", "dbes"]
+source = "JTL-Forum (Release 5.8.4), Code-Diff 5.8.3 → 5.8.4, Pakete 5.5.5/5.6.6/5.7.6 geprüft"
+
+[[advisory]]
+id = "JTL-2026-BACKEND-RIGHTS-584"
+platform = "jtl5"
+title = "Eingeschränkte Backend-Konten: Kundendaten abrufbar, Dateien über den Avatar-Upload löschbar"
+severity = "warning"
+affected = [">=5.0.0 <5.5.5", ">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.4"]
+fixed_in = ["5.5.5", "5.6.6", "5.7.6", "5.8.4"]
+backpatch_note = "Mehrere Backend-IO-Funktionen (u. a. Kundensuche) waren für jedes Backend-Konto aufrufbar, und der Avatar-Upload in der Benutzerverwaltung löschte einen frei wählbaren Pfad. JTL nennt die Fixes in 5.8.4, 5.7.6, 5.6.6 und 5.5.5 ohne eigenen Hinweis. Nachweis an IOController.php und AdminAccountController.php."
+reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+published = 2026-11-12
+tags = ["missing-authorization", "file-deletion", "backend"]
+source = "JTL-Forum (Release 5.8.4), Code-Diff 5.8.3 → 5.8.4, Pakete 5.5.5/5.6.6/5.7.6 geprüft"
+
+[[advisory]]
 id = "JTL-SHOP-10049"
 platform = "jtl5"
 title = "Second-Order-SQL-Injection über Backend-Benachrichtigungen (jedes Backend-Konto)"
 severity = "critical"
-affected = [">=5.0.0 <5.8.3"]
-fixed_in = ["5.8.3"]
-backpatch_note = "Das Ausblenden einer Backend-Benachrichtigung speichert einen beliebigen Wert als Hash, der beim nächsten Aufbau der Benachrichtigungen ungefiltert in ein DELETE eingesetzt wird. Ausnutzbar mit jedem angemeldeten Backend-Konto, unabhängig von dessen Rechten. Für 5.6 und 5.7 hat JTL keinen Fix veröffentlicht: Update auf 5.8.3. Ein eingespielter Fix wird an Notification::isValidHash erkannt."
+affected = [">=5.0.0 <5.5.5", ">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.3"]
+fixed_in = ["5.5.5", "5.6.6", "5.7.6", "5.8.3"]
+backpatch_note = "Das Ausblenden einer Backend-Benachrichtigung speichert einen beliebigen Wert als Hash, der beim nächsten Aufbau der Benachrichtigungen ungefiltert in ein DELETE eingesetzt wird. Ausnutzbar mit jedem angemeldeten Backend-Konto, unabhängig von dessen Rechten. Behoben in 5.8.3 sowie (als „SQL-Injection über die Benachrichtigungsaktion im Backend“) in 5.7.6, 5.6.6 und 5.5.5. Ein eingespielter Fix wird an Notification::isValidHash erkannt."
 reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
 published = 2026-11-04
 tags = ["sqli", "authenticated", "backend"]
-source = "JTL-Forum (Release 5.8.3), Code-Diff 5.8.2 → 5.8.3"
+source = "JTL-Forum (Releases 5.8.3, 5.7.6, 5.6.6, 5.5.5), Code-Diff 5.8.2 → 5.8.3, Pakete 5.5.5/5.6.6/5.7.6 geprüft"
 
 [[advisory]]
 id = "JTL-2026-BACKEND-PRIVESC"
@@ -27,24 +206,24 @@ title = "Rechteausweitung: eingeschränkte Backend-Konten können Administratore
 severity = "critical"
 affected = [">=5.2.0 <5.8.3"]
 fixed_in = ["5.8.3"]
-backpatch_note = "Ein Backend-Konto mit Zugriff auf die Benutzerverwaltung, aber ohne Administratorgruppe, konnte Konten der Administratorgruppe zuordnen, Administratoren löschen und die Zwei-Faktor-Geheimnisse von Administratoren abrufen oder neu setzen. Als Administrator stehen Plugin- und Template-Upload und damit Codeausführung offen. Kein Fix für 5.6 und 5.7: Update auf 5.8.3. Nachweis an AdminAccountController.php und BackendTwoFA.php. Admin-Konten und Gruppenzugehörigkeit prüfen."
+backpatch_note = "Ein Backend-Konto mit Zugriff auf die Benutzerverwaltung, aber ohne Administratorgruppe, konnte Konten der Administratorgruppe zuordnen, Administratoren löschen und die Zwei-Faktor-Geheimnisse von Administratoren abrufen oder neu setzen. Als Administrator stehen Plugin- und Template-Upload und damit Codeausführung offen. Nur in 5.8.3 und neuer behoben; 5.7.7, 5.6.7 und 5.5.6 enthalten den alten Code (Pakete geprüft): Update auf 5.8. Nachweis an AdminAccountController.php und BackendTwoFA.php. Admin-Konten und Gruppenzugehörigkeit prüfen."
 reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
 published = 2026-11-04
 tags = ["privilege-escalation", "authenticated", "2fa", "backend"]
-source = "JTL-Forum (Release 5.8.3, „mehrere Security Fixes mit severity high“), Code-Diff 5.8.2 → 5.8.3"
+source = "Pakete 5.5.6/5.6.7/5.7.7 geprüft (kein Backport); JTL-Forum (Release 5.8.3, „mehrere Security Fixes mit severity high“), Code-Diff 5.8.2 → 5.8.3"
 
 [[advisory]]
 id = "JTL-2026-WAWI-SYNC"
 platform = "jtl5"
 title = "Wawi-Abgleich: beliebige Dateien über den Bildabgleich, SQL-Injection beim Löschen"
 severity = "warning"
-affected = [">=5.0.0 <5.8.3"]
-fixed_in = ["5.8.3"]
-backpatch_note = "Der dbeS-Bildabgleich übernahm Dateien ohne Prüfung von Endung und Inhalt, das Löschen von Datensätzen setzte Ausschlusswerte ungefiltert in SQL ein. Beides setzt gültige Wawi-Sync-Zugangsdaten voraus. Kein Fix für 5.6 und 5.7: Update auf 5.8.3 und Sync-Passwort ändern, falls es Dritten bekannt sein könnte. Nachweis an ImageUpload.php und AbstractSync.php."
+affected = [">=5.0.0 <5.5.5", ">=5.6.0 <5.6.6", ">=5.7.0 <5.7.6", ">=5.8.0 <5.8.3"]
+fixed_in = ["5.5.5", "5.6.6", "5.7.6", "5.8.3"]
+backpatch_note = "Der dbeS-Bildabgleich übernahm Dateien ohne Prüfung von Endung und Inhalt, das Löschen von Datensätzen setzte Ausschlusswerte ungefiltert in SQL ein. Beides setzt gültige Wawi-Sync-Zugangsdaten voraus. Behoben in 5.8.3 sowie in 5.7.6, 5.6.6 und 5.5.5; Sync-Passwort ändern, falls es Dritten bekannt sein könnte. Nachweis an ImageUpload.php und AbstractSync.php."
 reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
 published = 2026-11-04
 tags = ["file-upload", "sqli", "authenticated", "dbes"]
-source = "Code-Diff 5.8.2 → 5.8.3 (Release 5.8.3)"
+source = "Code-Diff 5.8.2 → 5.8.3, Pakete 5.5.5/5.6.6/5.7.6 geprüft"
 
 [[advisory]]
 id = "JTL-2026-CHECKOUT-PAYMENT"
@@ -53,11 +232,11 @@ title = "Checkout akzeptiert deaktivierte oder für die Kundengruppe gesperrte Z
 severity = "warning"
 affected = [">=5.2.0 <5.8.3"]
 fixed_in = ["5.8.3"]
-backpatch_note = "Eine Bestellung ließ sich mit einer Zahlungsart abschließen, die deaktiviert oder für die Kundengruppe nicht freigegeben ist (z. B. Kauf auf Rechnung für Neukunden). Kein Fix für 5.6 und 5.7: Update auf 5.8.3. Bestellungen mit unerwarteten Zahlungsarten prüfen."
+backpatch_note = "Eine Bestellung ließ sich mit einer Zahlungsart abschließen, die deaktiviert oder für die Kundengruppe nicht freigegeben ist (z. B. Kauf auf Rechnung für Neukunden). Nur in 5.8.3 und neuer behoben; 5.7.7, 5.6.7 und 5.5.6 enthalten den alten Code (Pakete geprüft): Update auf 5.8. Bestellungen mit unerwarteten Zahlungsarten prüfen."
 reference = "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
 published = 2026-11-04
 tags = ["business-logic", "checkout", "payment"]
-source = "Code-Diff 5.8.2 → 5.8.3 (Release 5.8.3)"
+source = "Pakete 5.5.6/5.6.7/5.7.7 geprüft (kein Backport); Code-Diff 5.8.2 → 5.8.3 (Release 5.8.3)"
 
 [[advisory]]
 id = "CVE-2026-54390"
