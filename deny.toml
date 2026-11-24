@@ -4,7 +4,12 @@
 
 [advisories]
 yanked = "deny"
-ignore = []
+ignore = [
+    # Unmaintained, not vulnerable: no known flaw in chrono 0.4.45. The types are
+    # part of the report schema (timestamps in JSON), so the move to jiff is a
+    # separate change with its own compatibility tests.
+    { id = "RUSTSEC-2026-0543", reason = "chrono ist nicht mehr gepflegt, aber ohne bekannte Schwachstelle; Wechsel auf jiff als eigene Änderung." },
+]
 
 [licenses]
 version = 2
