@@ -24,7 +24,7 @@
   <a href="https://crates.io/crates/ecomsec"><img alt="Downloads" src="https://img.shields.io/crates/d/ecomsec?label=Downloads"></a>
   <img alt="Kostenlos" src="https://img.shields.io/badge/Preis-kostenfrei-2ea44f">
   <img alt="Lizenz MIT" src="https://img.shields.io/badge/Lizenz-MIT-blue">
-  <img alt="Rust" src="https://img.shields.io/badge/Rust-1.80%2B-orange">
+  <img alt="Rust" src="https://img.shields.io/badge/Rust-1.89%2B-orange">
   <img alt="Read-only" src="https://img.shields.io/badge/Zugriff-nur%20lesend-informational">
   <img alt="Plattformen" src="https://img.shields.io/badge/JTL--Shop%205%20%C2%B7%20Shopware%206%20%C2%B7%20WooCommerce%20%C2%B7%20Magento%202%20%C2%B7%20Shopify-unterst%C3%BCtzt-6f42c1">
 </p>
@@ -460,7 +460,7 @@ Gleicher Prüfumfang und gleiche drei Ansichten – aber als eigenständiges Pro
 - Linux, macOS oder Windows (64-bit); Lesezugriff auf das Shop-Verzeichnis
 - Für Datenbank-Prüfungen: MySQL/MariaDB-Zugang wie in der Shop-Konfiguration hinterlegt
 - Für Shopify: Admin-API-Token mit Lese-Scopes (`read_script_tags`, `read_themes`, `read_apps`, `read_users`)
-- Zum Selbstbauen: Rust ab 1.80
+- Zum Selbstbauen: Rust ab 1.89
 
 ---
 

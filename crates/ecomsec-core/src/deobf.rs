@@ -976,16 +976,17 @@ fn apply_chain(literal: &[u8], steps: &[Step], limits: &Limits) -> Option<Vec<u8
 /// Decode a literal whose decoder is not written next to it.
 fn blind_decode(literal: &[u8], limits: &Limits) -> Option<(Vec<u8>, String)> {
     let limit = limits.max_payload_bytes;
-    let (raw, label) = if literal.len() % 2 == 0 && literal.iter().all(|b| b.is_ascii_hexdigit()) {
-        (hex_decode(literal)?, "hex2bin")
-    } else if literal
-        .iter()
-        .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='))
-    {
-        (base64_decode(literal)?, "base64_decode")
-    } else {
-        return None;
-    };
+    let (raw, label) =
+        if literal.len().is_multiple_of(2) && literal.iter().all(|b| b.is_ascii_hexdigit()) {
+            (hex_decode(literal)?, "hex2bin")
+        } else if literal
+            .iter()
+            .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'+' | b'/' | b'='))
+        {
+            (base64_decode(literal)?, "base64_decode")
+        } else {
+            return None;
+        };
     if mostly_text(&raw) {
         return Some((raw, label.to_string()));
     }
@@ -1061,7 +1062,7 @@ pub fn base64_decode(input: &[u8]) -> Option<Vec<u8>> {
 }
 
 fn hex_decode(input: &[u8]) -> Option<Vec<u8>> {
-    if input.len() % 2 != 0 || input.is_empty() {
+    if !input.len().is_multiple_of(2) || input.is_empty() {
         return None;
     }
     input

@@ -160,7 +160,7 @@ fn parse_signature(text: &str) -> Result<ParsedSig, VerifyError> {
 fn decode_b64(text: &str) -> Result<Vec<u8>, VerifyError> {
     let compact: String = text.chars().filter(|c| !c.is_ascii_whitespace()).collect();
     let mut padded = compact;
-    while padded.len() % 4 != 0 {
+    while !padded.len().is_multiple_of(4) {
         padded.push('=');
     }
     STANDARD

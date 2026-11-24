@@ -45,7 +45,7 @@ terminal_size.workspace = true
 # Release signatures (minisign): BLAKE2b-512 prehash and Ed25519.
 base64.workspace = true
 blake2 = "0.10"
-# 2.2 raises the MSRV above this workspace (1.80).
+# Pinned below 2.2 since #4 (2.2 needed a newer Rust than the MSRV at the time).
 ed25519-dalek = ">=2.1.1, <2.2"
 # Dashboard token comparison (constant time) and session tokens.
 sha2.workspace = true
