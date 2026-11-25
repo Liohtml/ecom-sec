@@ -37,6 +37,7 @@ pub mod rules;
 pub mod score;
 pub mod signatures;
 pub mod state;
+pub mod time;
 pub mod util;
 pub mod version;
 

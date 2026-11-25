@@ -6,8 +6,8 @@
 
 use crate::finding::Severity;
 use crate::platform::Advisory;
+use crate::time::Date;
 use crate::version::{Version, VersionRange};
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -52,7 +52,7 @@ pub struct AdvisorySpec {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reference: Option<String>,
     #[serde(deserialize_with = "de_date", serialize_with = "ser_date")]
-    pub published: NaiveDate,
+    pub published: Date,
     #[serde(default)]
     pub tags: Vec<String>,
     /// Alias ids (GHSA ↔ CVE) used by the sync workflow for de-duplication.
@@ -74,7 +74,7 @@ pub struct AdvisorySpec {
 }
 
 /// Accept both TOML native dates (`2026-06-17`) and strings (`"2026-06-17"`).
-fn de_date<'de, D: serde::Deserializer<'de>>(d: D) -> Result<NaiveDate, D::Error> {
+fn de_date<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Date, D::Error> {
     #[derive(Deserialize)]
     #[serde(untagged)]
     enum Raw {
@@ -86,11 +86,11 @@ fn de_date<'de, D: serde::Deserializer<'de>>(d: D) -> Result<NaiveDate, D::Error
         Raw::S(s) => s,
     };
     let day = text.get(..10).unwrap_or(&text);
-    NaiveDate::parse_from_str(day, "%Y-%m-%d").map_err(serde::de::Error::custom)
+    Date::strptime("%Y-%m-%d", day).map_err(serde::de::Error::custom)
 }
 
-fn ser_date<S: serde::Serializer>(d: &NaiveDate, s: S) -> Result<S::Ok, S::Error> {
-    s.serialize_str(&d.format("%Y-%m-%d").to_string())
+fn ser_date<S: serde::Serializer>(d: &Date, s: S) -> Result<S::Ok, S::Error> {
+    s.serialize_str(&d.strftime("%Y-%m-%d").to_string())
 }
 
 /// Parse `>=a <b`, `<b`, `>=a`, `*` or a bare version (`== a`).

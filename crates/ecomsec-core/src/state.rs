@@ -7,7 +7,7 @@
 
 use crate::finding::FindingId;
 use crate::report::HistoryEntry;
-use chrono::{DateTime, Utc};
+use crate::time::Timestamp;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
@@ -19,7 +19,8 @@ pub struct Acceptance {
     pub subject: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reason: Option<String>,
-    pub accepted_at: DateTime<Utc>,
+    #[serde(with = "crate::time::serde_rfc3339")]
+    pub accepted_at: Timestamp,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -37,7 +38,7 @@ const MAX_HISTORY: usize = 200;
 /// Number of complete reports kept in `reports/` for change detection.
 pub const MAX_ARCHIVED_REPORTS: usize = 10;
 const REPORTS_DIR: &str = "reports";
-const ARCHIVE_TS_FORMAT: &str = "%Y%m%dT%H%M%S%.3fZ";
+pub(crate) const ARCHIVE_TS_FORMAT: &str = "%Y%m%dT%H%M%S%.3fZ";
 
 impl StateStore {
     /// Use `dir` directly.
@@ -121,7 +122,7 @@ impl StateStore {
             Acceptance {
                 subject: subject.to_string(),
                 reason,
-                accepted_at: Utc::now(),
+                accepted_at: crate::time::now(),
             },
         );
         self.write_json("accepted.json", &acc)
@@ -185,7 +186,7 @@ impl StateStore {
     pub fn archive_report(&self, report: &crate::report::Report) -> io::Result<PathBuf> {
         let dir = self.dir.join(REPORTS_DIR);
         fs::create_dir_all(&dir)?;
-        let name = format!("{}.json", report.generated_at.format(ARCHIVE_TS_FORMAT));
+        let name = format!("{}.json", report.generated_at.strftime(ARCHIVE_TS_FORMAT));
         let path = dir.join(&name);
         let tmp = dir.join(format!("{name}.tmp"));
         fs::write(&tmp, serde_json::to_vec_pretty(report)?)?;
@@ -253,8 +254,8 @@ impl StateStore {
     }
 
     /// The newest archived report generated strictly before `before`.
-    pub fn previous_report(&self, before: DateTime<Utc>) -> Option<crate::report::Report> {
-        let cutoff = before.format(ARCHIVE_TS_FORMAT).to_string();
+    pub fn previous_report(&self, before: Timestamp) -> Option<crate::report::Report> {
+        let cutoff = before.strftime(ARCHIVE_TS_FORMAT).to_string();
         self.archived_reports()
             .iter()
             .rev()
@@ -374,7 +375,7 @@ mod tests {
         assert!(store.history().is_empty());
     }
 
-    fn dummy_report(at: DateTime<Utc>) -> crate::report::Report {
+    fn dummy_report(at: Timestamp) -> crate::report::Report {
         use crate::platform::{PlatformInfo, PlatformKind};
         crate::report::Report {
             schema_version: 1,
@@ -388,7 +389,7 @@ mod tests {
                 target: None,
                 details: vec![],
             },
-            reference_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
+            reference_date: jiff::civil::date(2026, 6, 17),
             verdict: crate::report::Verdict::Clean,
             summary: Default::default(),
             findings: vec![],
@@ -407,10 +408,12 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let store = StateStore::new(tmp.path());
         assert!(store.latest_archived_report().is_none());
-        let start = Utc::now() - chrono::Duration::days(30);
+        let start = jiff::Timestamp::now() - jiff::SignedDuration::from_hours(24 * 30);
         for i in 0..(MAX_ARCHIVED_REPORTS + 3) {
             store
-                .archive_report(&dummy_report(start + chrono::Duration::days(i as i64)))
+                .archive_report(&dummy_report(
+                    start + jiff::SignedDuration::from_hours(24 * (i as i64)),
+                ))
                 .unwrap();
         }
         // Unrelated files are ignored.
@@ -418,14 +421,15 @@ mod tests {
         let files = store.archived_reports();
         assert_eq!(files.len(), MAX_ARCHIVED_REPORTS);
         let latest = store.latest_archived_report().unwrap();
-        let expected_latest = start + chrono::Duration::days(MAX_ARCHIVED_REPORTS as i64 + 2);
+        let expected_latest =
+            start + jiff::SignedDuration::from_hours(24 * (MAX_ARCHIVED_REPORTS as i64 + 2));
         assert_eq!(latest.generated_at, expected_latest);
         let prev = store.previous_report(latest.generated_at).unwrap();
         assert_eq!(
             prev.generated_at,
-            expected_latest - chrono::Duration::days(1)
+            expected_latest - jiff::SignedDuration::from_hours(24)
         );
-        let oldest_kept = start + chrono::Duration::days(3);
+        let oldest_kept = start + jiff::SignedDuration::from_hours(24 * 3);
         assert!(store.previous_report(oldest_kept).is_none());
     }
 
@@ -433,11 +437,11 @@ mod tests {
     fn archived_report_by_stamp() {
         let tmp = tempfile::tempdir().unwrap();
         let store = StateStore::new(tmp.path());
-        let at = Utc::now();
+        let at = jiff::Timestamp::now();
         store.archive_report(&dummy_report(at)).unwrap();
         let stamps = store.archived_stamps();
         assert_eq!(stamps.len(), 1);
-        assert_eq!(stamps[0], at.format(ARCHIVE_TS_FORMAT).to_string());
+        assert_eq!(stamps[0], at.strftime(ARCHIVE_TS_FORMAT).to_string());
         let r = store.archived_report(&stamps[0]).unwrap();
         assert_eq!(r.generated_at, at);
         assert!(store.archived_report("../last-report").is_none());

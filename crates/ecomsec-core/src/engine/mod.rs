@@ -15,7 +15,7 @@ use crate::report::{HistoryEntry, Report, SCHEMA_VERSION};
 use crate::rules::RuleSet;
 use crate::signatures::{self, IocList};
 use crate::state::StateStore;
-use chrono::{NaiveDate, Utc};
+use crate::time::Date;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
@@ -23,13 +23,13 @@ use std::time::{Duration, Instant};
 /// Default reference date: publication of the CVE-2026-54390 advisory in the
 /// JTL partner newsletter (17 June 2026).  Files changed on or after this day
 /// are reported.
-pub fn default_reference_date() -> NaiveDate {
-    NaiveDate::from_ymd_opt(2026, 6, 17).expect("valid date")
+pub fn default_reference_date() -> Date {
+    jiff::civil::date(2026, 6, 17)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScanOptions {
-    pub reference_date: NaiveDate,
+    pub reference_date: Date,
     /// Stop the file scan after this long and persist a checkpoint.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub time_budget: Option<Duration>,
@@ -230,7 +230,7 @@ impl Engine {
                                 )
                                 .with_detail(format!(
                                     "Baseline vom {} ({} Dateien)",
-                                    baseline.created_at.format("%d.%m.%Y %H:%M UTC"),
+                                    baseline.created_at.strftime("%d.%m.%Y %H:%M UTC"),
                                     baseline.files.len()
                                 )),
                             );
@@ -438,7 +438,7 @@ impl Engine {
 
         let mut report = Report {
             schema_version: SCHEMA_VERSION,
-            generated_at: Utc::now(),
+            generated_at: jiff::Timestamp::now(),
             platform: info,
             reference_date: options.reference_date,
             verdict,

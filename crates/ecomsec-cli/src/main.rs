@@ -11,7 +11,6 @@ mod self_update;
 mod web;
 
 use anyhow::Context;
-use chrono::NaiveDate;
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use config::FileConfig;
 use ecomsec_core::baseline::Baseline;
@@ -145,8 +144,8 @@ struct SbomArgs {
 #[derive(Args, Clone)]
 struct ScanOptionArgs {
     /// Referenzdatum (YYYY-MM-DD); Dateien ab diesem Datum gelten als neu/geändert. Standard: 2026-06-17
-    #[arg(long, value_name = "DATUM")]
-    reference_date: Option<NaiveDate>,
+    #[arg(long, value_name = "DATUM", value_parser = ecomsec_core::time::parse_date)]
+    reference_date: Option<ecomsec_core::time::Date>,
     /// Zeitbudget für den Dateiscan (z. B. 45s, 2m); bei Ablauf wird ein Checkpoint gespeichert
     #[arg(long, value_name = "DAUER")]
     time_budget: Option<String>,
@@ -636,7 +635,7 @@ fn run(cli: Cli) -> anyhow::Result<u8> {
                 };
                 println!(
                     "{:<22} {:<12} {:<10} {:>8} {:>8} {:>9} {:>8} {:>8}{}",
-                    e.generated_at.format("%Y-%m-%d %H:%M:%S"),
+                    e.generated_at.strftime("%Y-%m-%d %H:%M:%S"),
                     e.version.clone().unwrap_or_default(),
                     format!("{:?}", e.verdict).to_lowercase(),
                     level,
@@ -726,7 +725,7 @@ fn sbom(ctx: &Context_, args: SbomArgs) -> anyhow::Result<u8> {
         packages: &packages,
         licenses: &licenses,
         source: &source,
-        timestamp: chrono::Utc::now(),
+        timestamp: jiff::Timestamp::now(),
     };
     let text = output::sbom::render(args.format, &input)?;
     emit(&text, args.output.as_ref())?;
@@ -770,7 +769,7 @@ fn findings(ctx: &Context_, command: FindingsCommand) -> anyhow::Result<u8> {
             }
             println!(
                 "\n{n} Befunde (Report vom {}).",
-                report.generated_at.format("%d.%m.%Y %H:%M UTC")
+                report.generated_at.strftime("%d.%m.%Y %H:%M UTC")
             );
             Ok(0)
         }
@@ -870,7 +869,7 @@ fn baseline(ctx: &Context_, command: BaselineCommand) -> anyhow::Result<u8> {
             let d = b.diff(&profile)?;
             println!(
                 "Baseline vom {} ({} Dateien)",
-                b.created_at.format("%d.%m.%Y %H:%M UTC"),
+                b.created_at.strftime("%d.%m.%Y %H:%M UTC"),
                 b.files.len()
             );
             for (label, list) in [
@@ -899,7 +898,7 @@ fn baseline(ctx: &Context_, command: BaselineCommand) -> anyhow::Result<u8> {
                 println!(
                     "Baseline: {} Dateien, erstellt {}, Version {}, Root {}",
                     b.files.len(),
-                    b.created_at.format("%d.%m.%Y %H:%M UTC"),
+                    b.created_at.strftime("%d.%m.%Y %H:%M UTC"),
                     b.version.unwrap_or_default(),
                     b.root
                 );

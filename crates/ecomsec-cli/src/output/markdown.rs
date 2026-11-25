@@ -43,7 +43,7 @@ pub fn render(report: &Report, show_all: bool) -> String {
             .unwrap_or_default(),
         posture.score,
         posture.grade,
-        report.generated_at.format("%d.%m.%Y %H:%M UTC"),
+        report.generated_at.strftime("%d.%m.%Y %H:%M UTC"),
         if report.summary.complete {
             ""
         } else {

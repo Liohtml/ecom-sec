@@ -24,7 +24,6 @@ mod domains;
 pub use client::{ShopifyClient, ShopifyConfig};
 pub use domains::{classify_host, HostClass};
 
-use chrono::{DateTime, Utc};
 use ecomsec_core::finding::{Category, Finding, Severity, Source};
 use ecomsec_core::platform::{
     IntegrityItem, IntegrityReport, IntegrityStatus, Platform, PlatformContext, PlatformInfo,
@@ -85,8 +84,8 @@ impl Shopify {
     }
 
     fn after_reference(&self, ts: &str, ctx: &PlatformContext) -> bool {
-        DateTime::parse_from_rfc3339(ts)
-            .map(|d| d.with_timezone(&Utc).date_naive() >= ctx.reference_date)
+        ecomsec_core::time::parse_rfc3339(ts)
+            .map(|t| ecomsec_core::time::utc_date(t) >= ctx.reference_date)
             .unwrap_or(false)
     }
 

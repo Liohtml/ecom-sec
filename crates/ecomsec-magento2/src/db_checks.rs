@@ -3,7 +3,6 @@
 
 use crate::files::{fp, MAGENTO_PLATFORM_HOSTS};
 use crate::Magento2;
-use chrono::NaiveDateTime;
 use ecomsec_core::db::{col, columns, query_rows, table_exists};
 use ecomsec_core::finding::{Category, Finding, Severity, Source};
 use ecomsec_core::hosts::{classify_host, host_of, script_sources, HostClass};
@@ -19,7 +18,7 @@ use std::sync::OnceLock;
 
 fn after_reference(s: &str, ctx: &PlatformContext) -> bool {
     let s = s.get(..19).unwrap_or(s);
-    NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S")
+    ecomsec_core::time::parse_sql_datetime(s)
         .map(|d| d.date() >= ctx.reference_date)
         .unwrap_or(false)
 }

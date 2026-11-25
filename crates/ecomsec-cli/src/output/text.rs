@@ -518,13 +518,13 @@ fn header(o: &mut Out, report: &Report) {
     }
     rows.push((
         "Referenzdatum:".into(),
-        vec![report.reference_date.format("%d.%m.%Y").to_string()],
+        vec![report.reference_date.strftime("%d.%m.%Y").to_string()],
     ));
     rows.push((
         "Scan-Zeitpunkt:".into(),
         vec![report
             .generated_at
-            .format("%d.%m.%Y %H:%M:%S UTC")
+            .strftime("%d.%m.%Y %H:%M:%S UTC")
             .to_string()],
     ));
     rows.push((

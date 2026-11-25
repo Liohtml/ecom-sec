@@ -1,7 +1,6 @@
 //! Database based checks for Shopware 6 (read-only).
 
 use crate::Shopware6;
-use chrono::NaiveDateTime;
 use ecomsec_core::db::{col, columns, query_rows, table_exists};
 use ecomsec_core::finding::{Category, Finding, Severity, Source};
 use ecomsec_core::platform::{
@@ -14,7 +13,7 @@ use std::collections::BTreeMap;
 
 fn after_reference(s: &str, ctx: &PlatformContext) -> bool {
     let s = s.get(..19).unwrap_or(s);
-    NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S")
+    ecomsec_core::time::parse_sql_datetime(s)
         .map(|d| d.date() >= ctx.reference_date)
         .unwrap_or(false)
 }

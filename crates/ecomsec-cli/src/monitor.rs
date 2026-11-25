@@ -295,13 +295,14 @@ pub fn watch(cli: &Cli, ctx: &Context_, args: &WatchArgs) -> anyhow::Result<u8> 
         if STOP.load(Ordering::SeqCst) {
             break;
         }
-        let next = chrono::Local::now()
-            + chrono::Duration::from_std(every.saturating_sub(started.elapsed()))
-                .unwrap_or_default();
+        let now = jiff::ZonedDateTime::now();
+        let next = now
+            .checked_add(every.saturating_sub(started.elapsed()))
+            .unwrap_or(now);
         if !args.quiet {
             eprintln!(
                 "Nächste Prüfung: {} (Strg+C beendet)",
-                next.format("%d.%m.%Y %H:%M")
+                next.strftime("%d.%m.%Y %H:%M")
             );
         }
         while started.elapsed() < every && !STOP.load(Ordering::SeqCst) {

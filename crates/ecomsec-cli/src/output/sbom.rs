@@ -2,7 +2,7 @@
 //! or SPDX 2.3 JSON).  Read-only: the inventory comes from `composer.lock`
 //! / `vendor/composer/installed.json` via [`ecomsec_osv::load_inventory`].
 
-use chrono::{DateTime, Utc};
+use ecomsec_core::time::{rfc3339_seconds, Timestamp};
 use ecomsec_osv::ComposerPackage;
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -26,7 +26,7 @@ pub struct SbomInput<'a> {
     pub licenses: &'a BTreeMap<String, Vec<String>>,
     /// Inventory file relative to the root (`composer.lock`).
     pub source: &'a str,
-    pub timestamp: DateTime<Utc>,
+    pub timestamp: Timestamp,
 }
 
 /// Package URL for a Composer package (`pkg:composer/vendor/name@1.2.3`).
@@ -110,7 +110,7 @@ fn seed(input: &SbomInput) -> String {
         input.platform_id,
         input.platform_version.as_deref().unwrap_or(""),
         input.source,
-        input.timestamp.timestamp()
+        input.timestamp.as_second()
     );
     for p in input.packages {
         s.push('|');
@@ -159,7 +159,7 @@ pub fn cyclonedx(input: &SbomInput) -> Value {
         "serialNumber": format!("urn:uuid:{}", uuid_from(&seed(input))),
         "version": 1,
         "metadata": {
-            "timestamp": input.timestamp.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            "timestamp": rfc3339_seconds(input.timestamp),
             "tools": {"components": [{
                 "type": "application",
                 "name": "ecomsec",
@@ -251,7 +251,7 @@ pub fn spdx(input: &SbomInput) -> Value {
             uuid_from(&seed(input))
         ),
         "creationInfo": {
-            "created": input.timestamp.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            "created": rfc3339_seconds(input.timestamp),
             "creators": [format!("Tool: ecomsec-{}", env!("CARGO_PKG_VERSION"))],
             "comment": format!("Composer-Inventar aus {}", input.source),
         },
@@ -289,9 +289,7 @@ mod tests {
             packages,
             licenses,
             source: "composer.lock",
-            timestamp: DateTime::parse_from_rfc3339("2026-10-13T12:00:00Z")
-                .unwrap()
-                .with_timezone(&Utc),
+            timestamp: "2026-10-13T12:00:00Z".parse().unwrap(),
         }
     }
 

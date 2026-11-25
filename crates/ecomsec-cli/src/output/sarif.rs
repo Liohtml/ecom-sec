@@ -193,7 +193,7 @@ pub fn to_value(report: &Report) -> Value {
         "automationDetails": {"id": format!("ecomsec/{}/", report.platform.id)},
         "invocations": [{
             "executionSuccessful": true,
-            "endTimeUtc": report.generated_at.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+            "endTimeUtc": ecomsec_core::time::rfc3339_seconds(report.generated_at),
             "toolExecutionNotifications": report.limitations.iter().map(|l| json!({
                 "level": "note",
                 "message": {"text": l},

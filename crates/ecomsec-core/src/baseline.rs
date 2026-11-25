@@ -3,7 +3,6 @@
 
 use crate::finding::{Category, Finding, Severity};
 use crate::platform::FileScanProfile;
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::Path;
@@ -17,7 +16,8 @@ pub struct FileRecord {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Baseline {
-    pub created_at: DateTime<Utc>,
+    #[serde(with = "crate::time::serde_rfc3339")]
+    pub created_at: crate::time::Timestamp,
     pub root: String,
     pub platform_id: String,
     pub version: Option<String>,
@@ -111,7 +111,7 @@ impl Baseline {
             }
         }
         Ok(Baseline {
-            created_at: Utc::now(),
+            created_at: crate::time::now(),
             root: profile.root.to_string_lossy().to_string(),
             platform_id: platform_id.to_string(),
             version,

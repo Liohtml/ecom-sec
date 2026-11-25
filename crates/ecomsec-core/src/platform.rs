@@ -5,9 +5,9 @@ use crate::finding::Finding;
 use crate::report::Report;
 use crate::rules::RuleSet;
 use crate::state::StateStore;
+use crate::time::Date;
 use crate::version::{Version, VersionRange};
 use crate::Recommendation;
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -146,7 +146,7 @@ pub struct Advisory {
     pub backpatch_note: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reference: Option<String>,
-    pub published: NaiveDate,
+    pub published: Date,
     #[serde(default)]
     pub tags: Vec<String>,
     /// Component the version ranges refer to when it is not the shop core
@@ -285,7 +285,7 @@ pub enum ComponentVersion {
 /// Runtime context handed to adapters.
 #[derive(Debug, Clone)]
 pub struct PlatformContext {
-    pub reference_date: NaiveDate,
+    pub reference_date: Date,
     /// Database / API checks disabled by the user.
     pub skip_remote: bool,
     /// Online lookups (OSV.dev) explicitly enabled by the user.

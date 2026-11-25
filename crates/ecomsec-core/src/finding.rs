@@ -232,8 +232,12 @@ pub struct Review {
     pub reasoning: String,
     /// Model (or reviewer) that produced the assessment.
     pub model: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub reviewed_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(
+        default,
+        with = "crate::time::serde_rfc3339::option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub reviewed_at: Option<crate::time::Timestamp>,
 }
 
 impl Finding {

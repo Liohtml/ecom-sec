@@ -38,7 +38,6 @@ pub fn render(
 
 #[cfg(test)]
 pub(crate) mod test_support {
-    use chrono::{NaiveDate, TimeZone, Utc};
     use ecomsec_core::finding::{Category, Finding, Severity, Source};
     use ecomsec_core::platform::{
         Advisory, AdvisoryStatus, IntegrityItem, IntegrityStatus, PatchState, PlatformInfo,
@@ -111,13 +110,13 @@ pub(crate) mod test_support {
             fixed_in: vec![],
             backpatch_note: None,
             reference: None,
-            published: NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
+            published: jiff::civil::date(2026, 6, 17),
             tags: vec![],
             component: None,
         };
         let mut report = Report {
             schema_version: SCHEMA_VERSION,
-            generated_at: Utc.with_ymd_and_hms(2026, 10, 13, 12, 0, 0).unwrap(),
+            generated_at: "2026-10-13T12:00:00Z".parse().unwrap(),
             platform: PlatformInfo {
                 id: "jtl5".into(),
                 name: "JTL-Shop 5".into(),
@@ -127,7 +126,7 @@ pub(crate) mod test_support {
                 target: None,
                 details: vec![],
             },
-            reference_date: NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
+            reference_date: jiff::civil::date(2026, 6, 17),
             verdict,
             summary,
             findings,

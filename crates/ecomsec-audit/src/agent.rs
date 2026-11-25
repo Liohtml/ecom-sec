@@ -7,7 +7,6 @@ use crate::pricing::estimate_cost;
 use crate::redact::redact;
 use crate::report::{AuditMode, AuditReport, AuditStatus, NextStep, AUDIT_SCHEMA_VERSION};
 use crate::tools::{category_name, ToolContext};
-use chrono::Utc;
 use ecomsec_core::finding::{Finding, Severity};
 use ecomsec_core::util::{excerpt, human_size};
 use serde_json::{json, Value};
@@ -156,8 +155,8 @@ fn task_message(cfg: &AuditConfig, ctx: &ToolContext) -> String {
     ));
     m.push_str(&format!(
         "Scan-Report vom {}, Referenzdatum {}, Ampel: {:?}. Befunde: {} kritisch, {} Warnungen, {} Hinweise, {} als unbedenklich markiert.\n",
-        r.generated_at.format("%d.%m.%Y %H:%M UTC"),
-        r.reference_date.format("%d.%m.%Y"),
+        r.generated_at.strftime("%d.%m.%Y %H:%M UTC"),
+        r.reference_date.strftime("%d.%m.%Y"),
         r.verdict,
         r.summary.critical,
         r.summary.warning,
@@ -231,7 +230,7 @@ fn task_message(cfg: &AuditConfig, ctx: &ToolContext) -> String {
                             c.path,
                             human_size(c.size),
                             c.modified
-                                .map(|t| format!(", geändert {}", t.format("%d.%m.%Y")))
+                                .map(|t| format!(", geändert {}", t.strftime("%d.%m.%Y")))
                                 .unwrap_or_default(),
                             c.hits
                                 .iter()
@@ -266,7 +265,7 @@ pub fn run_audit(
     ctx: &mut ToolContext,
     progress: &mut dyn FnMut(ProgressEvent<'_>),
 ) -> AuditReport {
-    let started = Utc::now();
+    let started = jiff::Timestamp::now();
     let tools = ctx.definitions();
     let mut messages = vec![Message::user_text(task_message(cfg, ctx))];
     let required: Vec<String> = required_findings(ctx)
@@ -446,7 +445,7 @@ pub fn run_audit(
         model: cfg.model.clone(),
         mode: cfg.mode,
         started,
-        finished: Utc::now(),
+        finished: jiff::Timestamp::now(),
         report_generated_at: ctx.report.generated_at,
         platform: format!(
             "{}{}",

@@ -352,13 +352,12 @@ mod tests {
     use crate::finding::{Finding, Source};
     use crate::platform::{IntegrityItem, PlatformInfo, PlatformKind};
     use crate::report::SCHEMA_VERSION;
-    use chrono::{NaiveDate, Utc};
 
     fn report(findings: Vec<Finding>, integrity: Vec<IntegrityItem>) -> Report {
         let (verdict, summary) = Report::compute_summary(&findings);
         Report {
             schema_version: SCHEMA_VERSION,
-            generated_at: Utc::now(),
+            generated_at: jiff::Timestamp::now(),
             platform: PlatformInfo {
                 id: "jtl5".into(),
                 name: "JTL-Shop 5".into(),
@@ -368,7 +367,7 @@ mod tests {
                 target: None,
                 details: vec![],
             },
-            reference_date: NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
+            reference_date: jiff::civil::date(2026, 6, 17),
             verdict,
             summary,
             findings,

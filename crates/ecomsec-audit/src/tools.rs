@@ -3,7 +3,6 @@
 //! hard output limits and redacts secrets before anything is returned.
 
 use crate::redact::{path_sensitivity, redact, redact_cell, redact_for, Sensitivity};
-use chrono::{DateTime, Utc};
 use ecomsec_core::finding::{Category, Finding, ReviewVerdict, Severity, Source};
 use ecomsec_core::platform::Advisory;
 use ecomsec_core::report::Report;
@@ -645,8 +644,8 @@ impl ToolContext {
         #[cfg(unix)]
         {
             use std::os::unix::fs::MetadataExt;
-            let ctime = DateTime::<Utc>::from_timestamp(meta.ctime(), 0)
-                .map(|d| d.format("%Y-%m-%d %H:%M:%S UTC").to_string());
+            let ctime = ecomsec_core::time::from_unix(meta.ctime(), 0)
+                .map(|d| d.strftime("%Y-%m-%d %H:%M:%S UTC").to_string());
             info.insert("ctime".into(), json!(ctime));
             info.insert(
                 "modus".into(),
@@ -1157,8 +1156,8 @@ fn excerpt_keep_lines(s: &str, max: usize) -> String {
 }
 
 fn fmt_time(t: std::time::SystemTime) -> String {
-    DateTime::<Utc>::from(t)
-        .format("%Y-%m-%d %H:%M:%S UTC")
+    ecomsec_core::time::from_system_time(t)
+        .strftime("%Y-%m-%d %H:%M:%S UTC")
         .to_string()
 }
 

@@ -1,7 +1,7 @@
 //! Candidate selection for `--mode hunt`: custom code (plugins, templates,
 //! theme scripts) ranked by risk heuristics within a file and size budget.
 
-use chrono::{DateTime, NaiveDate, Utc};
+use ecomsec_core::time::{Date, Timestamp};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -13,8 +13,12 @@ use walkdir::WalkDir;
 pub struct HuntCandidate {
     pub path: String,
     pub size: u64,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub modified: Option<DateTime<Utc>>,
+    #[serde(
+        default,
+        with = "ecomsec_core::time::serde_rfc3339::option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub modified: Option<Timestamp>,
     /// Heuristic hits (`name`, count).
     pub hits: Vec<(String, usize)>,
     pub score: u32,
@@ -123,14 +127,11 @@ fn heuristics() -> &'static [Heuristic] {
 pub fn hunt_candidates(
     root: &Path,
     platform_id: &str,
-    reference_date: NaiveDate,
+    reference_date: Date,
     max_files: usize,
     max_bytes: u64,
 ) -> Vec<HuntCandidate> {
-    let reference = reference_date
-        .and_hms_opt(0, 0, 0)
-        .map(|d| d.and_utc())
-        .unwrap_or_else(Utc::now);
+    let reference = ecomsec_core::time::utc_midnight(reference_date);
     let mut all: Vec<HuntCandidate> = Vec::new();
     let mut visited = 0usize;
     for dir in custom_code_dirs(platform_id) {
@@ -180,7 +181,10 @@ pub fn hunt_candidates(
             if score == 0 {
                 continue;
             }
-            let modified: Option<DateTime<Utc>> = meta.modified().ok().map(DateTime::from);
+            let modified = meta
+                .modified()
+                .ok()
+                .map(ecomsec_core::time::from_system_time);
             if modified.map(|m| m >= reference).unwrap_or(false) {
                 score += 6;
             }
@@ -236,13 +240,7 @@ mod tests {
         write("plugins/acme/harmless.php", "<?php return 1;");
         write("plugins/acme/vendor/lib.php", "<?php eval($_POST['x']);");
         write("templates/x/app.min.js", "document.write(x)");
-        let c = hunt_candidates(
-            root,
-            "jtl5",
-            NaiveDate::from_ymd_opt(2000, 1, 1).unwrap(),
-            10,
-            1_000_000,
-        );
+        let c = hunt_candidates(root, "jtl5", jiff::civil::date(2000, 1, 1), 10, 1_000_000);
         assert_eq!(c.len(), 1, "{c:?}");
         assert_eq!(c[0].path, "plugins/acme/Frontend.php");
         assert!(c[0].hits.iter().any(|(n, _)| n == "sql_concat"));

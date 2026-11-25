@@ -2,10 +2,10 @@
 
 use crate::client::Usage;
 use crate::tools::{DataStats, VerdictRecord};
-use chrono::{DateTime, Utc};
 use ecomsec_core::finding::{Finding, Review, ReviewVerdict};
 use ecomsec_core::report::Report;
 use ecomsec_core::state::AcceptedFindings;
+use ecomsec_core::time::Timestamp;
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 
@@ -66,10 +66,13 @@ pub struct AuditReport {
     pub schema_version: u32,
     pub model: String,
     pub mode: AuditMode,
-    pub started: DateTime<Utc>,
-    pub finished: DateTime<Utc>,
+    #[serde(with = "ecomsec_core::time::serde_rfc3339")]
+    pub started: Timestamp,
+    #[serde(with = "ecomsec_core::time::serde_rfc3339")]
+    pub finished: Timestamp,
     /// Scan report the audit was based on.
-    pub report_generated_at: DateTime<Utc>,
+    #[serde(with = "ecomsec_core::time::serde_rfc3339")]
+    pub report_generated_at: Timestamp,
     pub platform: String,
     pub status: AuditStatus,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -101,7 +104,7 @@ pub struct AuditReport {
 impl AuditReport {
     /// `audit-<timestamp>.json`
     pub fn file_name(&self) -> String {
-        format!("audit-{}.json", self.started.format("%Y%m%dT%H%M%SZ"))
+        format!("audit-{}.json", self.started.strftime("%Y%m%dT%H%M%SZ"))
     }
 
     pub fn is_complete(&self) -> bool {
@@ -163,15 +166,15 @@ pub fn render_text(a: &AuditReport) -> String {
     let _ = writeln!(
         out,
         "Zeitraum:        {} – {} ({} Runden, {} Werkzeugaufrufe)",
-        a.started.format("%d.%m.%Y %H:%M:%S"),
-        a.finished.format("%H:%M:%S UTC"),
+        a.started.strftime("%d.%m.%Y %H:%M:%S"),
+        a.finished.strftime("%H:%M:%S UTC"),
         a.turns,
         a.data.tool_calls
     );
     let _ = writeln!(
         out,
         "Bezug:           Scan-Report vom {}",
-        a.report_generated_at.format("%d.%m.%Y %H:%M UTC")
+        a.report_generated_at.strftime("%d.%m.%Y %H:%M UTC")
     );
     let _ = writeln!(
         out,

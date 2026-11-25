@@ -4,7 +4,6 @@
 use crate::inventory::{random_looking, Extension};
 use crate::php_serial::{unserialize, PhpValue};
 use crate::WooCommerce;
-use chrono::{DateTime, NaiveDateTime, Utc};
 use ecomsec_core::db::{col, columns, query_rows, table_exists};
 use ecomsec_core::finding::{Category, Finding, Severity, Source};
 use ecomsec_core::hosts::{classify_host, host_of, script_sources, HostClass, SUSPICIOUS_TLDS};
@@ -12,6 +11,7 @@ use ecomsec_core::platform::{
     IntegrityItem, IntegrityReport, IntegrityStatus, Platform, PlatformContext,
 };
 use ecomsec_core::rules::RuleSet;
+use ecomsec_core::time::Timestamp;
 use ecomsec_core::util::{excerpt, mask, mask_email, sha256_hex};
 use mysql::Conn;
 use regex::Regex;
@@ -99,7 +99,7 @@ const KNOWN_CRON_PREFIXES: &[&str] = &[
 
 fn after_reference(s: &str, ctx: &PlatformContext) -> bool {
     let s = s.get(..19).unwrap_or(s);
-    NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S")
+    ecomsec_core::time::parse_sql_datetime(s)
         .map(|d| d.date() >= ctx.reference_date)
         .unwrap_or(false)
 }
@@ -281,13 +281,13 @@ pub fn roles_of(caps: &str) -> Vec<String> {
 }
 
 /// Last login time and IPs from the `session_tokens` user meta.
-pub fn sessions_of(meta: &str) -> (Option<DateTime<Utc>>, Vec<String>) {
+pub fn sessions_of(meta: &str) -> (Option<Timestamp>, Vec<String>) {
     let mut last = None;
     let mut ips = BTreeSet::new();
     if let Some(v) = unserialize(meta) {
         for (_, session) in v.entries() {
             if let Some(ts) = session.get("login").and_then(PhpValue::as_i64) {
-                let t = DateTime::<Utc>::from_timestamp(ts, 0);
+                let t = ecomsec_core::time::from_unix(ts, 0);
                 if t > last {
                     last = t;
                 }
@@ -394,7 +394,7 @@ fn admins(
                     roles.join(", "),
                     registered.get(..10).unwrap_or(&registered),
                     last_login
-                        .map(|t| t.format("%d.%m.%Y %H:%M").to_string())
+                        .map(|t| t.strftime("%d.%m.%Y %H:%M").to_string())
                         .unwrap_or_else(|| "keine aktive Sitzung".into())
                 ),
             )
@@ -1459,7 +1459,7 @@ mod tests {
         let (last, ips) = sessions_of(
             r#"a:2:{s:3:"abc";a:4:{s:10:"expiration";i:1760000000;s:2:"ip";s:9:"203.0.1.5";s:2:"ua";s:3:"cli";s:5:"login";i:1759000000;}s:3:"def";a:2:{s:2:"ip";s:9:"198.5.1.1";s:5:"login";i:1759500000;}}"#,
         );
-        assert_eq!(last.unwrap().timestamp(), 1_759_500_000);
+        assert_eq!(last.unwrap().as_second(), 1_759_500_000);
         assert_eq!(ips.len(), 2);
     }
 

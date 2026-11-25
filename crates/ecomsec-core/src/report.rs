@@ -5,7 +5,7 @@ use crate::finding::{Finding, Severity};
 use crate::platform::{AdvisoryStatus, IntegrityItem, PlatformInfo};
 use crate::recommendations::RecommendationGroup;
 use crate::score::{Grade, PostureScore, ScoreDriver};
-use chrono::{DateTime, NaiveDate, Utc};
+use crate::time::{Date, Timestamp};
 use serde::{Deserialize, Serialize};
 
 pub const SCHEMA_VERSION: u32 = 1;
@@ -46,9 +46,10 @@ pub struct Summary {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Report {
     pub schema_version: u32,
-    pub generated_at: DateTime<Utc>,
+    #[serde(with = "crate::time::serde_rfc3339")]
+    pub generated_at: Timestamp,
     pub platform: PlatformInfo,
-    pub reference_date: NaiveDate,
+    pub reference_date: Date,
     pub verdict: Verdict,
     pub summary: Summary,
     pub findings: Vec<Finding>,
@@ -172,7 +173,8 @@ impl Report {
 /// Compact entry kept in the scan history.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HistoryEntry {
-    pub generated_at: DateTime<Utc>,
+    #[serde(with = "crate::time::serde_rfc3339")]
+    pub generated_at: Timestamp,
     pub platform_id: String,
     pub version: Option<String>,
     pub verdict: Verdict,

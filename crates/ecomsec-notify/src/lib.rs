@@ -18,7 +18,6 @@ pub use config::{
 };
 pub use email::SmtpSecurity;
 
-use chrono::{DateTime, Utc};
 use config::Target;
 use ecomsec_core::diff::DiffSection;
 use ecomsec_core::{ReportDiff, Severity};
@@ -89,7 +88,8 @@ pub struct Notification {
     pub text: String,
     /// Shop / target description.
     pub target: String,
-    pub created_at: DateTime<Utc>,
+    #[serde(serialize_with = "ecomsec_core::time::serde_rfc3339::serialize")]
+    pub created_at: jiff::Timestamp,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dashboard_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -104,7 +104,7 @@ impl Notification {
             level: diff.relevance,
             text: diff.to_text(),
             target: format!("{} ({})", diff.platform_name, diff.target),
-            created_at: Utc::now(),
+            created_at: jiff::Timestamp::now(),
             dashboard_url: opts.dashboard_url.clone(),
             diff: Some(diff.clone()),
         }
@@ -122,7 +122,7 @@ impl Notification {
                  Shop: {target}"
             ),
             target: target.to_string(),
-            created_at: Utc::now(),
+            created_at: jiff::Timestamp::now(),
             dashboard_url: opts.dashboard_url.clone(),
             diff: None,
         }
@@ -139,7 +139,7 @@ impl Notification {
                  Bitte Konfiguration und Erreichbarkeit prüfen (z. B. `ecomsec watch` von Hand starten)."
             ),
             target: target.to_string(),
-            created_at: Utc::now(),
+            created_at: jiff::Timestamp::now(),
             dashboard_url: opts.dashboard_url.clone(),
             diff: None,
         }
@@ -340,7 +340,7 @@ fn write_file(
     let content = match format {
         FileFormat::Text => format!(
             "===== {} · {} =====\n{}\n",
-            n.created_at.format("%Y-%m-%d %H:%M:%S UTC"),
+            n.created_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
             n.title,
             format::plain_text(n).trim_end()
         ),

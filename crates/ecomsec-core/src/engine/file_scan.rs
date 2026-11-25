@@ -27,7 +27,7 @@ use crate::platform::FileScanProfile;
 use crate::rules::{RuleMatch, RuleSet};
 use crate::signatures::IocList;
 use crate::state::StateStore;
-use chrono::{DateTime, Duration as ChronoDuration, NaiveDate, Utc};
+use crate::time::{Date, SignedDuration, Timestamp};
 use rayon::prelude::*;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -44,8 +44,9 @@ pub type ProgressFn = Box<dyn Fn(usize, usize) + Send + Sync>;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct Checkpoint {
     root: String,
-    reference_date: NaiveDate,
-    started_at: DateTime<Utc>,
+    reference_date: Date,
+    #[serde(with = "crate::time::serde_rfc3339")]
+    started_at: Timestamp,
     next_index: usize,
     total: usize,
     files_scanned: u64,
@@ -299,7 +300,8 @@ impl<'a> FileScanner<'a> {
                     && cp.root == root_key
                     && cp.reference_date == self.options.reference_date
                     && cp.next_index <= total
-                    && Utc::now() - cp.started_at < ChronoDuration::hours(24) =>
+                    && Timestamp::now().duration_since(cp.started_at)
+                        < SignedDuration::from_hours(24) =>
             {
                 log::info!("resuming file scan at {}/{}", cp.next_index, total);
                 cp
@@ -307,7 +309,7 @@ impl<'a> FileScanner<'a> {
             _ => Checkpoint {
                 root: root_key,
                 reference_date: self.options.reference_date,
-                started_at: Utc::now(),
+                started_at: Timestamp::now(),
                 next_index: 0,
                 total,
                 files_scanned: 0,
@@ -318,13 +320,8 @@ impl<'a> FileScanner<'a> {
         };
         cp.total = total;
 
-        let reference: DateTime<Utc> = self
-            .options
-            .reference_date
-            .and_hms_opt(0, 0, 0)
-            .expect("midnight")
-            .and_utc();
-        let now = Utc::now();
+        let reference = crate::time::utc_midnight(self.options.reference_date);
+        let now = Timestamp::now();
         let mut complete = true;
         let pool = rayon::ThreadPoolBuilder::new()
             .num_threads(self.options.threads.unwrap_or(0))
@@ -400,7 +397,7 @@ impl<'a> FileScanner<'a> {
     }
 
     /// Scan one file; returns bytes read and findings.
-    fn scan_file(&self, path: &Path, reference: DateTime<Utc>, now: DateTime<Utc>) -> FileResult {
+    fn scan_file(&self, path: &Path, reference: Timestamp, now: Timestamp) -> FileResult {
         let root = &self.profile.root;
         let rel = crate::util::relative_display(root, path);
         let class = classify(path, &rel, self.profile);
@@ -480,8 +477,8 @@ impl<'a> FileScanner<'a> {
 
         // ----------------------------------------------------------- timestamps
         if matches!(class, FileClass::Php | FileClass::Htaccess | FileClass::Ini) {
-            let mtime: Option<DateTime<Utc>> = meta.modified().ok().map(DateTime::<Utc>::from);
-            let ctime: Option<DateTime<Utc>> = ctime_of(&meta);
+            let mtime = meta.modified().ok().map(crate::time::from_system_time);
+            let ctime = ctime_of(&meta);
             if let Some(m) = mtime {
                 if m >= reference {
                     let severity = if in_generated {
@@ -506,13 +503,13 @@ impl<'a> FileScanner<'a> {
                             "Änderungszeit {} liegt nach dem Referenzdatum {}. Jede unbekannte Änderung an \
                              ausführbaren Dateien seit Bekanntwerden der Schwachstelle ist zu verifizieren \
                              (Update? Agentur? Plugin?).",
-                            m.format("%d.%m.%Y %H:%M:%S UTC"),
-                            self.options.reference_date.format("%d.%m.%Y")
+                            m.strftime("%d.%m.%Y %H:%M:%S UTC"),
+                            self.options.reference_date.strftime("%d.%m.%Y")
                         ))
-                        .with_evidence(format!("mtime={}", m.to_rfc3339())),
+                        .with_evidence(format!("mtime={}", crate::time::rfc3339_offset(m))),
                     );
                 }
-                if m > now + ChronoDuration::days(1) {
+                if m > now + SignedDuration::from_hours(24) {
                     findings.push(
                         Finding::file(
                             Severity::Warning,
@@ -523,14 +520,17 @@ impl<'a> FileScanner<'a> {
                             "Änderungszeit liegt in der Zukunft",
                         )
                         .with_description("Zeitstempel wurden offenbar manipuliert (touch).")
-                        .with_evidence(format!("mtime={}", m.to_rfc3339())),
+                        .with_evidence(format!("mtime={}", crate::time::rfc3339_offset(m))),
                     );
                 }
                 if let Some(c) = ctime {
                     // ctime cannot be set from user space: if the inode changed
                     // after the reference date while the content claims to be
                     // older, the mtime was most likely back-dated.
-                    if c >= reference && m < reference && c - m > ChronoDuration::hours(6) {
+                    if c >= reference
+                        && m < reference
+                        && c.duration_since(m) > SignedDuration::from_hours(6)
+                    {
                         findings.push(
                             Finding::file(
                                 Severity::Warning,
@@ -546,7 +546,11 @@ impl<'a> FileScanner<'a> {
                                  typisch für `touch -r`-Tarnung nach dem Ablegen einer Datei. Kann auch \
                                  durch Deployment-Tools (rsync -t, Archive entpacken, chmod) entstehen.",
                             )
-                            .with_evidence(format!("mtime={} ctime={}", m.to_rfc3339(), c.to_rfc3339())),
+                            .with_evidence(format!(
+                                "mtime={} ctime={}",
+                                crate::time::rfc3339_offset(m),
+                                crate::time::rfc3339_offset(c)
+                            )),
                         );
                     }
                 }
@@ -981,16 +985,15 @@ fn read_chunks(
 }
 
 #[cfg(unix)]
-fn ctime_of(meta: &fs::Metadata) -> Option<DateTime<Utc>> {
+fn ctime_of(meta: &fs::Metadata) -> Option<Timestamp> {
     use std::os::unix::fs::MetadataExt;
-    let secs = meta.ctime();
-    let nanos = meta.ctime_nsec() as u32;
-    DateTime::<Utc>::from_timestamp(secs, nanos)
+    let nanos = i32::try_from(meta.ctime_nsec()).ok()?;
+    crate::time::from_unix(meta.ctime(), nanos)
 }
 
 #[cfg(not(unix))]
-fn ctime_of(meta: &fs::Metadata) -> Option<DateTime<Utc>> {
-    meta.created().ok().map(DateTime::<Utc>::from)
+fn ctime_of(meta: &fs::Metadata) -> Option<Timestamp> {
+    meta.created().ok().map(crate::time::from_system_time)
 }
 
 #[cfg(test)]

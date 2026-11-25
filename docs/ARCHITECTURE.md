@@ -164,6 +164,13 @@ Benachrichtigungen (`ecomsec diff`, `ecomsec watch`, Crate `ecomsec-notify`,
 Web-Dashboard rendern dasselbe JSON; `--format json` ist daher die stabile Schnittstelle für
 Monitoring und Weiterverarbeitung.
 
+Zeitpunkte (`generated_at`, `accepted_at`, `reviewed_at`, `created_at`, …) stehen als RFC 3339 in
+UTC mit `Z` und 0, 3, 6 oder 9 Nachkommastellen (`2026-10-13T04:17:00.123Z`), Datumsfelder
+(`reference_date`, `published`) als `YYYY-MM-DD`. Die Zeittypen kommen aus `jiff` (Modul
+`ecomsec_core::time`, bis 0.2 `chrono`); gelesen werden auch die Schreibweisen, die ältere
+Versionen akzeptiert haben. Die Tests `crates/ecomsec-core/tests/compat_state.rs` lesen einen mit
+0.2.0 erzeugten Zustandsordner und verlangen, dass er Byte für Byte gleich wieder geschrieben wird.
+
 ## Web-Dashboard
 
 `ecomsec serve` (Modul `crates/ecomsec-cli/src/web`) liefert eine statische App aus

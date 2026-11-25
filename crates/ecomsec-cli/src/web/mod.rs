@@ -22,7 +22,6 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
-use chrono::NaiveDate;
 use ecomsec_core::finding::FindingId;
 use ecomsec_core::{Engine, Report, ScanOptions, StateStore};
 use serde::Deserialize;
@@ -336,7 +335,7 @@ async fn export_report(State(state): State<AppState>, Query(q): Query<ExportQuer
     };
     let body = match tokio::task::spawn_blocking(move || {
         output::render(&report, format, true, false)
-            .map(|b| (b, report.generated_at.format("%Y%m%d-%H%M").to_string()))
+            .map(|b| (b, report.generated_at.strftime("%Y%m%d-%H%M").to_string()))
     })
     .await
     {
@@ -459,8 +458,7 @@ fn scan_options_for(base: &ScanOptions, req: &ScanRequest) -> Result<ScanOptions
     }
     if let Some(d) = req.reference_date.as_deref().map(str::trim) {
         if !d.is_empty() {
-            o.reference_date = d
-                .parse::<NaiveDate>()
+            o.reference_date = ecomsec_core::time::parse_date(d)
                 .map_err(|_| format!("ungültiges Referenzdatum {d:?} (JJJJ-MM-TT)"))?;
         }
     }

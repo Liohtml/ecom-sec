@@ -4,9 +4,9 @@
 //! check.
 
 use crate::config::{file_headers, parse_headers, WpConfig};
-use chrono::{DateTime, Utc};
 use ecomsec_core::finding::{Category, Finding, Severity, Source};
 use ecomsec_core::platform::{IntegrityItem, IntegrityReport, IntegrityStatus, PlatformContext};
+use ecomsec_core::time::Timestamp;
 use ecomsec_core::util::{excerpt, sha256_hex};
 use ecomsec_core::version::Version;
 use regex::Regex;
@@ -30,7 +30,12 @@ pub struct Extension {
     pub version: Option<String>,
     pub author: Option<String>,
     /// Newest modification time of the PHP files in the extension.
-    pub newest_mtime: Option<DateTime<Utc>>,
+    #[serde(
+        default,
+        with = "ecomsec_core::time::serde_rfc3339::option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub newest_mtime: Option<Timestamp>,
     pub php_files: usize,
     /// `Update URI:` header (`false` disables wordpress.org updates).
     pub update_uri: Option<String>,
@@ -183,19 +188,19 @@ pub fn themes(root: &Path) -> Vec<Extension> {
     out
 }
 
-fn mtime(path: &Path) -> Option<DateTime<Utc>> {
+fn mtime(path: &Path) -> Option<Timestamp> {
     std::fs::metadata(path)
         .and_then(|m| m.modified())
         .ok()
-        .map(DateTime::<Utc>::from)
+        .map(ecomsec_core::time::from_system_time)
 }
 
 fn rel(root: &Path, path: &Path) -> String {
     ecomsec_core::util::relative_display(root, path)
 }
 
-fn after_reference(t: Option<DateTime<Utc>>, ctx: &PlatformContext) -> bool {
-    t.map(|t| t.date_naive() >= ctx.reference_date)
+fn after_reference(t: Option<Timestamp>, ctx: &PlatformContext) -> bool {
+    t.map(|t| ecomsec_core::time::utc_date(t) >= ctx.reference_date)
         .unwrap_or(false)
 }
 
@@ -274,7 +279,7 @@ pub fn inventory_checks(
                 .unwrap_or_default(),
             p.php_files,
             p.newest_mtime
-                .map(|t| t.format("%d.%m.%Y").to_string())
+                .map(|t| t.strftime("%d.%m.%Y").to_string())
                 .unwrap_or_else(|| "unbekannt".into())
         ));
         report.items.push(item);
@@ -296,7 +301,7 @@ pub fn inventory_checks(
                     "Version {} · neueste Änderung {}",
                     p.version.as_deref().unwrap_or("?"),
                     p.newest_mtime
-                        .map(|t| t.to_rfc3339())
+                        .map(ecomsec_core::time::rfc3339_offset)
                         .unwrap_or_default()
                 )),
             );
@@ -325,7 +330,7 @@ pub fn inventory_checks(
                 "{} PHP-Dateien · zuletzt geändert {}{}",
                 t.php_files,
                 t.newest_mtime
-                    .map(|x| x.format("%d.%m.%Y").to_string())
+                    .map(|x| x.strftime("%d.%m.%Y").to_string())
                     .unwrap_or_else(|| "unbekannt".into()),
                 if t.main_file.is_none() {
                     " · keine style.css – kein gültiges Theme"
@@ -445,7 +450,7 @@ pub fn mu_plugin_checks(root: &Path, ctx: &PlatformContext, report: &mut Integri
                 )
                 .with_evidence(
                     mtime(f)
-                        .map(|t| format!("mtime={}", t.to_rfc3339()))
+                        .map(|t| format!("mtime={}", ecomsec_core::time::rfc3339_offset(t)))
                         .unwrap_or_default(),
                 ),
             );

@@ -10,7 +10,7 @@ use crate::finding::{Finding, FindingId, Severity};
 use crate::platform::{IntegrityItem, IntegrityStatus, PatchState};
 use crate::report::{Report, Verdict};
 use crate::state::StateStore;
-use chrono::{DateTime, NaiveDate, Utc};
+use crate::time::{Date, Timestamp};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write;
@@ -62,7 +62,7 @@ pub struct AdvisoryChange {
     pub fixed_in: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub reference: Option<String>,
-    pub published: NaiveDate,
+    pub published: Date,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -138,9 +138,14 @@ pub struct ReportDiff {
     pub platform_name: String,
     /// Web root or shop domain.
     pub target: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub before_generated_at: Option<DateTime<Utc>>,
-    pub after_generated_at: DateTime<Utc>,
+    #[serde(
+        default,
+        with = "crate::time::serde_rfc3339::option",
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub before_generated_at: Option<Timestamp>,
+    #[serde(with = "crate::time::serde_rfc3339")]
+    pub after_generated_at: Timestamp,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version_before: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -423,12 +428,12 @@ impl ReportDiff {
             match self.before_generated_at {
                 Some(b) => format!(
                     "{} → {}",
-                    b.format("%d.%m.%Y %H:%M UTC"),
-                    self.after_generated_at.format("%d.%m.%Y %H:%M UTC")
+                    b.strftime("%d.%m.%Y %H:%M UTC"),
+                    self.after_generated_at.strftime("%d.%m.%Y %H:%M UTC")
                 ),
                 None => format!(
                     "erster Scan ({})",
-                    self.after_generated_at.format("%d.%m.%Y %H:%M UTC")
+                    self.after_generated_at.strftime("%d.%m.%Y %H:%M UTC")
                 ),
             },
         ));
@@ -775,7 +780,7 @@ mod tests {
         let (verdict, summary) = Report::compute_summary(&findings);
         Report {
             schema_version: 1,
-            generated_at: Utc::now(),
+            generated_at: jiff::Timestamp::now(),
             platform: PlatformInfo {
                 id: "jtl5".into(),
                 name: "JTL-Shop 5".into(),
@@ -785,7 +790,7 @@ mod tests {
                 target: None,
                 details: vec![],
             },
-            reference_date: NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
+            reference_date: jiff::civil::date(2026, 6, 17),
             verdict,
             summary,
             findings,
@@ -821,7 +826,7 @@ mod tests {
                 fixed_in: vec![Version::parse("9.0").unwrap()],
                 backpatch_note: None,
                 reference: Some("https://example.org".into()),
-                published: NaiveDate::from_ymd_opt(2026, 10, 1).unwrap(),
+                published: jiff::civil::date(2026, 10, 1),
                 tags: vec![],
                 component: None,
             },
@@ -1025,7 +1030,7 @@ mod tests {
         let store = StateStore::new(tmp.path());
         assert!(latest_from_store(&store).is_none());
         let mut a = report(vec![finding(Severity::Warning, "a.php")]);
-        a.generated_at = Utc::now() - chrono::Duration::hours(24);
+        a.generated_at = jiff::Timestamp::now() - jiff::SignedDuration::from_hours(24);
         store.archive_report(&a).unwrap();
         store.save_last_report(&a).unwrap();
         let d = latest_from_store(&store).unwrap();

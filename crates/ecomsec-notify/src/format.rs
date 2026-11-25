@@ -386,7 +386,7 @@ pub fn slack(n: &Notification, channel: Option<&str>, username: Option<&str>) ->
     if let Some(url) = &n.dashboard_url {
         blocks.push(json!({"type": "actions", "elements": [{"type": "button", "text": {"type": "plain_text", "text": "Dashboard öffnen"}, "url": url}]}));
     }
-    blocks.push(json!({"type": "context", "elements": [{"type": "mrkdwn", "text": format!("{FOOTER} · {}", n.created_at.format("%d.%m.%Y %H:%M UTC"))}]}));
+    blocks.push(json!({"type": "context", "elements": [{"type": "mrkdwn", "text": format!("{FOOTER} · {}", n.created_at.strftime("%d.%m.%Y %H:%M UTC"))}]}));
     let mut v = json!({"text": n.title, "blocks": blocks});
     if let Some(c) = channel {
         v["channel"] = json!(c);
@@ -513,7 +513,7 @@ pub fn discord(n: &Notification, username: Option<&str>) -> Value {
         "description": budgeted(&lines, 3500),
         "color": color_int(n),
         "fields": fields,
-        "timestamp": n.created_at.to_rfc3339(),
+        "timestamp": ecomsec_core::time::rfc3339_offset(n.created_at),
         "footer": {"text": FOOTER},
     });
     if let Some(url) = &n.dashboard_url {
@@ -612,7 +612,6 @@ pub(crate) fn http_request(kind: ChannelKind, h: &HttpTarget, n: &Notification) 
 mod tests {
     use super::*;
     use crate::{Channel, ChannelConfig, MessageOptions};
-    use chrono::{NaiveDate, Utc};
     use ecomsec_core::finding::{Category, Finding, Source};
     use ecomsec_core::platform::{PlatformInfo, PlatformKind};
     use ecomsec_core::{Report, ReportDiff};
@@ -621,7 +620,7 @@ mod tests {
         let (verdict, summary) = Report::compute_summary(&findings);
         Report {
             schema_version: 1,
-            generated_at: Utc::now(),
+            generated_at: jiff::Timestamp::now(),
             platform: PlatformInfo {
                 id: "jtl5".into(),
                 name: "JTL-Shop 5".into(),
@@ -631,7 +630,7 @@ mod tests {
                 target: None,
                 details: vec![],
             },
-            reference_date: NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
+            reference_date: jiff::civil::date(2026, 6, 17),
             verdict,
             summary,
             findings,

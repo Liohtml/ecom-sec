@@ -1,7 +1,6 @@
 //! Database based checks for JTL-Shop 5 (read-only).
 
 use crate::Jtl5;
-use chrono::NaiveDateTime;
 use ecomsec_core::db::{col, columns, query_rows, table_exists};
 use ecomsec_core::finding::{Category, Finding, Severity, Source};
 use ecomsec_core::platform::{IntegrityItem, IntegrityReport, IntegrityStatus, PlatformContext};
@@ -10,12 +9,8 @@ use ecomsec_core::util::{excerpt, mask, mask_email, sha256_hex};
 use mysql::Conn;
 use std::collections::BTreeMap;
 
-fn parse_dt(s: &str) -> Option<NaiveDateTime> {
-    NaiveDateTime::parse_from_str(s, "%Y-%m-%d %H:%M:%S").ok()
-}
-
 fn after_reference(s: &str, ctx: &PlatformContext) -> bool {
-    parse_dt(s)
+    ecomsec_core::time::parse_sql_datetime(s)
         .map(|d| d.date() >= ctx.reference_date)
         .unwrap_or(false)
 }
@@ -1142,7 +1137,7 @@ mod tests {
         assert!(after_reference(
             "2026-07-01 10:00:00",
             &PlatformContext {
-                reference_date: chrono::NaiveDate::from_ymd_opt(2026, 6, 17).unwrap(),
+                reference_date: jiff::civil::date(2026, 6, 17),
                 skip_remote: true,
                 online: false,
                 state: ecomsec_core::StateStore::new("/nonexistent"),

@@ -123,7 +123,7 @@ pub fn render(report: &Report) -> String {
         out,
         "<testsuites name=\"ecomsec\" tests=\"{n}\" failures=\"{failures}\" errors=\"0\" time=\"{time:.3}\">\n  <testsuite name=\"{}\" tests=\"{n}\" failures=\"{failures}\" errors=\"0\" skipped=\"0\" time=\"{time:.3}\" timestamp=\"{}\">\n",
         xml_escape(&suite),
-        report.generated_at.format("%Y-%m-%dT%H:%M:%S"),
+        report.generated_at.strftime("%Y-%m-%dT%H:%M:%S"),
         n = categories.len(),
     );
     let _ = write!(

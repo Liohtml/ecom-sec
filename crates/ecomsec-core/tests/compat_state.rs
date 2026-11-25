@@ -77,9 +77,66 @@ fn diff_output_round_trips_unchanged() {
 
 #[test]
 fn every_fractional_second_width_round_trips_unchanged() {
-    let h: Vec<HistoryEntry> = assert_round_trip("edge/history.json");
-    assert_eq!(h.len(), 12);
     assert_round_trip::<AcceptedFindings>("edge/accepted.json");
+    // The last history entry, 9999-12-31T23:59:59Z, lies beyond the range of
+    // jiff (up to 9999-12-30T22:00:00Z): it still loads, saturated at the
+    // maximum.  Everything else is written back unchanged.
+    let original = read("edge/history.json");
+    let h: Vec<HistoryEntry> = serde_json::from_str(&original).unwrap();
+    assert_eq!(h.len(), 12);
+    assert_eq!(h[11].generated_at, ecomsec_core::time::Timestamp::MAX);
+    let written = serde_json::to_string_pretty(&h).unwrap();
+    let expected = original.replace(
+        "\"9999-12-31T23:59:59Z\"",
+        "\"9999-12-30T22:00:00.999999999Z\"",
+    );
+    assert_eq!(written, expected.trim_end());
+}
+
+/// Replace every RFC 3339 time stamp string in `v` with `to`.
+fn set_timestamps(v: &mut serde_json::Value, to: &str) -> usize {
+    match v {
+        serde_json::Value::String(s) => {
+            let b = s.as_bytes();
+            let looks_like_ts = b.len() >= 20
+                && b[4] == b'-'
+                && b[10] == b'T'
+                && b[13] == b':'
+                && s.ends_with('Z')
+                && s[..4].bytes().all(|c| c.is_ascii_digit());
+            if looks_like_ts {
+                *s = to.to_string();
+                1
+            } else {
+                0
+            }
+        }
+        serde_json::Value::Array(a) => a.iter_mut().map(|x| set_timestamps(x, to)).sum(),
+        serde_json::Value::Object(o) => o.values_mut().map(|x| set_timestamps(x, to)).sum(),
+        _ => 0,
+    }
+}
+
+/// Every time stamp field keeps the 0/3/6/9-digit form, whatever its value:
+/// with all of them set to `.500` (which a plain jiff serialiser would
+/// shorten to `.5`), the files still round-trip unchanged.
+#[test]
+fn every_time_stamp_field_uses_the_report_format() {
+    fn check<T: Serialize + DeserializeOwned>(rel: &str, at_least: usize) {
+        let mut v: serde_json::Value = serde_json::from_str(&read(rel)).unwrap();
+        let n = set_timestamps(&mut v, "2026-11-25T08:25:39.500Z");
+        assert!(n >= at_least, "{rel}: only {n} time stamps");
+        let typed: T = serde_json::from_value(v.clone()).unwrap();
+        // Compare via text: `to_value` would widen f32 fields (0.6 → 0.6000000238…).
+        let written: serde_json::Value =
+            serde_json::from_str(&serde_json::to_string(&typed).unwrap()).unwrap();
+        assert!(written == v, "{rel} changed");
+    }
+    check::<Report>("state/last-report.json", 2);
+    check::<Vec<HistoryEntry>>("state/history.json", 4);
+    check::<AcceptedFindings>("state/accepted.json", 1);
+    check::<Baseline>("state/baseline.json", 1);
+    check::<ReportDiff>("diff.json", 2);
 }
 
 #[test]
