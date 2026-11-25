@@ -1,0 +1,2701 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-25T08:25:39.643842689Z",
+  "platform": {
+    "id": "jtl5",
+    "name": "JTL-Shop 5",
+    "kind": "self_hosted",
+    "version": "5.3.1",
+    "root": "/tmp/.tmp9f3GfK/shop",
+    "target": "https://demo.example",
+    "details": [
+      [
+        "Versionsquelle",
+        "includes/defines.php"
+      ],
+      [
+        "Shop-URL",
+        "https://demo.example"
+      ],
+      [
+        "Datenbank",
+        "u@127.0.0.1/x"
+      ]
+    ]
+  },
+  "reference_date": "2026-06-17",
+  "verdict": "critical",
+  "summary": {
+    "critical": 23,
+    "warning": 11,
+    "info": 2,
+    "accepted": 1,
+    "files_scanned": 40,
+    "bytes_scanned": 954,
+    "duration_ms": 160,
+    "complete": true
+  },
+  "findings": [
+    {
+      "id": "34b03f681df6dc43",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: CVE-2026-22308 (Reflektiertes XSS über den OPC-Vorschaumodus (ohne Anmeldung))",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_cve-2026-22308",
+      "evidence": [
+        "https://www.jtl-software.com/de/security/sicherheitshinweis-opc-vorschaumodus_xss/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "3f498b1fb8bbe820",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: CVE-2026-123058 (Web-Installer sperrt sich nach der Installation nicht)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_cve-2026-123058",
+      "evidence": [
+        "https://www.jtl-software.com/de/security/sicherheitshinweis-web-installer_nicht_gesperrt/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "542a85f9e4f37a0c",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-2026-ADMIN-PWRESET (Übernahme von Admin-Konten über „Passwort zurücksetzen“)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-2026-admin-pwreset",
+      "evidence": [
+        "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "754aa9e2ed3670dc",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: CVE-2026-125060 (IDOR im Bestellprozess: fremde Lieferadressen in eigene Bestellungen übernehmbar)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_cve-2026-125060",
+      "evidence": [
+        "https://www.jtl-software.com/de/security/sicherheitshinweis-lieferadressen-bestellprozess/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "9250c17212fab8ab",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-SHOP-9886 (IDOR im Retouren-Modul: Lieferadressen aller Kunden auslesbar)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.4, >=5.7.0 <5.7.4, >=5.8.0 <5.8.1); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-shop-9886",
+      "evidence": [
+        "https://www.jtl-software.com/de/advisory-shop-security-bola-idor-shop-9886/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "9a92508dc0475919",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: CVE-2026-22310 (Gespeichertes XSS über 404-Weiterleitungen)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_cve-2026-22310",
+      "evidence": [
+        "https://www.jtl-software.com/de/security/sicherheitshinweis-404-weiterleitungen_xss/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "9dc381f51ab3f543",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: CVE-2026-133939 (Reflektiertes XSS im OPC-Startmenü)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_cve-2026-133939",
+      "evidence": [
+        "https://www.jtl-software.com/de/security/sicherheitshinweis-opc-startmenue_xss/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "c17ac7787b9f9b86",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: CVE-2026-133938 (Backend-Sprachumschaltung ohne Token: Skriptcode im Backend (CSRF + gespeichertes XSS))",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.3 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_cve-2026-133938",
+      "evidence": [
+        "https://www.jtl-software.com/de/security/sicherheitshinweis-backend-sprachumschaltung_xss/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "d594e811bfff8a10",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-2026-ADMIN-XSS (XSS in zwei Backend-Funktionen (Bewertungen, Freischaltungen))",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.6.3, >=5.7.0 <5.7.3); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-2026-admin-xss",
+      "evidence": [
+        "https://www.jtl-software.com/de/shop-patch-xss"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "ebb67d5b0664a227",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: CVE-2026-133940 (Sicherungsdateien in export/backup ohne Anmeldung abrufbar)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_cve-2026-133940",
+      "evidence": [
+        "https://www.jtl-software.com/de/security/sicherheitshinweis-sicherungsdateien-export_backup_abrufbar/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "ed3628734a663db6",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-2026-BACKEND-PRIVESC (Rechteausweitung: eingeschränkte Backend-Konten können Administratoren anlegen, ändern und deren 2FA verwalten)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.8.3); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-2026-backend-privesc",
+      "evidence": [
+        "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "ede6466ed43e5f15",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: CVE-2026-103905 (Unauthentifiziertes Umschalten des Wartungsmodus (Safe-Mode))",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.5, >=5.7.0 <5.7.5, >=5.8.0 <5.8.2); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_cve-2026-103905",
+      "evidence": [
+        "https://www.jtl-software.com/de/security/shop-maintenance-mode"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "eff039ce2cd7e01f",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-SHOP-10049 (Second-Order-SQL-Injection über Backend-Benachrichtigungen (jedes Backend-Konto))",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.3); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-shop-10049",
+      "evidence": [
+        "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "f7800eacdada947a",
+      "severity": "critical",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: CVE-2026-54390 (Unauthentifizierte Smarty Template Injection (SSTI) mit RCE ab 5.4.0)",
+      "description": "Der gefährliche Smarty-Modifier `unserialize` ist weiterhin registriert – die RCE-Kette von CVE-2026-54390 steht zur Verfügung (geprüfte Datei: includes/src/Smarty/MailSmarty.php).",
+      "subject": "5.3.1",
+      "rule": "advisory_cve-2026-54390",
+      "evidence": [
+        "https://sansec.io/research/jtl-shop-ssti-rce"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "65f375f1f7f7251e",
+      "severity": "critical",
+      "category": "exposed_file",
+      "source": "file_system",
+      "title": "Backup-, Dump-, Schlüssel- oder Konfigurationskopie im Webroot",
+      "description": "Die Datei liegt unterhalb des öffentlich erreichbaren Verzeichnisses und kann je nach Webserver-Konfiguration direkt heruntergeladen werden. Dumps und Konfigurationskopien enthalten häufig Zugangsdaten.",
+      "subject": "backup.sql",
+      "path": "/tmp/.tmp9f3GfK/shop/backup.sql",
+      "rule": "exposed_file",
+      "evidence": [
+        "backup.sql (15 B)"
+      ],
+      "accepted": true,
+      "accepted_reason": "Testdump",
+      "group": "."
+    },
+    {
+      "id": "0472e34e58e9e36b",
+      "severity": "critical",
+      "category": "exploit_payload",
+      "source": "file_system",
+      "title": "Rohes SSTI-Angriffsmuster für CVE-2026-54390: {capture} … {eval}",
+      "description": "Regel `jtl_ssti_capture_eval` [cve-2026-54390, ssti, jtl]: Rohes SSTI-Angriffsmuster für CVE-2026-54390: {capture} … {eval}",
+      "subject": "jtllogs/shop.log",
+      "path": "/tmp/.tmp9f3GfK/shop/jtllogs/shop.log",
+      "rule": "jtl_ssti_capture_eval",
+      "evidence": [
+        "vorname={capture name=a}x{/capture}{eval",
+        "pture name=a}x{/capture}{eval var=$smarty.capture.a} ",
+        "https://sansec.io/research/jtl-shop-ssti-rce"
+      ],
+      "accepted": false,
+      "group": "jtllogs",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "ea9761a3872f4f76",
+      "severity": "critical",
+      "category": "exploit_payload",
+      "source": "file_system",
+      "title": "Smarty {eval var=…} mit Variableninhalt – Codeausführung über Template-Injection",
+      "description": "Regel `jtl_ssti_eval_tag_with_var` [cve-2026-54390, ssti, jtl]: Smarty {eval var=…} mit Variableninhalt – Codeausführung über Template-Injection",
+      "subject": "jtllogs/shop.log",
+      "path": "/tmp/.tmp9f3GfK/shop/jtllogs/shop.log",
+      "rule": "jtl_ssti_eval_tag_with_var",
+      "evidence": [
+        "pture name=a}x{/capture}{eval var=$smarty.capture.a} "
+      ],
+      "accepted": false,
+      "group": "jtllogs",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "29a74db159f2832c",
+      "severity": "critical",
+      "category": "webserver_config_manipulation",
+      "source": "file_system",
+      "title": ".htaccess leitet Nicht-PHP-Endungen (Bilder, txt, …) an den PHP-Handler",
+      "description": "Regel `htaccess_php_handler_for_non_php` [htaccess]: .htaccess leitet Nicht-PHP-Endungen (Bilder, txt, …) an den PHP-Handler",
+      "subject": "mediafiles/.htaccess",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/.htaccess",
+      "rule": "htaccess_php_handler_for_non_php",
+      "evidence": [
+        "AddHandler application/x-httpd-php .png "
+      ],
+      "accepted": false,
+      "group": "mediafiles",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "4cfd122be4c32fd6",
+      "severity": "critical",
+      "category": "suspicious_pattern",
+      "source": "file_system",
+      "title": "Direkte Ausführung von Request-Eingaben (eval/assert/system mit $_GET/$_POST/$_REQUEST/$_COOKIE)",
+      "description": "Regel `php_eval_request_input` [webshell]: Direkte Ausführung von Request-Eingaben (eval/assert/system mit $_GET/$_POST/$_REQUEST/$_COOKIE)",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "php_eval_request_input",
+      "evidence": [
+        "<?php @eval($_POST['x']);"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "81eb524b014725b2",
+      "severity": "critical",
+      "category": "code_in_upload_dir",
+      "source": "file_system",
+      "title": "PHP-Datei in Upload-/Medienverzeichnis",
+      "description": "Upload- und Medienverzeichnisse dürfen keine ausführbaren Dateien enthalten. Ein PHP-Script an dieser Stelle ist ein klassisches Muster für eine über einen Upload-Bug abgelegte Webshell.",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "php_in_upload_dir",
+      "evidence": [
+        "mediafiles/Bilder/neu.php (25 B)"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "b79e52affe29d7e2",
+      "severity": "critical",
+      "category": "suspicious_pattern",
+      "source": "file_system",
+      "title": "China-Chopper-Einzeiler: @eval($_POST[...])",
+      "description": "Regel `php_china_chopper` [webshell]: China-Chopper-Einzeiler: @eval($_POST[...])",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "php_china_chopper",
+      "evidence": [
+        "<?php @eval($_POST['x']);",
+        "https://www.cisa.gov/news-events/alerts/2015/11/10/compromised-web-servers-and-web-shells-threat-awareness-and-guidance"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "52459272e8a737e9",
+      "severity": "critical",
+      "category": "suspicious_pattern",
+      "source": "file_system",
+      "title": "eval() mit base64-dekodierter/komprimierter Nutzlast – klassische Einzeiler-Backdoor",
+      "description": "Regel `php_eval_base64` [webshell, obfuscation]: eval() mit base64-dekodierter/komprimierter Nutzlast – klassische Einzeiler-Backdoor",
+      "subject": "mediafiles/Bilder/wso.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/wso.php",
+      "rule": "php_eval_base64",
+      "evidence": [
+        "<?php eval(base64_decode('x'));",
+        "https://media.defense.gov/2020/Jun/09/2002313081/-1/-1/0/CSI-DETECT-AND-PREVENT-WEB-SHELL-MALWARE-20200422.PDF"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "a3d8a47c88262314",
+      "severity": "critical",
+      "category": "known_webshell",
+      "source": "file_system",
+      "title": "Dateiname entspricht bekanntem IOC: WSO (web shell by orb)",
+      "description": "Der Dateiname steht auf einer Liste bekannter Webshell-/Backdoor-Namen (CISA, NSA, MITRE ATT&CK T1505.003) bzw. nutzt ein typisches Tarnmuster. Inhalt prüfen; nicht erklärbare Dateien sichern und entfernen.",
+      "subject": "mediafiles/Bilder/wso.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/wso.php",
+      "rule": "ioc_filename",
+      "evidence": [
+        "wso.php (31 B)"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "b844315150dd98a0",
+      "severity": "critical",
+      "category": "code_in_upload_dir",
+      "source": "file_system",
+      "title": "PHP-Datei in Upload-/Medienverzeichnis",
+      "description": "Upload- und Medienverzeichnisse dürfen keine ausführbaren Dateien enthalten. Ein PHP-Script an dieser Stelle ist ein klassisches Muster für eine über einen Upload-Bug abgelegte Webshell.",
+      "subject": "mediafiles/Bilder/wso.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/wso.php",
+      "rule": "php_in_upload_dir",
+      "evidence": [
+        "mediafiles/Bilder/wso.php (31 B)"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "058d1c216b4caba7",
+      "severity": "warning",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-2026-DBES-CATEGORY-SQLI (SQL-Injection im dbeS-Kategorie-Abgleich)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-2026-dbes-category-sqli",
+      "evidence": [
+        "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "4439af3c0ced547c",
+      "severity": "warning",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-2026-WAWI-SYNC (Wawi-Abgleich: beliebige Dateien über den Bildabgleich, SQL-Injection beim Löschen)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.3); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-2026-wawi-sync",
+      "evidence": [
+        "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "5cea0601137dd884",
+      "severity": "warning",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-2026-PWRESET-XSS (Reflected XSS in „Passwort vergessen“)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.4, >=5.7.0 <5.7.4, >=5.8.0 <5.8.1); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-2026-pwreset-xss",
+      "evidence": [
+        "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-2.249343/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "76c7284c89856162",
+      "severity": "warning",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-2026-PATH-TRAVERSAL (Path Traversal: Dateien löschen (Banner/ImageMap) und schreiben (Wawi-Bildabgleich))",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.6.5, >=5.7.0 <5.7.5, >=5.8.0 <5.8.2); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-2026-path-traversal",
+      "evidence": [
+        "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-2.249343/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "d2a45dd3c5f1017a",
+      "severity": "warning",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-2026-CHECKOUT-PAYMENT (Checkout akzeptiert deaktivierte oder für die Kundengruppe gesperrte Zahlungsarten)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.8.3); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-2026-checkout-payment",
+      "evidence": [
+        "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "d7f67e2192ed6c88",
+      "severity": "warning",
+      "category": "patch_status",
+      "source": "configuration",
+      "title": "Shop ist verwundbar: JTL-2026-BACKEND-RIGHTS-584 (Eingeschränkte Backend-Konten: Kundendaten abrufbar, Dateien über den Avatar-Upload löschbar)",
+      "description": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden.",
+      "subject": "5.3.1",
+      "rule": "advisory_jtl-2026-backend-rights-584",
+      "evidence": [
+        "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/"
+      ],
+      "accepted": false,
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "10068f65be442089",
+      "severity": "warning",
+      "category": "integrity_deviation",
+      "source": "file_system",
+      "title": "Datei weicht von der Baseline ab",
+      "description": "Der Hash der Datei unterscheidet sich von der zuletzt aufgezeichneten Baseline. Entweder wurde die Datei legitim aktualisiert (Update, Anpassung) oder manipuliert.",
+      "subject": "admin/index.php",
+      "path": "/tmp/.tmp9f3GfK/shop/admin/index.php",
+      "rule": "baseline_changed",
+      "accepted": false,
+      "group": "admin",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "6ac995307b1b6756",
+      "severity": "warning",
+      "category": "modified_since_reference",
+      "source": "file_system",
+      "title": "Datei seit Referenzdatum neu oder geändert",
+      "description": "Änderungszeit 25.11.2026 08:25:39 UTC liegt nach dem Referenzdatum 17.06.2026. Jede unbekannte Änderung an ausführbaren Dateien seit Bekanntwerden der Schwachstelle ist zu verifizieren (Update? Agentur? Plugin?).",
+      "subject": "admin/index.php",
+      "path": "/tmp/.tmp9f3GfK/shop/admin/index.php",
+      "rule": "modified_since_reference",
+      "evidence": [
+        "mtime=2026-11-25T08:25:39.249940510+00:00"
+      ],
+      "accepted": false,
+      "group": "admin",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "4bda2f0e7895cb04",
+      "severity": "warning",
+      "category": "config_permissions",
+      "source": "file_system",
+      "title": "includes/config.JTL-Shop.ini.php ist für alle Benutzer lesbar",
+      "description": "Auf Shared Hosting können andere Kunden desselben Servers die Datei lesen. Rechte auf 0640 oder 0600 setzen (Besitzer = Webserver-/FTP-Benutzer).",
+      "subject": "includes/config.JTL-Shop.ini.php",
+      "path": "/tmp/.tmp9f3GfK/shop/includes/config.JTL-Shop.ini.php",
+      "rule": "config_permissions",
+      "evidence": [
+        "mode=0644"
+      ],
+      "accepted": false,
+      "group": "includes",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "333869f0c972248d",
+      "severity": "warning",
+      "category": "attack_trace",
+      "source": "file_system",
+      "title": "Angriffsversuch im Log: Smarty-Tags in Request-Parametern",
+      "description": "Regel `jtl_log_ssti_probe` [cve-2026-54390, jtl]: Angriffsversuch im Log: Smarty-Tags in Request-Parametern",
+      "subject": "jtllogs/shop.log",
+      "path": "/tmp/.tmp9f3GfK/shop/jtllogs/shop.log",
+      "rule": "jtl_log_ssti_probe",
+      "evidence": [
+        "vorname={capture name=a}x{/capture}{eval var=$sm"
+      ],
+      "accepted": false,
+      "group": "jtllogs",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "6847eb442d474899",
+      "severity": "warning",
+      "category": "modified_since_reference",
+      "source": "file_system",
+      "title": "Datei seit Referenzdatum neu oder geändert",
+      "description": "Änderungszeit 25.11.2026 08:25:39 UTC liegt nach dem Referenzdatum 17.06.2026. Jede unbekannte Änderung an ausführbaren Dateien seit Bekanntwerden der Schwachstelle ist zu verifizieren (Update? Agentur? Plugin?).",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "modified_since_reference",
+      "evidence": [
+        "mtime=2026-11-25T08:25:39.249940510+00:00"
+      ],
+      "accepted": false,
+      "group": "mediafiles/Bilder",
+      "review": {
+        "verdict": "needs_human",
+        "confidence": 0.6,
+        "reasoning": "Testbewertung",
+        "model": "claude-sonnet-5-5",
+        "reviewed_at": "2026-11-25T08:25:39.928960644Z"
+      }
+    },
+    {
+      "id": "5c233e1bf3776661",
+      "severity": "info",
+      "category": "timestamp_anomaly",
+      "source": "file_system",
+      "title": "36 Dateien mit ctime nach dem Referenzdatum bei älterer mtime (vermutlich Deployment)",
+      "description": "Ein Großteil der Dateien wurde nach dem Referenzdatum auf dem Server abgelegt, trägt aber ältere Änderungszeiten. Das ist typisch für ein Deployment mit erhaltenen Zeitstempeln und kein Hinweis auf eine Manipulation einzelner Dateien. Einzelne Dateien mit diesem Muster würden separat gemeldet.",
+      "subject": "deployment",
+      "rule": "ctime_mass_anomaly",
+      "evidence": [
+        "includes/config.JTL-Shop.ini.php, includes/defines.php, includes/src/F0.php, includes/src/F1.php, includes/src/F10.php"
+      ],
+      "accepted": false
+    },
+    {
+      "id": "4c5cb6f4896cb4f5",
+      "severity": "info",
+      "category": "integrity_deviation",
+      "source": "file_system",
+      "title": "Neue Datei seit der Baseline",
+      "description": "Die Datei ist seit der Baseline hinzugekommen (Plugin, Update – oder Fremdcode).",
+      "subject": "mediafiles/Bilder/neu.php",
+      "path": "/tmp/.tmp9f3GfK/shop/mediafiles/Bilder/neu.php",
+      "rule": "baseline_added",
+      "accepted": false,
+      "group": "mediafiles/Bilder"
+    }
+  ],
+  "integrity": [
+    {
+      "key": "shop.version",
+      "section": "Shop",
+      "label": "JTL-Shop Version",
+      "status": "ok",
+      "value": "5.3.1",
+      "detail": "Quelle: includes/defines.php"
+    },
+    {
+      "key": "patch.cve-2026-103904",
+      "section": "Patch-Status",
+      "label": "CVE-2026-103904 – Unauthentifiziertes gespeichertes XSS in der Consent-Statistik (Backend-Übernahme)",
+      "status": "ok",
+      "value": "nicht betroffen",
+      "detail": "Shop-Version 5.3.1 ist von CVE-2026-103904 nicht betroffen."
+    },
+    {
+      "key": "patch.cve-2026-103905",
+      "section": "Patch-Status",
+      "label": "CVE-2026-103905 – Unauthentifiziertes Umschalten des Wartungsmodus (Safe-Mode)",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.5, >=5.7.0 <5.7.5, >=5.8.0 <5.8.2); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.cve-2026-123058",
+      "section": "Patch-Status",
+      "label": "CVE-2026-123058 – Web-Installer sperrt sich nach der Installation nicht",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.cve-2026-125060",
+      "section": "Patch-Status",
+      "label": "CVE-2026-125060 – IDOR im Bestellprozess: fremde Lieferadressen in eigene Bestellungen übernehmbar",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.cve-2026-133938",
+      "section": "Patch-Status",
+      "label": "CVE-2026-133938 – Backend-Sprachumschaltung ohne Token: Skriptcode im Backend (CSRF + gespeichertes XSS)",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.3 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.cve-2026-133939",
+      "section": "Patch-Status",
+      "label": "CVE-2026-133939 – Reflektiertes XSS im OPC-Startmenü",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.cve-2026-133940",
+      "section": "Patch-Status",
+      "label": "CVE-2026-133940 – Sicherungsdateien in export/backup ohne Anmeldung abrufbar",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.cve-2026-133941",
+      "section": "Patch-Status",
+      "label": "CVE-2026-133941 – Reflektiertes XSS in der Länderverwaltung (activeSortOrder)",
+      "status": "ok",
+      "value": "nicht betroffen",
+      "detail": "Shop-Version 5.3.1 ist von CVE-2026-133941 nicht betroffen."
+    },
+    {
+      "key": "patch.cve-2026-22308",
+      "section": "Patch-Status",
+      "label": "CVE-2026-22308 – Reflektiertes XSS über den OPC-Vorschaumodus (ohne Anmeldung)",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.cve-2026-22309",
+      "section": "Patch-Status",
+      "label": "CVE-2026-22309 – Gespeichertes XSS über den Crawler-User-Agent",
+      "status": "ok",
+      "value": "nicht betroffen",
+      "detail": "Shop-Version 5.3.1 ist von CVE-2026-22309 nicht betroffen."
+    },
+    {
+      "key": "patch.cve-2026-22310",
+      "section": "Patch-Status",
+      "label": "CVE-2026-22310 – Gespeichertes XSS über 404-Weiterleitungen",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.cve-2026-22311",
+      "section": "Patch-Status",
+      "label": "CVE-2026-22311 – Wawi-Abgleich lässt sich über X-Forwarded-For sperren",
+      "status": "ok",
+      "value": "nicht betroffen",
+      "detail": "Shop-Version 5.3.1 ist von CVE-2026-22311 nicht betroffen."
+    },
+    {
+      "key": "patch.cve-2026-54390",
+      "section": "Patch-Status",
+      "label": "CVE-2026-54390 – Unauthentifizierte Smarty Template Injection (SSTI) mit RCE ab 5.4.0",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Der gefährliche Smarty-Modifier `unserialize` ist weiterhin registriert – die RCE-Kette von CVE-2026-54390 steht zur Verfügung (geprüfte Datei: includes/src/Smarty/MailSmarty.php)."
+    },
+    {
+      "key": "patch.jtl-2026-admin-pwreset",
+      "section": "Patch-Status",
+      "label": "JTL-2026-ADMIN-PWRESET – Übernahme von Admin-Konten über „Passwort zurücksetzen“",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-2026-admin-xss",
+      "section": "Patch-Status",
+      "label": "JTL-2026-ADMIN-XSS – XSS in zwei Backend-Funktionen (Bewertungen, Freischaltungen)",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.6.3, >=5.7.0 <5.7.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-2026-backend-privesc",
+      "section": "Patch-Status",
+      "label": "JTL-2026-BACKEND-PRIVESC – Rechteausweitung: eingeschränkte Backend-Konten können Administratoren anlegen, ändern und deren 2FA verwalten",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.8.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-2026-backend-rights-584",
+      "section": "Patch-Status",
+      "label": "JTL-2026-BACKEND-RIGHTS-584 – Eingeschränkte Backend-Konten: Kundendaten abrufbar, Dateien über den Avatar-Upload löschbar",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-2026-checkout-payment",
+      "section": "Patch-Status",
+      "label": "JTL-2026-CHECKOUT-PAYMENT – Checkout akzeptiert deaktivierte oder für die Kundengruppe gesperrte Zahlungsarten",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.8.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-2026-dbes-category-sqli",
+      "section": "Patch-Status",
+      "label": "JTL-2026-DBES-CATEGORY-SQLI – SQL-Injection im dbeS-Kategorie-Abgleich",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-2026-path-traversal",
+      "section": "Patch-Status",
+      "label": "JTL-2026-PATH-TRAVERSAL – Path Traversal: Dateien löschen (Banner/ImageMap) und schreiben (Wawi-Bildabgleich)",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.6.5, >=5.7.0 <5.7.5, >=5.8.0 <5.8.2); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-2026-pwreset-xss",
+      "section": "Patch-Status",
+      "label": "JTL-2026-PWRESET-XSS – Reflected XSS in „Passwort vergessen“",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.4, >=5.7.0 <5.7.4, >=5.8.0 <5.8.1); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-2026-wawi-sync",
+      "section": "Patch-Status",
+      "label": "JTL-2026-WAWI-SYNC – Wawi-Abgleich: beliebige Dateien über den Bildabgleich, SQL-Injection beim Löschen",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-shop-10049",
+      "section": "Patch-Status",
+      "label": "JTL-SHOP-10049 – Second-Order-SQL-Injection über Backend-Benachrichtigungen (jedes Backend-Konto)",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "patch.jtl-shop-9886",
+      "section": "Patch-Status",
+      "label": "JTL-SHOP-9886 – IDOR im Retouren-Modul: Lieferadressen aller Kunden auslesbar",
+      "status": "critical",
+      "value": "VERWUNDBAR",
+      "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.4, >=5.7.0 <5.7.4, >=5.8.0 <5.8.1); kein Patch-Nachweis gefunden."
+    },
+    {
+      "key": "integrity.baseline",
+      "section": "Integrität",
+      "label": "Abweichungen von der Baseline",
+      "status": "warning",
+      "value": "1 geändert, 0 fehlend, 1 neu",
+      "detail": "Baseline vom 25.11.2026 08:25 UTC (36 Dateien)"
+    },
+    {
+      "key": "perm.includes/config.JTL-Shop.ini.php",
+      "section": "Dateirechte",
+      "label": "includes/config.JTL-Shop.ini.php",
+      "status": "warning",
+      "value": "0644",
+      "detail": "für alle Benutzer lesbar – DB-Zugangsdaten und Blowfish-Key einsehbar"
+    },
+    {
+      "key": "perm.includes/defines.php",
+      "section": "Dateirechte",
+      "label": "includes/defines.php",
+      "status": "ok",
+      "value": "0644"
+    },
+    {
+      "key": "dependencies.osv",
+      "section": "Abhängigkeiten",
+      "label": "Composer-Pakete",
+      "status": "unknown",
+      "value": "keine composer.lock / installed.json gefunden"
+    }
+  ],
+  "advisories": [
+    {
+      "advisory": {
+        "id": "CVE-2026-103904",
+        "title": "Unauthentifiziertes gespeichertes XSS in der Consent-Statistik (Backend-Übernahme)",
+        "severity": "critical",
+        "score": 9.3,
+        "affected": [
+          {
+            "min_inclusive": "5.4.0",
+            "max_exclusive": "5.6.5"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.5"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.2"
+          }
+        ],
+        "fixed_in": [
+          "5.6.5",
+          "5.7.5",
+          "5.8.2"
+        ],
+        "backpatch_note": "Über /_updateconsent lassen sich ohne Anmeldung beliebige Einwilligungs-Namen in consent_statistics speichern; beim Öffnen von Statistiken → Consent-Manager (/admin/stats/6) läuft der Code mit den Rechten des Administrators. Für 5.4/5.5 gibt es keinen Patch (Upgrade auf 5.6.5+). JTL stellt Patch-Dateien bereit; deren Einspielung wird anhand von statistik.tpl und Consent/Manager.php erkannt. Bis zum Update die Consent-Statistik nicht öffnen bzw. das Recht STATS_CONSENT_VIEW entziehen; ecomsec prüft consent_statistics auf eingeschleuste Namen.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitsluecke-shop-xss/",
+        "published": "2026-10-14",
+        "tags": [
+          "xss",
+          "stored-xss",
+          "unauthenticated",
+          "admin-takeover",
+          "consent"
+        ]
+      },
+      "state": "not_affected",
+      "basis": "Shop-Version 5.3.1 ist von CVE-2026-103904 nicht betroffen."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-103905",
+        "title": "Unauthentifiziertes Umschalten des Wartungsmodus (Safe-Mode)",
+        "severity": "critical",
+        "score": 7.5,
+        "affected": [
+          {
+            "min_inclusive": "5.3.0",
+            "max_exclusive": "5.6.5"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.5"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.2"
+          }
+        ],
+        "fixed_in": [
+          "5.6.5",
+          "5.7.5",
+          "5.8.2"
+        ],
+        "backpatch_note": "Ein Aufruf von /admin/logout?safemode=… schaltet den Shop ohne Anmeldung in den Wartungsmodus (auch über eingebettete Ressourcen auf fremden Seiten). Kein Datenzugriff, aber Shop-Ausfall. Für 5.3–5.5 gibt es keinen Patch (Upgrade auf 5.6.5+). Ein eingespielter Patch wird an der Reihenfolge in AuthMiddleware.php erkannt; Spuren mit --access-log suchen.",
+        "reference": "https://www.jtl-software.com/de/security/shop-maintenance-mode",
+        "published": "2026-10-14",
+        "tags": [
+          "missing-authorization",
+          "unauthenticated",
+          "dos"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.5, >=5.7.0 <5.7.5, >=5.8.0 <5.8.2); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-123058",
+        "title": "Web-Installer sperrt sich nach der Installation nicht",
+        "severity": "critical",
+        "score": 9.0,
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.5.5"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.4"
+          }
+        ],
+        "fixed_in": [
+          "5.5.5",
+          "5.6.6",
+          "5.7.6",
+          "5.8.4"
+        ],
+        "backpatch_note": "Solange install/ erreichbar ist, nimmt der Installer fremde Datenbank-Zugangsdaten an, legt Admin- und Sync-Konten an und überschreibt die Konfiguration – ohne Anmeldung. Das Update löscht ein vorhandenes install/-Verzeichnis nicht: sofort entfernen. Nachweis an Installation/VueInstaller.php; der Scan meldet ein vorhandenes install/-Verzeichnis.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-web-installer_nicht_gesperrt/",
+        "published": "2026-11-12",
+        "tags": [
+          "missing-authentication",
+          "unauthenticated",
+          "installer"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-125060",
+        "title": "IDOR im Bestellprozess: fremde Lieferadressen in eigene Bestellungen übernehmbar",
+        "severity": "critical",
+        "score": 8.2,
+        "affected": [
+          {
+            "min_inclusive": "5.2.0",
+            "max_exclusive": "5.5.5"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.4"
+          }
+        ],
+        "fixed_in": [
+          "5.5.5",
+          "5.6.6",
+          "5.7.6",
+          "5.8.4"
+        ],
+        "backpatch_note": "Die Lieferadressen-ID aus dem Formular wurde ohne Besitzprüfung in die Bestellung übernommen; mit einem Kundenkonto oder einer Gastbestellung ließen sich so fremde gespeicherte Adressen auslesen. 5.0/5.1 nicht betroffen, 5.2–5.4 ohne Patch. Bestellungen mit fremder Lieferadresse prüfen (Abfrage im Hinweis) und eine Meldung nach DSGVO Art. 33 erwägen. Nachweis an CheckoutController.php.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-lieferadressen-bestellprozess/",
+        "published": "2026-11-12",
+        "tags": [
+          "idor",
+          "data-leak",
+          "gdpr"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-133938",
+        "title": "Backend-Sprachumschaltung ohne Token: Skriptcode im Backend (CSRF + gespeichertes XSS)",
+        "severity": "critical",
+        "score": 9.3,
+        "affected": [
+          {
+            "min_inclusive": "5.2.3",
+            "max_exclusive": "5.5.6"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.7"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.7"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.5"
+          }
+        ],
+        "fixed_in": [
+          "5.5.6",
+          "5.6.7",
+          "5.7.7",
+          "5.8.5"
+        ],
+        "backpatch_note": "Die Aktion quick_change_language übernimmt per GET ohne Token einen beliebigen Wert in tadminlogin.language, der im Backend ungefiltert ausgegeben wird. Ein Administrator muss nur eine präparierte Seite öffnen. Für 5.2.3–5.4 gibt es nur die Patch-Dateien vom 24.11.2026. Nachweis an AdminAccountController.php (Token-Prüfung); mit Datenbankzugang meldet der Scan ungültige Sprachwerte.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-backend-sprachumschaltung_xss/",
+        "published": "2026-11-24",
+        "tags": [
+          "csrf",
+          "xss",
+          "backend",
+          "cwe-352",
+          "cwe-79"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.3 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-133939",
+        "title": "Reflektiertes XSS im OPC-Startmenü",
+        "severity": "critical",
+        "score": 9.3,
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.5.6"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.7"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.7"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.5"
+          }
+        ],
+        "fixed_in": [
+          "5.5.6",
+          "5.6.7",
+          "5.7.7",
+          "5.8.5"
+        ],
+        "backpatch_note": "Suchbegriff, Seitenkennung und Adressen wurden im OPC-Startmenü ungefiltert in JavaScript ausgegeben; ein Klick eines angemeldeten Backend-Nutzers auf einen präparierten Link genügt. Seit Einführung des OPC betroffen, für 5.0–5.4 nur Patch-Dateien. Nachweis an admin/opc/tpl/startmenu.tpl.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-opc-startmenue_xss/",
+        "published": "2026-11-24",
+        "tags": [
+          "xss",
+          "opc",
+          "backend"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-133940",
+        "title": "Sicherungsdateien in export/backup ohne Anmeldung abrufbar",
+        "severity": "critical",
+        "score": 8.2,
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.5.6"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.7"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.7"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.5"
+          }
+        ],
+        "fixed_in": [
+          "5.5.6",
+          "5.6.7",
+          "5.7.7",
+          "5.8.5"
+        ],
+        "backpatch_note": "export/.htaccess erlaubt .gz und .zip unterhalb von export/, export/backup hob das nicht auf: Datenbank- und Dateisicherungen (inkl. Konfiguration mit Zugangsdaten) waren abrufbar, sofern der Dateiname bekannt oder erratbar ist (bis 5.5.5 nur ein Zeitstempel). Der Fix wirkt nur unter Apache; nginx braucht eine eigene Sperre. Nachweis an export/backup/.htaccess; der Scan listet vorhandene Sicherungen.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-sicherungsdateien-export_backup_abrufbar/",
+        "published": "2026-11-24",
+        "tags": [
+          "exposed-file",
+          "unauthenticated",
+          "backup",
+          "gdpr"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-133941",
+        "title": "Reflektiertes XSS in der Länderverwaltung (activeSortOrder)",
+        "severity": "critical",
+        "score": 9.3,
+        "affected": [
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.7"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.7"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.5"
+          }
+        ],
+        "fixed_in": [
+          "5.6.7",
+          "5.7.7",
+          "5.8.5"
+        ],
+        "backpatch_note": "Der Parameter activeSortOrder unter /admin/countries wurde ungeprüft in JavaScript und Formularfelder übernommen; ein Klick eines Backend-Nutzers mit Zugriff auf die Länderverwaltung genügt. Vor 5.6.0 nicht betroffen. Nachweis an includes/src/Country/Manager.php.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-backend-laenderverwaltung_xss/",
+        "published": "2026-11-24",
+        "tags": [
+          "xss",
+          "backend"
+        ]
+      },
+      "state": "not_affected",
+      "basis": "Shop-Version 5.3.1 ist von CVE-2026-133941 nicht betroffen."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-22308",
+        "title": "Reflektiertes XSS über den OPC-Vorschaumodus (ohne Anmeldung)",
+        "severity": "critical",
+        "score": 9.3,
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.5.5"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.4"
+          }
+        ],
+        "fixed_in": [
+          "5.5.5",
+          "5.6.6",
+          "5.7.6",
+          "5.8.4"
+        ],
+        "backpatch_note": "Der Parameter opcPreviewMode schaltete per GET für jeden Besucher die OPC-Vorschau ein, die Seitendaten aus der Anfrage ungefiltert rendert. Ein präparierter Link genügt. Für 5.0–5.4 gibt es nur die Patch-Dateien vom 12.11.2026. Nachweis an includes/src/OPC/Service.php (PreviewToken).",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-opc-vorschaumodus_xss/",
+        "published": "2026-11-12",
+        "tags": [
+          "xss",
+          "opc",
+          "unauthenticated"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-22309",
+        "title": "Gespeichertes XSS über den Crawler-User-Agent",
+        "severity": "critical",
+        "score": 9.3,
+        "affected": [
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.4"
+          }
+        ],
+        "fixed_in": [
+          "5.6.6",
+          "5.7.6",
+          "5.8.4"
+        ],
+        "backpatch_note": "Ein präparierter User-Agent wird ohne Anmeldung in tbesucherbot gespeichert und in Statistiken, Dashboard-Widget, Crawler-Bearbeitung und Sitemap-Export ungefiltert ausgegeben. 5.5 und älter nicht betroffen. Nachweis an includes/src/Crawler/Controller.php; mit Datenbankzugang meldet der Scan gespeicherte Payloads.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-crawler-user-agent_xss/",
+        "published": "2026-11-12",
+        "tags": [
+          "stored-xss",
+          "unauthenticated",
+          "backend"
+        ]
+      },
+      "state": "not_affected",
+      "basis": "Shop-Version 5.3.1 ist von CVE-2026-22309 nicht betroffen."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-22310",
+        "title": "Gespeichertes XSS über 404-Weiterleitungen",
+        "severity": "critical",
+        "score": 8.0,
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.5.5"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.4"
+          }
+        ],
+        "fixed_in": [
+          "5.5.5",
+          "5.6.6",
+          "5.7.6",
+          "5.8.4"
+        ],
+        "backpatch_note": "Ist „404-Fehler speichern“ (redirect_save_404) aktiv, landen aufgerufene URLs ungefiltert in tredirect.cFromUrl und werden im Bearbeitungsformular der Weiterleitungen ausgegeben. Für 5.0–5.4 kein Patch. Nachweis an Redirect/Services/ValidationService.php; mit Datenbankzugang meldet der Scan gespeicherte Payloads.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-404-weiterleitungen_xss/",
+        "published": "2026-11-12",
+        "tags": [
+          "stored-xss",
+          "unauthenticated",
+          "backend"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-22311",
+        "title": "Wawi-Abgleich lässt sich über X-Forwarded-For sperren",
+        "severity": "warning",
+        "score": 7.5,
+        "affected": [
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.4"
+          }
+        ],
+        "fixed_in": [
+          "5.8.4"
+        ],
+        "backpatch_note": "Die Sperre nach fünf Fehlversuchen am /dbeS/-Abgleich hing an der ersten X-Forwarded-For-Angabe, die jeder Aufrufer setzen kann: Der echte Abgleich ließ sich so ohne Anmeldung blockieren (Bestellungen werden nicht abgeholt). Nur 5.8. Nach dem Update Proxy-Adressen in TRUSTED_PROXY_IPS eintragen. Nachweis an dbeS/FailedLoginLimiter.php.",
+        "reference": "https://www.jtl-software.com/de/security/sicherheitshinweis-wawi-synchronisation_sperrung/",
+        "published": "2026-11-12",
+        "tags": [
+          "dos",
+          "unauthenticated",
+          "dbes"
+        ]
+      },
+      "state": "not_affected",
+      "basis": "Shop-Version 5.3.1 ist von CVE-2026-22311 nicht betroffen."
+    },
+    {
+      "advisory": {
+        "id": "CVE-2026-54390",
+        "title": "Unauthentifizierte Smarty Template Injection (SSTI) mit RCE ab 5.4.0",
+        "severity": "critical",
+        "score": 9.8,
+        "affected": [
+          {
+            "min_inclusive": "5.2.0",
+            "max_exclusive": "5.5.4"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.2"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.2"
+          }
+        ],
+        "fixed_in": [
+          "5.5.4",
+          "5.6.2",
+          "5.7.2"
+        ],
+        "backpatch_note": "Für ältere 5.x-Zweige stellt JTL einen Back-Patch bereit; ein eingespielter Back-Patch wird anhand des Smarty-Mail-Renderers erkannt. Nach dem Patch Blowfish-Key, DB-Passwort und alle im Shop hinterlegten Zugangsdaten rotieren, da diese vor dem Patch auslesbar waren.",
+        "reference": "https://sansec.io/research/jtl-shop-ssti-rce",
+        "published": "2026-06-17",
+        "tags": [
+          "ssti",
+          "rce",
+          "unauthenticated"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Der gefährliche Smarty-Modifier `unserialize` ist weiterhin registriert – die RCE-Kette von CVE-2026-54390 steht zur Verfügung (geprüfte Datei: includes/src/Smarty/MailSmarty.php)."
+    },
+    {
+      "advisory": {
+        "id": "JTL-2026-ADMIN-PWRESET",
+        "title": "Übernahme von Admin-Konten über „Passwort zurücksetzen“",
+        "severity": "critical",
+        "affected": [
+          {
+            "min_inclusive": "5.2.0",
+            "max_exclusive": "5.5.5"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.4"
+          }
+        ],
+        "fixed_in": [
+          "5.5.5",
+          "5.6.6",
+          "5.7.6",
+          "5.8.4"
+        ],
+        "backpatch_note": "Beim Setzen eines neuen Backend-Passworts wurde das Konto über die mitgesendete E-Mail-Adresse statt über den Reset-Link bestimmt. JTL nennt den Fix in 5.8.4, 5.7.6, 5.6.6 und 5.5.5 ohne eigenen Hinweis. Nachweis an Router/Controller/Backend/PasswordController.php. Admin-Konten, Passwortänderungen und Anmeldungen prüfen.",
+        "reference": "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/",
+        "published": "2026-11-12",
+        "tags": [
+          "account-takeover",
+          "unauthenticated",
+          "backend"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-2026-ADMIN-XSS",
+        "title": "XSS in zwei Backend-Funktionen (Bewertungen, Freischaltungen)",
+        "severity": "critical",
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.6.3"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.3"
+          }
+        ],
+        "fixed_in": [
+          "5.6.3",
+          "5.7.3",
+          "5.8.0"
+        ],
+        "backpatch_note": "Werte aus Bewertungen (Name, Titel) und Suchparameter der Freischaltungen wurden im Backend ungefiltert ausgegeben; präparierte Kundenbewertungen konnten so JavaScript in der Admin-Sitzung ausführen. Versionen vor 5.6.0 erhalten keinen Fix.",
+        "reference": "https://www.jtl-software.com/de/shop-patch-xss",
+        "published": "2026-08-26",
+        "tags": [
+          "xss",
+          "admin"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.6.3, >=5.7.0 <5.7.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-2026-BACKEND-PRIVESC",
+        "title": "Rechteausweitung: eingeschränkte Backend-Konten können Administratoren anlegen, ändern und deren 2FA verwalten",
+        "severity": "critical",
+        "affected": [
+          {
+            "min_inclusive": "5.2.0",
+            "max_exclusive": "5.8.3"
+          }
+        ],
+        "fixed_in": [
+          "5.8.3"
+        ],
+        "backpatch_note": "Ein Backend-Konto mit Zugriff auf die Benutzerverwaltung, aber ohne Administratorgruppe, konnte Konten der Administratorgruppe zuordnen, Administratoren löschen und die Zwei-Faktor-Geheimnisse von Administratoren abrufen oder neu setzen. Als Administrator stehen Plugin- und Template-Upload und damit Codeausführung offen. Nur in 5.8.3 und neuer behoben; 5.7.7, 5.6.7 und 5.5.6 enthalten den alten Code (Pakete geprüft): Update auf 5.8. Nachweis an AdminAccountController.php und BackendTwoFA.php. Admin-Konten und Gruppenzugehörigkeit prüfen.",
+        "reference": "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/",
+        "published": "2026-11-04",
+        "tags": [
+          "privilege-escalation",
+          "authenticated",
+          "2fa",
+          "backend"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.8.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-2026-BACKEND-RIGHTS-584",
+        "title": "Eingeschränkte Backend-Konten: Kundendaten abrufbar, Dateien über den Avatar-Upload löschbar",
+        "severity": "warning",
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.5.5"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.4"
+          }
+        ],
+        "fixed_in": [
+          "5.5.5",
+          "5.6.6",
+          "5.7.6",
+          "5.8.4"
+        ],
+        "backpatch_note": "Mehrere Backend-IO-Funktionen (u. a. Kundensuche) waren für jedes Backend-Konto aufrufbar, und der Avatar-Upload in der Benutzerverwaltung löschte einen frei wählbaren Pfad. JTL nennt die Fixes in 5.8.4, 5.7.6, 5.6.6 und 5.5.5 ohne eigenen Hinweis. Nachweis an IOController.php und AdminAccountController.php.",
+        "reference": "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/",
+        "published": "2026-11-12",
+        "tags": [
+          "missing-authorization",
+          "file-deletion",
+          "backend"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-2026-CHECKOUT-PAYMENT",
+        "title": "Checkout akzeptiert deaktivierte oder für die Kundengruppe gesperrte Zahlungsarten",
+        "severity": "warning",
+        "affected": [
+          {
+            "min_inclusive": "5.2.0",
+            "max_exclusive": "5.8.3"
+          }
+        ],
+        "fixed_in": [
+          "5.8.3"
+        ],
+        "backpatch_note": "Eine Bestellung ließ sich mit einer Zahlungsart abschließen, die deaktiviert oder für die Kundengruppe nicht freigegeben ist (z. B. Kauf auf Rechnung für Neukunden). Nur in 5.8.3 und neuer behoben; 5.7.7, 5.6.7 und 5.5.6 enthalten den alten Code (Pakete geprüft): Update auf 5.8. Bestellungen mit unerwarteten Zahlungsarten prüfen.",
+        "reference": "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/",
+        "published": "2026-11-04",
+        "tags": [
+          "business-logic",
+          "checkout",
+          "payment"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.8.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-2026-DBES-CATEGORY-SQLI",
+        "title": "SQL-Injection im dbeS-Kategorie-Abgleich",
+        "severity": "warning",
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.5.5"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.4"
+          }
+        ],
+        "fixed_in": [
+          "5.5.5",
+          "5.6.6",
+          "5.7.6",
+          "5.8.4"
+        ],
+        "backpatch_note": "Beim Kategorie-Abgleich wurden Attribut-IDs ungebunden in ein DELETE eingesetzt. Setzt gültige Wawi-Sync-Zugangsdaten voraus. JTL nennt den Fix in 5.8.4, 5.7.6, 5.6.6 und 5.5.5 ohne eigenen Hinweis. Nachweis an dbeS/Sync/Categories.php.",
+        "reference": "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/",
+        "published": "2026-11-12",
+        "tags": [
+          "sqli",
+          "authenticated",
+          "dbes"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-2026-PATH-TRAVERSAL",
+        "title": "Path Traversal: Dateien löschen (Banner/ImageMap) und schreiben (Wawi-Bildabgleich)",
+        "severity": "warning",
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.6.5"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.5"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.2"
+          }
+        ],
+        "fixed_in": [
+          "5.6.5",
+          "5.7.5",
+          "5.8.2"
+        ],
+        "backpatch_note": "Zwei Lücken, die Backend- bzw. Wawi-Sync-Zugang voraussetzen: Banner- und ImageMap-Verwaltung löschen Dateien ohne Pfadprüfung (ab 5.6.0), der dbeS-Bildabgleich übernimmt Dateinamen mit ../ ungeprüft (ab 5.0.0). Mit gestohlenen Admin- oder Sync-Zugangsdaten lassen sich so Dateien außerhalb der Bildverzeichnisse löschen bzw. ablegen.",
+        "reference": "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-2.249343/",
+        "published": "2026-10-14",
+        "tags": [
+          "path-traversal",
+          "authenticated",
+          "file-deletion"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.6.5, >=5.7.0 <5.7.5, >=5.8.0 <5.8.2); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-2026-PWRESET-XSS",
+        "title": "Reflected XSS in „Passwort vergessen“",
+        "severity": "warning",
+        "affected": [
+          {
+            "min_inclusive": "5.3.0",
+            "max_exclusive": "5.6.4"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.4"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.1"
+          }
+        ],
+        "fixed_in": [
+          "5.6.4",
+          "5.7.4",
+          "5.8.1"
+        ],
+        "backpatch_note": "Die eingegebene E-Mail-Adresse wurde ungefiltert in die Erfolgs-/Fehlermeldung übernommen. Gemeinsam mit JTL-SHOP-9886 behoben.",
+        "reference": "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-2.249343/",
+        "published": "2026-09-24",
+        "tags": [
+          "xss",
+          "reflected-xss"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.4, >=5.7.0 <5.7.4, >=5.8.0 <5.8.1); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-2026-WAWI-SYNC",
+        "title": "Wawi-Abgleich: beliebige Dateien über den Bildabgleich, SQL-Injection beim Löschen",
+        "severity": "warning",
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.5.5"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.3"
+          }
+        ],
+        "fixed_in": [
+          "5.5.5",
+          "5.6.6",
+          "5.7.6",
+          "5.8.3"
+        ],
+        "backpatch_note": "Der dbeS-Bildabgleich übernahm Dateien ohne Prüfung von Endung und Inhalt, das Löschen von Datensätzen setzte Ausschlusswerte ungefiltert in SQL ein. Beides setzt gültige Wawi-Sync-Zugangsdaten voraus. Behoben in 5.8.3 sowie in 5.7.6, 5.6.6 und 5.5.5; Sync-Passwort ändern, falls es Dritten bekannt sein könnte. Nachweis an ImageUpload.php und AbstractSync.php.",
+        "reference": "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/",
+        "published": "2026-11-04",
+        "tags": [
+          "file-upload",
+          "sqli",
+          "authenticated",
+          "dbes"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-SHOP-10049",
+        "title": "Second-Order-SQL-Injection über Backend-Benachrichtigungen (jedes Backend-Konto)",
+        "severity": "critical",
+        "affected": [
+          {
+            "min_inclusive": "5.0.0",
+            "max_exclusive": "5.5.5"
+          },
+          {
+            "min_inclusive": "5.6.0",
+            "max_exclusive": "5.6.6"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.6"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.3"
+          }
+        ],
+        "fixed_in": [
+          "5.5.5",
+          "5.6.6",
+          "5.7.6",
+          "5.8.3"
+        ],
+        "backpatch_note": "Das Ausblenden einer Backend-Benachrichtigung speichert einen beliebigen Wert als Hash, der beim nächsten Aufbau der Benachrichtigungen ungefiltert in ein DELETE eingesetzt wird. Ausnutzbar mit jedem angemeldeten Backend-Konto, unabhängig von dessen Rechten. Behoben in 5.8.3 sowie (als „SQL-Injection über die Benachrichtigungsaktion im Backend“) in 5.7.6, 5.6.6 und 5.5.5. Ein eingespielter Fix wird an Notification::isValidHash erkannt.",
+        "reference": "https://forum.jtl-software.de/threads/jtl-shop-5-8-aktuell-5-8-3.249343/",
+        "published": "2026-11-04",
+        "tags": [
+          "sqli",
+          "authenticated",
+          "backend"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.3); kein Patch-Nachweis gefunden."
+    },
+    {
+      "advisory": {
+        "id": "JTL-SHOP-9886",
+        "title": "IDOR im Retouren-Modul: Lieferadressen aller Kunden auslesbar",
+        "severity": "critical",
+        "score": 6.5,
+        "affected": [
+          {
+            "min_inclusive": "5.3.0",
+            "max_exclusive": "5.6.4"
+          },
+          {
+            "min_inclusive": "5.7.0",
+            "max_exclusive": "5.7.4"
+          },
+          {
+            "min_inclusive": "5.8.0",
+            "max_exclusive": "5.8.1"
+          }
+        ],
+        "fixed_in": [
+          "5.6.4",
+          "5.7.4",
+          "5.8.1"
+        ],
+        "backpatch_note": "Jeder angemeldete Kunde kann über die IO-Methode rmaSummary (Parameter returnAddress) fortlaufende IDs aus tlieferadressevorlage abfragen. Das Abschalten der Retouren hilft nicht. Für 5.3–5.5 gibt es nur einen manuellen Patch; dessen Einspielung wird an RMAReturnAddressService.php erkannt. Datenschutzrechtlich (DSGVO Art. 33) prüfen, ob eine Meldung nötig ist.",
+        "reference": "https://www.jtl-software.com/de/advisory-shop-security-bola-idor-shop-9886/",
+        "published": "2026-09-24",
+        "tags": [
+          "idor",
+          "bola",
+          "data-leak",
+          "gdpr"
+        ]
+      },
+      "state": "vulnerable",
+      "basis": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.4, >=5.7.0 <5.7.4, >=5.8.0 <5.8.1); kein Patch-Nachweis gefunden."
+    }
+  ],
+  "recommendations": [
+    {
+      "kind": "check_first",
+      "label": "Zuerst prüfen (Fehlalarme ausschließen)",
+      "items": [
+        {
+          "group": "check_first",
+          "priority": 1,
+          "title": "Kritische Befunde vor dem Abschalten des Shops verifizieren",
+          "detail": "Jeden kritischen Befund öffnen und prüfen, ob Datei/Eintrag bekannt ist (eigene Anpassung, Plugin, Agentur). Nur bestätigte Fremddateien behandeln wie unten beschrieben. Bekannte, harmlose Befunde als unbedenklich markieren (mit Begründung), damit sie künftig nicht mehr zählen."
+        }
+      ]
+    },
+    {
+      "kind": "immediate",
+      "label": "Sofortmaßnahmen",
+      "items": [
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: CVE-2026-103905 – Unauthentifiziertes Umschalten des Wartungsmodus (Safe-Mode)",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.5, >=5.7.0 <5.7.5, >=5.8.0 <5.8.2); kein Patch-Nachweis gefunden. Behobene Versionen: 5.6.5 / 5.7.5 / 5.8.2. Ein Aufruf von /admin/logout?safemode=… schaltet den Shop ohne Anmeldung in den Wartungsmodus (auch über eingebettete Ressourcen auf fremden Seiten). Kein Datenzugriff, aber Shop-Ausfall. Für 5.3–5.5 gibt es keinen Patch (Upgrade auf 5.6.5+). Ein eingespielter Patch wird an der Reihenfolge in AuthMiddleware.php erkannt; Spuren mit --access-log suchen.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: CVE-2026-123058 – Web-Installer sperrt sich nach der Installation nicht",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.5 / 5.6.6 / 5.7.6 / 5.8.4. Solange install/ erreichbar ist, nimmt der Installer fremde Datenbank-Zugangsdaten an, legt Admin- und Sync-Konten an und überschreibt die Konfiguration – ohne Anmeldung. Das Update löscht ein vorhandenes install/-Verzeichnis nicht: sofort entfernen. Nachweis an Installation/VueInstaller.php; der Scan meldet ein vorhandenes install/-Verzeichnis.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: CVE-2026-125060 – IDOR im Bestellprozess: fremde Lieferadressen in eigene Bestellungen übernehmbar",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.5 / 5.6.6 / 5.7.6 / 5.8.4. Die Lieferadressen-ID aus dem Formular wurde ohne Besitzprüfung in die Bestellung übernommen; mit einem Kundenkonto oder einer Gastbestellung ließen sich so fremde gespeicherte Adressen auslesen. 5.0/5.1 nicht betroffen, 5.2–5.4 ohne Patch. Bestellungen mit fremder Lieferadresse prüfen (Abfrage im Hinweis) und eine Meldung nach DSGVO Art. 33 erwägen. Nachweis an CheckoutController.php.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: CVE-2026-133938 – Backend-Sprachumschaltung ohne Token: Skriptcode im Backend (CSRF + gespeichertes XSS)",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.3 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.6 / 5.6.7 / 5.7.7 / 5.8.5. Die Aktion quick_change_language übernimmt per GET ohne Token einen beliebigen Wert in tadminlogin.language, der im Backend ungefiltert ausgegeben wird. Ein Administrator muss nur eine präparierte Seite öffnen. Für 5.2.3–5.4 gibt es nur die Patch-Dateien vom 24.11.2026. Nachweis an AdminAccountController.php (Token-Prüfung); mit Datenbankzugang meldet der Scan ungültige Sprachwerte.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: CVE-2026-133939 – Reflektiertes XSS im OPC-Startmenü",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.6 / 5.6.7 / 5.7.7 / 5.8.5. Suchbegriff, Seitenkennung und Adressen wurden im OPC-Startmenü ungefiltert in JavaScript ausgegeben; ein Klick eines angemeldeten Backend-Nutzers auf einen präparierten Link genügt. Seit Einführung des OPC betroffen, für 5.0–5.4 nur Patch-Dateien. Nachweis an admin/opc/tpl/startmenu.tpl.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: CVE-2026-133940 – Sicherungsdateien in export/backup ohne Anmeldung abrufbar",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.6, >=5.6.0 <5.6.7, >=5.7.0 <5.7.7, >=5.8.0 <5.8.5); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.6 / 5.6.7 / 5.7.7 / 5.8.5. export/.htaccess erlaubt .gz und .zip unterhalb von export/, export/backup hob das nicht auf: Datenbank- und Dateisicherungen (inkl. Konfiguration mit Zugangsdaten) waren abrufbar, sofern der Dateiname bekannt oder erratbar ist (bis 5.5.5 nur ein Zeitstempel). Der Fix wirkt nur unter Apache; nginx braucht eine eigene Sperre. Nachweis an export/backup/.htaccess; der Scan listet vorhandene Sicherungen.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: CVE-2026-22308 – Reflektiertes XSS über den OPC-Vorschaumodus (ohne Anmeldung)",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.5 / 5.6.6 / 5.7.6 / 5.8.4. Der Parameter opcPreviewMode schaltete per GET für jeden Besucher die OPC-Vorschau ein, die Seitendaten aus der Anfrage ungefiltert rendert. Ein präparierter Link genügt. Für 5.0–5.4 gibt es nur die Patch-Dateien vom 12.11.2026. Nachweis an includes/src/OPC/Service.php (PreviewToken).",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: CVE-2026-22310 – Gespeichertes XSS über 404-Weiterleitungen",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.5 / 5.6.6 / 5.7.6 / 5.8.4. Ist „404-Fehler speichern“ (redirect_save_404) aktiv, landen aufgerufene URLs ungefiltert in tredirect.cFromUrl und werden im Bearbeitungsformular der Weiterleitungen ausgegeben. Für 5.0–5.4 kein Patch. Nachweis an Redirect/Services/ValidationService.php; mit Datenbankzugang meldet der Scan gespeicherte Payloads.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: CVE-2026-54390 – Unauthentifizierte Smarty Template Injection (SSTI) mit RCE ab 5.4.0",
+          "detail": "Der gefährliche Smarty-Modifier `unserialize` ist weiterhin registriert – die RCE-Kette von CVE-2026-54390 steht zur Verfügung (geprüfte Datei: includes/src/Smarty/MailSmarty.php). Behobene Versionen: 5.5.4 / 5.6.2 / 5.7.2. Für ältere 5.x-Zweige stellt JTL einen Back-Patch bereit; ein eingespielter Back-Patch wird anhand des Smarty-Mail-Renderers erkannt. Nach dem Patch Blowfish-Key, DB-Passwort und alle im Shop hinterlegten Zugangsdaten rotieren, da diese vor dem Patch auslesbar waren.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-2026-ADMIN-PWRESET – Übernahme von Admin-Konten über „Passwort zurücksetzen“",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.5 / 5.6.6 / 5.7.6 / 5.8.4. Beim Setzen eines neuen Backend-Passworts wurde das Konto über die mitgesendete E-Mail-Adresse statt über den Reset-Link bestimmt. JTL nennt den Fix in 5.8.4, 5.7.6, 5.6.6 und 5.5.5 ohne eigenen Hinweis. Nachweis an Router/Controller/Backend/PasswordController.php. Admin-Konten, Passwortänderungen und Anmeldungen prüfen.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-2026-ADMIN-XSS – XSS in zwei Backend-Funktionen (Bewertungen, Freischaltungen)",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.6.3, >=5.7.0 <5.7.3); kein Patch-Nachweis gefunden. Behobene Versionen: 5.6.3 / 5.7.3 / 5.8.0. Werte aus Bewertungen (Name, Titel) und Suchparameter der Freischaltungen wurden im Backend ungefiltert ausgegeben; präparierte Kundenbewertungen konnten so JavaScript in der Admin-Sitzung ausführen. Versionen vor 5.6.0 erhalten keinen Fix.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-2026-BACKEND-PRIVESC – Rechteausweitung: eingeschränkte Backend-Konten können Administratoren anlegen, ändern und deren 2FA verwalten",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.8.3); kein Patch-Nachweis gefunden. Behobene Versionen: 5.8.3. Ein Backend-Konto mit Zugriff auf die Benutzerverwaltung, aber ohne Administratorgruppe, konnte Konten der Administratorgruppe zuordnen, Administratoren löschen und die Zwei-Faktor-Geheimnisse von Administratoren abrufen oder neu setzen. Als Administrator stehen Plugin- und Template-Upload und damit Codeausführung offen. Nur in 5.8.3 und neuer behoben; 5.7.7, 5.6.7 und 5.5.6 enthalten den alten Code (Pakete geprüft): Update auf 5.8. Nachweis an AdminAccountController.php und BackendTwoFA.php. Admin-Konten und Gruppenzugehörigkeit prüfen.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-2026-BACKEND-RIGHTS-584 – Eingeschränkte Backend-Konten: Kundendaten abrufbar, Dateien über den Avatar-Upload löschbar",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.5 / 5.6.6 / 5.7.6 / 5.8.4. Mehrere Backend-IO-Funktionen (u. a. Kundensuche) waren für jedes Backend-Konto aufrufbar, und der Avatar-Upload in der Benutzerverwaltung löschte einen frei wählbaren Pfad. JTL nennt die Fixes in 5.8.4, 5.7.6, 5.6.6 und 5.5.5 ohne eigenen Hinweis. Nachweis an IOController.php und AdminAccountController.php.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-2026-CHECKOUT-PAYMENT – Checkout akzeptiert deaktivierte oder für die Kundengruppe gesperrte Zahlungsarten",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.2.0 <5.8.3); kein Patch-Nachweis gefunden. Behobene Versionen: 5.8.3. Eine Bestellung ließ sich mit einer Zahlungsart abschließen, die deaktiviert oder für die Kundengruppe nicht freigegeben ist (z. B. Kauf auf Rechnung für Neukunden). Nur in 5.8.3 und neuer behoben; 5.7.7, 5.6.7 und 5.5.6 enthalten den alten Code (Pakete geprüft): Update auf 5.8. Bestellungen mit unerwarteten Zahlungsarten prüfen.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-2026-DBES-CATEGORY-SQLI – SQL-Injection im dbeS-Kategorie-Abgleich",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.4); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.5 / 5.6.6 / 5.7.6 / 5.8.4. Beim Kategorie-Abgleich wurden Attribut-IDs ungebunden in ein DELETE eingesetzt. Setzt gültige Wawi-Sync-Zugangsdaten voraus. JTL nennt den Fix in 5.8.4, 5.7.6, 5.6.6 und 5.5.5 ohne eigenen Hinweis. Nachweis an dbeS/Sync/Categories.php.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-2026-PATH-TRAVERSAL – Path Traversal: Dateien löschen (Banner/ImageMap) und schreiben (Wawi-Bildabgleich)",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.6.5, >=5.7.0 <5.7.5, >=5.8.0 <5.8.2); kein Patch-Nachweis gefunden. Behobene Versionen: 5.6.5 / 5.7.5 / 5.8.2. Zwei Lücken, die Backend- bzw. Wawi-Sync-Zugang voraussetzen: Banner- und ImageMap-Verwaltung löschen Dateien ohne Pfadprüfung (ab 5.6.0), der dbeS-Bildabgleich übernimmt Dateinamen mit ../ ungeprüft (ab 5.0.0). Mit gestohlenen Admin- oder Sync-Zugangsdaten lassen sich so Dateien außerhalb der Bildverzeichnisse löschen bzw. ablegen.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-2026-PWRESET-XSS – Reflected XSS in „Passwort vergessen“",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.4, >=5.7.0 <5.7.4, >=5.8.0 <5.8.1); kein Patch-Nachweis gefunden. Behobene Versionen: 5.6.4 / 5.7.4 / 5.8.1. Die eingegebene E-Mail-Adresse wurde ungefiltert in die Erfolgs-/Fehlermeldung übernommen. Gemeinsam mit JTL-SHOP-9886 behoben.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-2026-WAWI-SYNC – Wawi-Abgleich: beliebige Dateien über den Bildabgleich, SQL-Injection beim Löschen",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.3); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.5 / 5.6.6 / 5.7.6 / 5.8.3. Der dbeS-Bildabgleich übernahm Dateien ohne Prüfung von Endung und Inhalt, das Löschen von Datensätzen setzte Ausschlusswerte ungefiltert in SQL ein. Beides setzt gültige Wawi-Sync-Zugangsdaten voraus. Behoben in 5.8.3 sowie in 5.7.6, 5.6.6 und 5.5.5; Sync-Passwort ändern, falls es Dritten bekannt sein könnte. Nachweis an ImageUpload.php und AbstractSync.php.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-SHOP-10049 – Second-Order-SQL-Injection über Backend-Benachrichtigungen (jedes Backend-Konto)",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.0.0 <5.5.5, >=5.6.0 <5.6.6, >=5.7.0 <5.7.6, >=5.8.0 <5.8.3); kein Patch-Nachweis gefunden. Behobene Versionen: 5.5.5 / 5.6.6 / 5.7.6 / 5.8.3. Das Ausblenden einer Backend-Benachrichtigung speichert einen beliebigen Wert als Hash, der beim nächsten Aufbau der Benachrichtigungen ungefiltert in ein DELETE eingesetzt wird. Ausnutzbar mit jedem angemeldeten Backend-Konto, unabhängig von dessen Rechten. Behoben in 5.8.3 sowie (als „SQL-Injection über die Benachrichtigungsaktion im Backend“) in 5.7.6, 5.6.6 und 5.5.5. Ein eingespielter Fix wird an Notification::isValidHash erkannt.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Sicherheitspatch einspielen: JTL-SHOP-9886 – IDOR im Retouren-Modul: Lieferadressen aller Kunden auslesbar",
+          "detail": "Shop-Version 5.3.1 liegt im betroffenen Bereich (>=5.3.0 <5.6.4, >=5.7.0 <5.7.4, >=5.8.0 <5.8.1); kein Patch-Nachweis gefunden. Behobene Versionen: 5.6.4 / 5.7.4 / 5.8.1. Jeder angemeldete Kunde kann über die IO-Methode rmaSummary (Parameter returnAddress) fortlaufende IDs aus tlieferadressevorlage abfragen. Das Abschalten der Retouren hilft nicht. Für 5.3–5.5 gibt es nur einen manuellen Patch; dessen Einspielung wird an RMAReturnAddressService.php erkannt. Datenschutzrechtlich (DSGVO Art. 33) prüfen, ob eine Meldung nötig ist.",
+          "related": [
+            "34b03f681df6dc43",
+            "3f498b1fb8bbe820",
+            "542a85f9e4f37a0c",
+            "754aa9e2ed3670dc",
+            "9250c17212fab8ab",
+            "9a92508dc0475919",
+            "9dc381f51ab3f543",
+            "c17ac7787b9f9b86",
+            "d594e811bfff8a10",
+            "ebb67d5b0664a227",
+            "ed3628734a663db6",
+            "ede6466ed43e5f15",
+            "eff039ce2cd7e01f",
+            "f7800eacdada947a",
+            "058d1c216b4caba7",
+            "4439af3c0ced547c",
+            "5cea0601137dd884",
+            "76c7284c89856162",
+            "d2a45dd3c5f1017a",
+            "d7f67e2192ed6c88"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Bestätigte Webshells / Exploit-Dateien isolieren",
+          "detail": "Betroffene Dateien nicht einfach löschen, sondern zuerst für die Forensik sichern (Kopie außerhalb des Webroots inkl. Zeitstempel), danach entfernen oder den Zugriff per Webserver sperren. Anschließend alle Zugangsdaten rotieren (DB, Admin, FTP/SFTP, API-Keys, SMTP).",
+          "related": [
+            "a3d8a47c88262314",
+            "0472e34e58e9e36b",
+            "ea9761a3872f4f76",
+            "81eb524b014725b2",
+            "b844315150dd98a0"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "Manipulierte Webserver-Konfiguration (.htaccess/.user.ini) zurücksetzen",
+          "detail": "Handler-Zuweisungen für Nicht-PHP-Dateien, auto_prepend_file und fremde RewriteRules entfernen und durch die Original-Konfiguration des Shops ersetzen.",
+          "related": [
+            "29a74db159f2832c"
+          ]
+        },
+        {
+          "group": "immediate",
+          "priority": 1,
+          "title": "JTL-Shop auf 5.5.4 / 5.6.2 / 5.7.2 (oder neuer) aktualisieren bzw. Back-Patch einspielen",
+          "detail": "Download über das JTL-Kundencenter bzw. die JTL-Forum-Ankündigung zu CVE-2026-54390. Danach Blowfish-Key in includes/config.JTL-Shop.ini.php, Datenbank-Passwort, dbeS-Synchronisations-Passwort, SMTP-/Newsletter-Zugänge, FTP/SFTP, Redis, OAuth-Secrets rotieren – alle Werte waren vor dem Patch durch die Lücke auslesbar."
+        }
+      ]
+    },
+    {
+      "kind": "compromise_check",
+      "label": "Kompromittierungs-Prüfung",
+      "items": [
+        {
+          "group": "compromise_check",
+          "priority": 1,
+          "title": "Angriffsspuren in E-Mails/Logs auswerten",
+          "detail": "Die gefundenen Payloads belegen mindestens einen Angriffsversuch. Zeitpunkt mit Webserver-Logs abgleichen und prüfen, ob der Shop zu diesem Zeitpunkt bereits gepatcht war. Falls nicht: von einer Kompromittierung ausgehen und alle Zugangsdaten rotieren.",
+          "related": [
+            "333869f0c972248d"
+          ]
+        },
+        {
+          "group": "compromise_check",
+          "priority": 2,
+          "title": "Neue/geänderte Dateien und Code-Muster manuell prüfen",
+          "detail": "Jede seit dem Referenzdatum geänderte Datei mit einer sauberen Kopie des Shops (Release-Archiv, Git, Backup) vergleichen. Unbekannte Dateien gelten bis zum Beweis des Gegenteils als Fremdcode. Zeitstempel-Anomalien deuten auf absichtlich zurückdatierte Dateien hin.",
+          "related": [
+            "6ac995307b1b6756",
+            "6847eb442d474899",
+            "4cfd122be4c32fd6",
+            "b79e52affe29d7e2",
+            "52459272e8a737e9",
+            "5c233e1bf3776661"
+          ]
+        },
+        {
+          "group": "compromise_check",
+          "priority": 2,
+          "title": "Abweichungen vom Integritäts-Baseline prüfen",
+          "detail": "Geänderte, fehlende oder neue Kerndateien gegen das Original-Release verifizieren und nach der Prüfung eine neue Baseline erzeugen.",
+          "related": [
+            "10068f65be442089",
+            "4c5cb6f4896cb4f5"
+          ]
+        },
+        {
+          "group": "compromise_check",
+          "priority": 3,
+          "title": "Bei bestätigter Kompromittierung: vollständige forensische Analyse",
+          "detail": "Dieser Scan ist eine Triage-Hilfe. Ein bestätigter Befund erfordert eine Analyse von Webserver-Logs, Datenbank (Bestellungen, Kundendaten, Admin-Logins) und Hosting-Umgebung, ggf. mit Meldepflicht nach DSGVO Art. 33 innerhalb von 72 Stunden."
+        }
+      ]
+    },
+    {
+      "kind": "hardening",
+      "label": "Langfristige Härtung",
+      "items": [
+        {
+          "group": "hardening",
+          "priority": 2,
+          "title": "Dateirechte für Konfigurationsdateien einschränken",
+          "detail": "Konfigurationsdateien mit Zugangsdaten sollten nur für den Webserver-Benutzer lesbar sein (z. B. 0400/0440) und nie für Gruppe/Andere schreibbar.",
+          "related": [
+            "4bda2f0e7895cb04"
+          ]
+        },
+        {
+          "group": "hardening",
+          "priority": 3,
+          "title": "PHP-Ausführung in Upload-/Medienverzeichnissen serverseitig unterbinden",
+          "detail": "Per Webserver-Konfiguration (z. B. `php_flag engine off`, `RemoveHandler`, nginx `location` ohne PHP-Weiterleitung) sicherstellen, dass hochgeladene Dateien nie als Code ausgeführt werden."
+        },
+        {
+          "group": "hardening",
+          "priority": 3,
+          "title": "Regelmäßigen Scan und Baseline etablieren",
+          "detail": "Scan wöchentlich sowie nach jedem Update ausführen; nach verifiziertem Zustand eine Baseline erzeugen, damit künftige Änderungen an Kerndateien sofort auffallen."
+        },
+        {
+          "group": "hardening",
+          "priority": 3,
+          "title": "Updates, Plugins und Zugänge im Griff behalten",
+          "detail": "Sicherheitsupdates des Shopsystems zeitnah einspielen, nicht benötigte Plugins/Apps deinstallieren, Zugangsdaten turnusmäßig rotieren und 2FA für alle Backend-Zugänge erzwingen. Eine Web Application Firewall reduziert die Angriffsfläche zusätzlich."
+        },
+        {
+          "group": "hardening",
+          "priority": 3,
+          "title": "Admin-Backend zusätzlich absichern",
+          "detail": "Admin-Verzeichnis umbenennen oder per HTTP-Auth/IP-Allowlist schützen, 2FA für alle Admin-Konten (JTL-Backend › Benutzerverwaltung) erzwingen und Login-Versuche im Backend überwachen."
+        },
+        {
+          "group": "hardening",
+          "priority": 3,
+          "title": "Plugins und Templates nur aus vertrauenswürdigen Quellen",
+          "detail": "Nur Plugins aus dem JTL Extension Store oder von bekannten Agenturen installieren; nicht genutzte Plugins deinstallieren (nicht nur deaktivieren). Nach jedem Plugin-Update erneut scannen."
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Datenbankprüfungen übersprungen (--skip-remote).",
+    "Webserver-Access-Logs nicht geprüft – mit `--access-log auto` oder `--access-log PFAD` nach Angriffsspuren bekannter Lücken suchen."
+  ],
+  "score": 9,
+  "grade": "F",
+  "score_drivers": [
+    {
+      "key": "critical_findings",
+      "label": "9 kritische Befunde",
+      "points": 48
+    },
+    {
+      "key": "advisories_vulnerable",
+      "label": "Shop-Version verwundbar (CVE-2026-22308, CVE-2026-123058, JTL-2026-ADMIN-PWRESET)",
+      "points": 30
+    },
+    {
+      "key": "warnings",
+      "label": "4 Warnungen",
+      "points": 8
+    },
+    {
+      "key": "config_permissions",
+      "label": "1 Konfigurationsdatei mit zu offenen Dateirechten",
+      "points": 3
+    },
+    {
+      "key": "limitations",
+      "label": "2 Prüfungen übersprungen oder eingeschränkt",
+      "points": 2
+    }
+  ]
+}

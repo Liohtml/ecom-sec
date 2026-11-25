@@ -1,0 +1,58 @@
+[
+  {
+    "generated_at": "2026-11-25T08:25:38.289807841Z",
+    "platform_id": "jtl5",
+    "version": "5.3.1",
+    "verdict": "critical",
+    "critical": 14,
+    "warning": 7,
+    "info": 0,
+    "accepted": 0,
+    "files_scanned": 0,
+    "complete": false,
+    "score": 49,
+    "grade": "D"
+  },
+  {
+    "generated_at": "2026-11-25T08:25:38.797765536Z",
+    "platform_id": "jtl5",
+    "version": "5.3.1",
+    "verdict": "critical",
+    "critical": 21,
+    "warning": 8,
+    "info": 1,
+    "accepted": 0,
+    "files_scanned": 39,
+    "complete": true,
+    "score": 15,
+    "grade": "F"
+  },
+  {
+    "generated_at": "2026-11-25T08:25:39.222625289Z",
+    "platform_id": "jtl5",
+    "version": "5.3.1",
+    "verdict": "critical",
+    "critical": 21,
+    "warning": 8,
+    "info": 1,
+    "accepted": 0,
+    "files_scanned": 39,
+    "complete": true,
+    "score": 15,
+    "grade": "F"
+  },
+  {
+    "generated_at": "2026-11-25T08:25:39.643842689Z",
+    "platform_id": "jtl5",
+    "version": "5.3.1",
+    "verdict": "critical",
+    "critical": 23,
+    "warning": 11,
+    "info": 2,
+    "accepted": 1,
+    "files_scanned": 40,
+    "complete": true,
+    "score": 9,
+    "grade": "F"
+  }
+]

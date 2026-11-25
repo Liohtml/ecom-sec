@@ -1529,3 +1529,89 @@ fn release_583_fixes_are_not_backported_to_575() {
         .iter()
         .any(|(r, _)| r == "advisory_jtl-shop-10049"));
 }
+
+// ------------------------------------------------- state from older versions
+
+/// Directory with JSON written by ecomsec 0.2.0 (time types from `chrono`),
+/// see `crates/ecomsec-core/tests/compat_state.rs`.
+fn old_state_fixture() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("../ecomsec-core/tests/fixtures/chrono-0.2.0")
+}
+
+#[test]
+fn state_written_by_older_version_is_read_and_reproduced() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path().join("shop");
+    let state = tmp.path().join("state");
+    jtl_fixture(&root);
+    let root_s = root.to_str().unwrap();
+    // One scan creates the per-target directory; then swap in the old files.
+    scan_json(&root, &state, &[]);
+    let store = fs::read_dir(&state)
+        .unwrap()
+        .flatten()
+        .find(|e| e.file_name().to_string_lossy().starts_with("jtl5-"))
+        .unwrap()
+        .path();
+    fs::remove_dir_all(&store).unwrap();
+    let old = old_state_fixture();
+    for e in walkdir::WalkDir::new(old.join("state")) {
+        let e = e.unwrap();
+        let dst = store.join(e.path().strip_prefix(old.join("state")).unwrap());
+        if e.file_type().is_dir() {
+            fs::create_dir_all(&dst).unwrap();
+        } else {
+            fs::copy(e.path(), &dst).unwrap();
+        }
+    }
+    fs::copy(old.join("checkpoint.json"), store.join("checkpoint.json")).unwrap();
+
+    // The stored report is printed byte for byte as it was written.
+    let out = run(&state, &["report", "--root", root_s, "--format", "json"]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    let expected = fs::read_to_string(old.join("state/last-report.json")).unwrap();
+    assert_eq!(
+        String::from_utf8(out.stdout).unwrap(),
+        format!("{expected}\n")
+    );
+
+    // Diff of the two archived reports equals the diff 0.2.0 printed.
+    let out = run(&state, &["diff", "--root", root_s, "--format", "json"]);
+    let mut d: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let mut expected: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(old.join("diff.json")).unwrap()).unwrap();
+    expected["target"] = d["target"].take();
+    d["target"] = expected["target"].clone();
+    assert_eq!(d, expected);
+
+    let out = run(&state, &["history", "--root", root_s]);
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(String::from_utf8_lossy(&out.stdout).contains("2026-11-25 08:25:39"));
+
+    let out = run(&state, &["baseline", "diff", "--root", root_s]);
+    let text = String::from_utf8_lossy(&out.stdout);
+    assert!(text.contains("Baseline vom 25.11.2026 08:25 UTC"), "{text}");
+
+    // A new scan keeps the old acceptance and extends the old history.
+    let report = scan_json(&root, &state, &[]);
+    let dump = report["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["rule"] == "exposed_file" && f["subject"] == "backup.sql")
+        .unwrap();
+    assert_eq!(dump["accepted"], true);
+    assert_eq!(dump["accepted_reason"], "Testdump");
+    let history: Vec<serde_json::Value> =
+        serde_json::from_slice(&fs::read(store.join("history.json")).unwrap()).unwrap();
+    assert_eq!(history.len(), 5);
+    assert_eq!(fs::read_dir(store.join("reports")).unwrap().count(), 3);
+}

@@ -1,0 +1,152 @@
+{
+  "created_at": "2026-11-25T08:25:38.317819104Z",
+  "root": "/tmp/.tmp9f3GfK/shop",
+  "platform_id": "jtl5",
+  "version": "5.3.1",
+  "files": {
+    "admin/index.php": {
+      "sha256": "1b90fd3730db41d00c70bac79074ab336a3acb01f3677629d90a16693362744c",
+      "size": 13
+    },
+    "includes/config.JTL-Shop.ini.php": {
+      "sha256": "d1ccc2c0a12e2ee71ddcffc9046ae9ba5abe2d88f84d5906870678625c019b3f",
+      "size": 150
+    },
+    "includes/defines.php": {
+      "sha256": "3b8bb4138d3687b06e4ae3b4041f02e8e17bfaeea2f1c8e0466dfdc6baa1709b",
+      "size": 43
+    },
+    "includes/src/F0.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F1.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F10.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F11.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F12.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F13.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F14.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F15.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F16.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F17.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F18.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F19.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F2.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F20.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F21.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F22.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F23.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F24.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F25.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F26.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F27.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F28.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F29.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F3.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F4.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F5.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F6.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F7.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F8.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/F9.php": {
+      "sha256": "ca8ce9606e6c984ad93d043fdd3d88cf1b20e7d1dc51d47c03e80e3b15c12edf",
+      "size": 16
+    },
+    "includes/src/Smarty/MailSmarty.php": {
+      "sha256": "e18e8fd6409954eb754a789ae0931a29a1f89225f5b801c1596c35189a712122",
+      "size": 71
+    },
+    "mediafiles/.htaccess": {
+      "sha256": "a9486733d92c22d9debf0d06164eaecdf08d55a87255405b392c04af369dd43a",
+      "size": 40
+    },
+    "mediafiles/Bilder/wso.php": {
+      "sha256": "e37205e9a95d1cfbb415c64e29141397bc3f3ad114f99a0c0977815dd0b83c44",
+      "size": 31
+    }
+  }
+}

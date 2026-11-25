@@ -1,0 +1,40 @@
+{
+  "findings": {
+    "id0": {
+      "subject": "s0",
+      "accepted_at": "2026-09-21T14:13:20Z"
+    },
+    "id1": {
+      "subject": "s1",
+      "accepted_at": "2026-09-21T15:14:21.500Z"
+    },
+    "id2": {
+      "subject": "s2",
+      "accepted_at": "2026-09-21T16:15:22.120Z"
+    },
+    "id3": {
+      "subject": "s3",
+      "accepted_at": "2026-09-21T17:16:23.001Z"
+    },
+    "id4": {
+      "subject": "s4",
+      "accepted_at": "2026-09-21T18:17:24.000123Z"
+    },
+    "id5": {
+      "subject": "s5",
+      "accepted_at": "2026-09-21T19:18:25.000001Z"
+    },
+    "id6": {
+      "subject": "s6",
+      "accepted_at": "2026-09-21T20:19:26.123456789Z"
+    },
+    "id7": {
+      "subject": "s7",
+      "accepted_at": "2026-09-21T21:20:27.000000010Z"
+    },
+    "id8": {
+      "subject": "s8",
+      "accepted_at": "2026-09-21T22:21:28.999999999Z"
+    }
+  }
+}

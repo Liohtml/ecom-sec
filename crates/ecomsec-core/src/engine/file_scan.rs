@@ -1008,6 +1008,17 @@ mod tests {
         p
     }
 
+    /// `checkpoint.json` written by ecomsec 0.2.0 (chrono) still loads and is
+    /// written back unchanged.
+    #[test]
+    fn checkpoint_from_older_version_round_trips() {
+        let old = include_str!("../../tests/fixtures/chrono-0.2.0/checkpoint.json");
+        let cp: Checkpoint = serde_json::from_str(old).expect("old checkpoint loads");
+        assert_eq!(cp.reference_date.to_string(), "2026-06-17");
+        assert_eq!((cp.next_index, cp.total), (0, 39));
+        assert_eq!(serde_json::to_string_pretty(&cp).unwrap(), old.trim_end());
+    }
+
     fn write(root: &Path, rel: &str, content: &[u8]) -> PathBuf {
         let p = root.join(rel);
         fs::create_dir_all(p.parent().unwrap()).unwrap();
